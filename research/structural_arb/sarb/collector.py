@@ -144,8 +144,8 @@ class Collector:
             if r.status != 200:
                 raise RuntimeError(f"events page status {r.status}")
             evs += r.body.get("events", [])
-            for ev in r.body.get("events", []):
-                self.ledger.observe_event(ev, r.recv_utc_ns)
+            # List-page events are NOT fed to the fee ledger: whether the list endpoint includes the
+            # override fields is unverified, so only single-object GET /events/{e} observations count.
             cur = r.body.get("cursor")
             if not cur:
                 break
@@ -187,6 +187,11 @@ class Collector:
         the fee in force at the snapshot time via the time-versioned ledger. Returns (fees, t)."""
         evs = sorted({u.raw[t][0]["event_ticker"] for t in tickers})
         sers = sorted({u.raw[t][0].get("series_ticker", "") for t in tickers})
+        now_utc = time.time_ns()
+        fresh = lambda layer, k: (lambda c: c is not None and now_utc - c[0] < config.OBSERVATION_REUSE_S * 1e9)(  # noqa: E731
+            self.ledger.confirmed.get((layer, k)))
+        evs = [e for e in evs if not fresh("event", e)]
+        sers = [x for x in sers if not fresh("series", x)]
         for e in evs:
             r = self.c.get(f"/events/{e}")
             if r.status == 200 and isinstance(r.body, dict) and r.body.get("event"):
@@ -368,6 +373,7 @@ class Collector:
                    "phase23_s": round(t_p2 - t_screen, 2), "audit_s": round(t_end - t_p2, 2),
                    "requests_total": n_req, "req_per_s": round(n_req / max(1e-9, t_end - t0), 2),
                    "http_429": sum(v for k, v in req["requests"].items() if k.endswith("|429")),
+                   "rate_limit_cooldowns_total": self.c._limiter.cooldowns,
                    "http_non200": {k: v for k, v in req["requests"].items() if not k.endswith("|200")},
                    **req, **{k: v for k, v in ops.items()}}
         self.out.write("ops", ops_rec)

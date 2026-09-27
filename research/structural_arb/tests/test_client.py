@@ -60,3 +60,17 @@ def test_package_has_no_write_verbs_or_credentials():
                 names = [a.name for a in node.names] + ([node.module] if isinstance(node, ast.ImportFrom) and node.module else [])
                 for n in names:
                     assert not n.startswith(("src", "trader", "kalshi_api", "telegram")), (fn, n)
+
+
+def test_global_cooldown_after_429():
+    import time as _t
+    from sarb.client import _RateLimiter
+    rl = _RateLimiter(1000, 10)
+    rl.feedback(429)
+    t = _t.monotonic(); rl.wait()
+    assert _t.monotonic() - t >= 0.9 and rl.cooldowns == 1
+    rl.feedback(429)
+    assert rl._backoff == 4.0
+    for _ in range(20):
+        rl.feedback(200)
+    assert rl._backoff == 1.0

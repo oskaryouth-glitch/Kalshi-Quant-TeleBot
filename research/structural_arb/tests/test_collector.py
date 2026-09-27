@@ -110,10 +110,11 @@ def test_cycle_records_everything_and_confirms_lock(tmp_path, fake_registry):
     assert p3[0]["status"] == "RULE_DEFINED_LOCK" and p3[0]["persistence_confirmed"] is True
     assert p3[0]["extra"]["price_source"] == "orderbook" and "unwind" in p3[0]["extra"]
     books = read(tmp_path, "books")
-    for phase in ("P2", "P3"):
-        kinds = sorted((b["kind"], b["ticker"]) for b in books if b["phase"] == phase)
-        assert kinds == [("event", "KXFAKE-99"), ("market", "A"), ("market", "B"),
-                         ("orderbook", "A"), ("orderbook", "B"), ("series", "KXFAKE")]
+    kinds = {ph: sorted((b["kind"], b["ticker"]) for b in books if b["phase"] == ph) for ph in ("P2", "P3")}
+    assert kinds["P2"] == [("event", "KXFAKE-99"), ("market", "A"), ("market", "B"),
+                           ("orderbook", "A"), ("orderbook", "B"), ("series", "KXFAKE")]
+    # P3 (~1 s later) reuses the P2 event/series objects (< OBSERVATION_REUSE_S), fresh books + markets
+    assert kinds["P3"] == [("market", "A"), ("market", "B"), ("orderbook", "A"), ("orderbook", "B")]
     assert any(b["phase"] == "AUDIT" for b in books)
     stat = read(tmp_path, "statscreen")
     assert any(r["relationship"] == "R1_LONG" and r["price_source"] == "events_summary_screen_only" for r in stat)

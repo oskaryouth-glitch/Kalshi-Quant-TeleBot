@@ -61,9 +61,10 @@ def check_path(path: str) -> None:
 
 
 class _RateLimiter:
-    """Token bucket: sustained `per_second`, bursts up to `burst` requests (Kalshi documents
-    token buckets with burst capacity; unauthenticated limits are undocumented, so we stay far
-    below the documented Basic authenticated read budget of 20 req/s)."""
+    """Token bucket (sustained `per_second`, bursts up to `burst`) plus a GLOBAL cool-down that
+    every request honours after any HTTP 429. Unauthenticated limits are undocumented; validation
+    runs showed 429s from bursts, so after a 429 the whole client pauses (1 s doubling to 32 s),
+    and the pause resets after 20 consecutive non-429 responses."""
 
     def __init__(self, per_second: float, burst: int = 1):
         self._rate = per_second
@@ -71,17 +72,37 @@ class _RateLimiter:
         self._tokens = self._cap
         self._last = time.monotonic()
         self._lock = threading.Lock()
+        self._cool_until = 0.0
+        self._backoff = 1.0
+        self._ok_streak = 0
+        self.cooldowns = 0
 
     def wait(self) -> None:
         with self._lock:
             while True:
                 now = time.monotonic()
+                if now < self._cool_until:
+                    time.sleep(self._cool_until - now)
+                    continue
                 self._tokens = min(self._cap, self._tokens + (now - self._last) * self._rate)
                 self._last = now
                 if self._tokens >= 1:
                     self._tokens -= 1
                     return
                 time.sleep((1 - self._tokens) / self._rate)
+
+    def feedback(self, status: int) -> None:
+        with self._lock:
+            if status == 429:
+                self._cool_until = max(self._cool_until, time.monotonic() + self._backoff)
+                self._backoff = min(32.0, self._backoff * 2)
+                self._tokens = 0.0
+                self._ok_streak = 0
+                self.cooldowns += 1
+            else:
+                self._ok_streak += 1
+                if self._ok_streak >= 20:
+                    self._backoff = 1.0
 
 
 class RequestStats:
@@ -148,14 +169,15 @@ class PublicClient:
         except ValueError:
             body = {"_non_json": resp.text[:2000]}
         self.stats.add(path, resp.status_code, recv_mono - sent_mono)
+        self._limiter.feedback(resp.status_code)
         h = getattr(resp, "headers", {}) or {}
         hdrs = tuple((k, h.get(k)) for k in ("x-cache", "age", "date") if h.get(k) is not None)
         return TimedResponse(path, params, resp.status_code, body, sent_utc, recv_utc, sent_mono, recv_mono, hdrs)
 
-    def get_retry(self, path: str, params: dict | None = None, attempts: int = 4) -> TimedResponse:
+    def get_retry(self, path: str, params: dict | None = None, attempts: int = 6) -> TimedResponse:
         """For discovery/screening pages only. Leg re-fetches never retry: a failed leg is
         recorded as unavailable and the candidate is rejected."""
-        r, delay = None, 0.5
+        r, delay = None, 1.0
         for _ in range(attempts):
             try:
                 r = self.get(path, params)
@@ -164,7 +186,7 @@ class PublicClient:
             if r is not None and r.status == 200:
                 return r
             time.sleep(delay)
-            delay *= 2
+            delay = min(32.0, delay * 2)
         if r is None:
             raise requests.ConnectionError(f"GET {path} failed after {attempts} attempts")
         return r

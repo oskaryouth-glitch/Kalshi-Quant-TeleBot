@@ -6,13 +6,13 @@ and noting the reason in the research log.
 """
 from decimal import Decimal
 
-CONFIG_VERSION = "2026-09-27.3-validation-feeledger"
+CONFIG_VERSION = "2026-09-27.4-validation"
 
 PUBLIC_BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
 
 # Rate limiting for the public read endpoints (well under the basic-tier read limit).
-MAX_REQUESTS_PER_SECOND = 8
-MAX_REQUEST_BURST = 16          # lets a candidate's legs be re-fetched back-to-back (low skew)
+MAX_REQUESTS_PER_SECOND = 5          # validation run2: 0 x 429 at ~3.9/s; run3: 429s from bursts at 8/s
+MAX_REQUEST_BURST = 6           # a 2-leg candidate's legs (market x2, book x2) fit in one burst
 
 # Timing gates (nanoseconds).
 # Max spread between the earliest request-sent and latest response-received across all legs.
@@ -41,3 +41,4 @@ TERMS_REFRESH_S = 3600
 FEE_CHANGES_REFRESH_S = 300
 EVENTS_PAGE_MIN_INTERVAL_S = 0.25        # summary pages paced <= 4/s (run1 saw 429s only on /events pages)
 STATSCREEN_REWRITE_S = 1800              # a given summary-only statistical hit is re-logged at most every 30 min
+OBSERVATION_REUSE_S = 10                 # event/series objects observed < 10 s ago are not re-fetched (freshness rule is 30 s)
