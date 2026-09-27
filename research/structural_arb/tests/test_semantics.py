@@ -127,3 +127,15 @@ def test_non_binary_or_non_unit_notional_rejected():
     m = {"ticker": "T", "strike_type": "greater", "floor_strike": 1, "rules_primary": "above 1",
          "market_type": "scalar", "notional_value_dollars": "1.0000"}
     assert S.build_market_spec(ev, m, {}, {}).reject == "NOT_BINARY"
+
+
+def test_registry_guard_rejects_per_strike_no_data_and_undocumented_common_determination():
+    from sarb import terms as T
+    with pytest.raises(ValueError):
+        T.VerifiedTerms("u", "0" * 64, True, "PER_STRIKE_NO", ("CRYPTO.pdf: affected strikes resolve to No",), "x")
+    with pytest.raises(ValueError):
+        T.VerifiedTerms("u", "0" * 64, True, "ALL_NO", ("c",), "")
+    assert "https://assets.kalshi.com/contract_terms/CRYPTO.pdf" not in T.REGISTRY
+    assert "https://assets.kalshi.com/contract_terms/AAAGAS.pdf" not in T.REGISTRY
+    assert "https://assets.kalshi.com/contract_terms/INX.pdf" not in T.REGISTRY
+    assert all(t.common_determination for t in T.REGISTRY.values())

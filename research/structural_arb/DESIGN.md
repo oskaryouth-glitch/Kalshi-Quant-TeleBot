@@ -357,3 +357,84 @@ Both were removed. No maximum, floor or historical substitution remains.
    * 5.11 statistics;
    * ops (request rate, 429s, latencies, P2 re-fetch, skew, P3 delay);
    * integrity (every P2/P3 leg has market and book snapshots; every P3 has a P2).
+
+## I. Final methodology audit (2026-09-27) — protocol status: **READY_TO_FREEZE**
+
+### I.1 Every path to `RULE_DEFINED_LOCK` (sarb/evaluator.py) requires ALL of
+
+| Requirement | Enforced by |
+|---|---|
+| Verified binding settlement semantics | `_terms_ok`: `terms_verified` for **every** family, including categorical MECNET (the former MECNET exemption was removed in this audit); combos never qualify; registry entries need a hash match at build, a documented `common_determination`, and a supported `no_data` |
+| Independent checker agreement over every modelled permitted state | gate `no_checker_bug` (checker must have run, and `fast == checker`); gate `locked_guaranteed` (relationship class GUARANTEED, L ≥ 1) |
+| Fresh executable order books | book integrity (HTTP 200, parsed, no CDN hit, not crossed or locked); gates `skew_ok` (≤ 2 s) and `age_ok` (≤ 5 s) |
+| Depth for the modelled quantity | every leg walked to size C, and C must fill completely |
+| Fee state resolved at the snapshot | gate `fees_resolved`; otherwise status `FEE_UNRESOLVED` (time-versioned ledger) |
+| Positive economics under the required scenario | edge > 0 under **all** fee scenarios (the binding one is non-direct $0.01, worst-case fills) |
+| Rule 5.11 | **at the same size** as the positive edge, every consumed level is within ±$0.20 of the last-trade proxy (fixed in this audit; previously only top of book was checked) |
+| Timing / skew | `skew_ok`, `age_ok`, `market_active_fresh` (≤ 120 s), `exchange_status_fresh` (≤ 30 s, added in this audit) |
+| Persistence | `persistence_confirmed`: only P3 re-fetches pass `True`, and only after a persistence-eligible P2 |
+| No metadata / terms contradiction | gate `metadata_matches_template` (added in this audit). The fresh market body must match the fingerprint the template was built from; the event must still belong to the same series (and, for MECNET, still be mutually exclusive); the series must carry the same `contract_terms_url`; at P3 the terms PDF is re-hashed live and must still equal the registered hash |
+
+### I.2 Nothing can fall through
+
+* The status precedence is
+  `FEE_UNRESOLVED` → `REJECTED` (data gates) → `STATISTICAL` → `CANDIDATE_TERMS_UNVERIFIED` →
+  `GUARANTEED_STRUCTURAL_NOT_EXECUTABLE`. `RULE_DEFINED_LOCK` is reached only when the list of
+  failing gates is empty.
+* Rate-limited or missing books are REJECTED before any price is used.
+* Unsupported semantics never become templates.
+* `tests/test_evaluator.py::test_no_disqualifier_falls_through_to_lock` applies 23 disqualifiers
+  singly and in all 253 pairs to a scenario that is otherwise a lock: none yields
+  `RULE_DEFINED_LOCK`.
+* `test_rule_5_11_applies_at_the_executed_size_not_only_top_of_book` would have produced a
+  false lock under the pre-audit logic.
+
+### I.3 Reconstruction
+
+`python -m sarb.reconstruct <data_dir>` re-derives any record from the recorded streams only:
+* raw order books, market, event, series and exchange bodies with send/receive timings;
+* the fee-ledger file (changes filtered by first-seen time, so no look-ahead);
+* the record's provenance (semantic readings, envelopes, template hash, terms URL and hash,
+  checker result, git SHA and config version).
+
+It then re-runs semantics, the checker, fee resolution and every gate. The live audit cycle
+reconstructed **29 of 29** records exactly. That run found and fixed one gap: objects reused
+across candidates were not copied into each candidate's group. Tampered snapshots are detected
+(test). The only input that cannot be reproduced later is the live P3 terms re-hash; its
+recorded outcome is used.
+
+### I.4 Terms registry after the audit
+
+* Verified: **BTC.pdf, ETH.pdf, GLOBALTEMPERATURE.pdf**, each with its documented
+  common-determination basis.
+* **INX.pdf removed.** Its expiration time "at least one minute after `<time>`", with revisions
+  after expiration ignored and Kalshi as Source Agency, does not force a common determination
+  instant: the same divergence channel as AAA gas.
+* **Not registrable until the payoff model supports per-market No states:** CRYPTO-family terms
+  whose no-data rule is per strike or per market. For example `CRYPTO.pdf`: "affected strikes
+  resolve to No". The model currently has only a common ALL_NO state. Registering such terms
+  would make the checker assume every leg resolves No together, when the terms allow one leg to
+  resolve No alone (which breaks R2/R3/R1-long locks). `VerifiedTerms` refuses any `no_data`
+  outside {ALL_NO, LAST_VALUE, DISCRETIONARY}, and requires a documented common-determination
+  basis.
+* AAA gas (AAAGAS.pdf) and Solana (CRYPTO.pdf) stay `TERMS_EQUIVALENCE_UNRESOLVED`
+  (sources/equivalence_review/REVIEW.md).
+
+### I.5 Remaining methodological weaknesses (known, documented, not lock-producing by themselves)
+
+1. **Discretionary settlement, contract modification, trade cancellation and non-atomic
+   execution** (Rulebook 6.3(c)/7.1/7.2/5.11) are residual by definition. They are listed on
+   every record, and never modelled as lock-breaking states.
+2. **The Rule 5.11 fair value is a proxy** (last traded price). Kalshi may use other
+   information, so the gate can pass while the true band differs.
+3. **Persistence is a single re-fetch about 1.2 s later.** Displayed depth can still vanish
+   before execution.
+4. **REST books are not simultaneous** (skew ≤ 2 s). Server timestamps and sequence numbers
+   need authentication, which is out of scope.
+5. **Terms verification is a human review of PDFs.** Hash pinning prevents silent drift, but
+   not a misreading. The registry is small (3 PDFs) and each fact is cited.
+6. **The text parser.** Anything unparseable is rejected. But if both the text and the fields
+   were wrong in the same way, the envelope could not detect it.
+7. **The fee-ledger boundary guard assumes the API reflects scheduled changes within ±60 s.**
+8. **The fee bound assumes resting orders are integer-sized** unless a fractional level is
+   displayed; if one is, the bound widens automatically.

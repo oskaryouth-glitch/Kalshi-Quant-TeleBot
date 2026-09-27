@@ -69,3 +69,17 @@ series M of 0.5). The list endpoint matched the objects in 4 of 4 events checked
 * **Rule 5.11.** It blocked 46 P2 records, but it was never the only failing gate.
 * **Statistical screen noise.** Most statscreen hits are R1 templates on events that are
   threshold ladders (not partitions), where R1 has no nominal meaning.
+
+## Methodology audit, 2026-09-27
+
+After the audit fixes (DESIGN.md §I), one live cycle was run:
+
+* 0 cycle errors, 1 × 429 (retried);
+* snapshot integrity complete;
+* **29/29 logged records reconstructed exactly** by `sarb.reconstruct`;
+* no `RULE_DEFINED_LOCK`.
+
+The verified-terms markets dropped from 2,533 to 1,256 after INX was removed from the registry.
+
+**Protocol status: READY_TO_FREEZE.** The long collection has NOT been started and no
+infrastructure has been provisioned.

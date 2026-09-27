@@ -76,7 +76,8 @@ class Session:
 
 @pytest.fixture
 def fake_registry(monkeypatch):
-    t = TERMS.VerifiedTerms(FAKE_TERMS, hashlib.sha256(FAKE_BYTES).hexdigest(), True, "LAST_VALUE", ("test",))
+    t = TERMS.VerifiedTerms(FAKE_TERMS, hashlib.sha256(FAKE_BYTES).hexdigest(), True, "LAST_VALUE", ("test",),
+                            "test fixture: single fixed determination instant")
     monkeypatch.setattr(TERMS, "REGISTRY", {FAKE_TERMS: t})
     monkeypatch.setattr(config, "PERSISTENCE_REFETCH_DELAY_S", 0.05)
     monkeypatch.setattr(config, "AUDIT_FAMILIES_PER_CYCLE", 1)
@@ -113,8 +114,9 @@ def test_cycle_records_everything_and_confirms_lock(tmp_path, fake_registry):
     kinds = {ph: sorted((b["kind"], b["ticker"]) for b in books if b["phase"] == ph) for ph in ("P2", "P3")}
     assert kinds["P2"] == [("event", "KXFAKE-99"), ("market", "A"), ("market", "B"),
                            ("orderbook", "A"), ("orderbook", "B"), ("series", "KXFAKE")]
-    # P3 (~1 s later) reuses the P2 event/series objects (< OBSERVATION_REUSE_S), fresh books + markets
-    assert kinds["P3"] == [("market", "A"), ("market", "B"), ("orderbook", "A"), ("orderbook", "B")]
+    # P3 (~1 s later) reuses the P2 event/series objects (< OBSERVATION_REUSE_S) but still records copies
+    assert kinds["P3"] == kinds["P2"]
+    assert all(b.get("reused") for b in books if b["phase"] == "P3" and b["kind"] in ("event", "series"))
     assert any(b["phase"] == "AUDIT" for b in books)
     stat = read(tmp_path, "statscreen")
     assert any(r["relationship"] == "R1_LONG" and r["price_source"] == "events_summary_screen_only" for r in stat)
@@ -182,3 +184,58 @@ def test_unsupported_fee_type_in_force_gives_fee_unresolved(tmp_path, fake_regis
     run_cycle(tmp_path, Session(series_fee=("flat", 1)))
     st = {r["status"] for r in read(tmp_path, "candidates") if r["extra"]["phase"] == "P2"}
     assert st == {"FEE_UNRESOLVED"}
+
+
+def test_every_lock_is_independently_reconstructable_from_streams(tmp_path, fake_registry):
+    from sarb.reconstruct import reconstruct
+    run_cycle(tmp_path, Session())
+    recs = [r for r in read(tmp_path, "candidates") if r["extra"]["phase"] in ("P2", "P3")]
+    lock = [r for r in recs if r["status"] == "RULE_DEFINED_LOCK"]
+    assert len(lock) == 1
+    for r in recs:                                   # the lock AND the non-lock P2 record reconstruct exactly
+        res = reconstruct(str(tmp_path), r)
+        assert res["match"], res
+    prov = lock[0]["extra"]["provenance"]
+    assert prov["code"]["git_sha"] and set(prov["legs"]) == {"A", "B"}
+    assert all(l["terms_sha_at_build"] for l in prov["legs"].values())
+
+
+def test_reconstruction_detects_tampered_snapshot(tmp_path, fake_registry):
+    from sarb.reconstruct import reconstruct
+    run_cycle(tmp_path, Session())
+    lock = [r for r in read(tmp_path, "candidates") if r["status"] == "RULE_DEFINED_LOCK"][0]
+    f = [x for x in os.listdir(tmp_path) if x.startswith("sarb_books_")][0]
+    rows = [json.loads(l) for l in gzip.open(os.path.join(tmp_path, f), "rt")]
+    for b in rows:
+        if b["kind"] == "orderbook" and b["phase"] == "P3" and b["ticker"] == "B":
+            b["body"] = {"orderbook_fp": {"yes_dollars": [["0.40", "50"]], "no_dollars": [["0.40", "50"]]}}
+    with gzip.open(os.path.join(tmp_path, f), "wt") as fh:
+        fh.write("".join(json.dumps(b) + "\n" for b in rows))
+    res = reconstruct(str(tmp_path), lock)
+    assert not res["match"] and any(d.startswith(("DIFFERS", "RECONSTRUCTED_OUTCOME")) for d in res["diffs"])
+
+
+def test_market_rules_changed_after_template_build_blocks_lock(tmp_path, fake_registry):
+    class Changing(Session):
+        def request(self, method, url, **kw):
+            r = super().request(method, url, **kw)
+            if "/markets/B" in url and not url.endswith("/orderbook"):
+                m = dict(self.markets["B"]); m["rules_primary"] = m["rules_primary"].replace("above 12", "above 12.5")
+                return Resp({"market": m})
+            return r
+    run_cycle(tmp_path, Changing())
+    recs = [r for r in read(tmp_path, "candidates") if r["extra"]["phase"] in ("P2", "P3")]
+    assert recs and not any(r["status"] == "RULE_DEFINED_LOCK" for r in recs)
+    assert any("FAIL:metadata_matches_template:B" in r["reasons"] for r in recs)
+
+
+def test_mecnet_pair_requires_verified_terms(tmp_path, monkeypatch):
+    """Categorical R1 pairs: at-most-one-YES (MECNET) alone is NOT enough for RULE_DEFINED_LOCK."""
+    import sarb.evaluator as E
+    from sarb import universe as U
+    st = U.categorical_pair("EV", "A", "B", terms_verified=False)
+    R_ = __import__("sarb.relationships", fromlist=["x"])
+    R_.check(st)
+    assert st.relationship_class == "GUARANTEED" and E._terms_ok(st) is False
+    st2 = U.categorical_pair("EV", "A", "B", terms_verified=True)
+    assert E._terms_ok(st2) is True

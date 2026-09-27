@@ -147,6 +147,8 @@ def build_universe(events: list[dict], series_by_ticker: dict[str, dict], terms_
     return u
 
 
-def categorical_pair(event_ticker: str, a: str, b: str) -> R.Structural:
+def categorical_pair(event_ticker: str, a: str, b: str, terms_verified: bool = False) -> R.Structural:
+    """terms_verified must be True for BOTH legs (sarb/terms.py); MECNET alone is not enough."""
     out = [s for s in R.categorical_templates(event_ticker, [a, b], True) if s.relationship == "R1_EXCLUSIVE_PAIR"]
+    out[0].terms_verified = terms_verified
     return out[0]

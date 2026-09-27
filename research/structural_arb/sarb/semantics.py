@@ -214,6 +214,20 @@ class MarketSpec:
     no_data_all_no: bool = True
     readings: list[str] = field(default_factory=list)
     reject: str | None = None
+    market_fp: str | None = None        # fingerprint of the market fields the spec was built from
+    terms_url: str | None = None
+    terms_sha: str | None = None        # hash observed when the spec was built (None if not checked)
+
+
+MARKET_FP_FIELDS = ("ticker", "rules_primary", "rules_secondary", "strike_type", "floor_strike", "cap_strike",
+                    "custom_strike", "functional_strike", "latest_expiration_time", "market_type",
+                    "notional_value_dollars")
+
+
+def market_fingerprint(market: dict) -> str:
+    """Any change to these fields after a template was built invalidates it (collector gate)."""
+    return hashlib.sha256(json.dumps([market.get(k) for k in MARKET_FP_FIELDS], sort_keys=True,
+                                     default=str).encode()).hexdigest()
 
 
 def build_market_spec(event: dict, market: dict, series: dict | None, terms_sha: dict[str, str]) -> MarketSpec:
@@ -225,7 +239,9 @@ def build_market_spec(event: dict, market: dict, series: dict | None, terms_sha:
     vt, tstatus = terms_mod.lookup(url, terms_sha.get(url) if url else None)
     spec = MarketSpec(market["ticker"], event["event_ticker"], event.get("series_ticker", ""), st,
                       terms=vt, terms_status=tstatus,
-                      no_data_all_no=(vt is None or vt.no_data == "ALL_NO"))
+                      no_data_all_no=(vt is None or vt.no_data == "ALL_NO"),
+                      market_fp=market_fingerprint(market), terms_url=url,
+                      terms_sha=terms_sha.get(url) if url else None)
     try:
         if market.get("market_type") != "binary":
             raise SemanticsError("NOT_BINARY", str(market.get("market_type")))

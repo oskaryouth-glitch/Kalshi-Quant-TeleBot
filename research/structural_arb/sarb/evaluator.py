@@ -41,6 +41,7 @@ RESIDUAL_RISKS = (
     "REST_BOOKS_NOT_SIMULTANEOUS(no server timestamps/sequence numbers without auth)",
 )
 RULE_5_11_NO_CANCEL_RANGE = Decimal("0.20")     # Rulebook 5.11(c)(ii)
+MAX_EXCHANGE_STATUS_AGE_NS = 30_000_000_000     # GET /exchange/status must be <= 30 s old
 MAX_METADATA_AGE_NS = 120_000_000_000           # market status/close_time freshness
 MAX_SIZE_SCAN = 5000
 
@@ -100,7 +101,9 @@ def price_portfolio(struct: Structural, books: Mapping[str, BookObs], fees: Mapp
 def evaluate(struct: Structural, books: Mapping[str, BookObs], meta: Mapping[str, MarketMeta],
              fees_or_err: Mapping[str, object], exchange_trading_active: bool, now_mono_ns: int,
              now_utc_ns: int, persistence_confirmed: bool | None, snapshot_id: str | None = None,
-             size_grid: Sequence[Decimal] = config.SIZE_GRID) -> tuple[str, CandidateRecord | None]:
+             size_grid: Sequence[Decimal] = config.SIZE_GRID, *,
+             exchange_fetched_mono_ns: int | None = None,
+             metadata_consistent: Mapping[str, bool] | None = None) -> tuple[str, CandidateRecord | None]:
     """Returns (outcome, record). outcome:
        CONSISTENT -- top-of-book prices do not violate the NOMINAL relationship (counted, not logged)
        NO_ASK     -- some leg has no displayed ask (counted, not logged)
@@ -131,6 +134,10 @@ def evaluate(struct: Structural, books: Mapping[str, BookObs], meta: Mapping[str
     # ---------- metadata / exchange / timing gates
     gates: dict[str, bool] = {}
     gates["exchange_trading_active"] = bool(exchange_trading_active)
+    gates["exchange_status_fresh"] = (exchange_fetched_mono_ns is not None
+                                      and 0 <= now_mono_ns - exchange_fetched_mono_ns <= MAX_EXCHANGE_STATUS_AGE_NS)
+    for t in tick:   # fresh market/event/series/terms objects must match what the template was built from
+        gates[f"metadata_matches_template:{t}"] = bool(metadata_consistent and metadata_consistent.get(t))
     for t in tick:
         m = meta.get(t)
         ok = (m is not None and m.status == "active" and m.close_time_utc_ns is not None
@@ -151,8 +158,24 @@ def evaluate(struct: Structural, books: Mapping[str, BookObs], meta: Mapping[str
     fee_unresolved = {t: str(fees_or_err.get(t)) for t in tick if not isinstance(fees_or_err.get(t), FEES.ResolvedFee)}
     fees = {t: fees_or_err[t] for t in tick} if fee_ok else {}
 
-    # ---------- depth / edges / sizes
-    grid_results, max_pos_size, n_pos_sizes = {}, None, 0
+    # ---------- Rulebook 5.11 fair-value proxy (last traded price), per leg
+    fair = {}
+    for p in struct.positions:
+        m = meta.get(p.ticker)
+        lp = m.last_price if m else None
+        fair[p.ticker] = None if (lp is None or lp <= 0) else (lp if p.side == "yes" else 1 - lp)
+
+    def within_5_11(r) -> bool:
+        """Every price level actually consumed at this size is within ±$0.20 of the proxy."""
+        for p in struct.positions:
+            if fair[p.ticker] is None:
+                return False
+            if any(abs(l.price - fair[p.ticker]) > RULE_5_11_NO_CANCEL_RANGE for l in r["fills"][p.ticker].fills):
+                return False
+        return True
+
+    # ---------- depth / edges / sizes. Economics and Rule 5.11 must hold AT THE SAME SIZE.
+    grid_results, max_pos_size, n_pos_sizes, max_qual_size = {}, None, 0, None
     depth = {p.ticker: sum((l.qty for l in books[p.ticker].book.asks(p.side)), Decimal(0)) for p in struct.positions}
     fractional_levels = {p.ticker: any(l.qty != l.qty.to_integral_value() for l in books[p.ticker].book.asks(p.side))
                          for p in struct.positions}
@@ -165,28 +188,27 @@ def evaluate(struct: Structural, books: Mapping[str, BookObs], meta: Mapping[str
             r = price_portfolio(struct, books, fees, meta, Decimal(c))
             if r and all(v > 0 for v in r["edges"].values()):
                 max_pos_size, n_pos_sizes = c, n_pos_sizes + 1
+                if within_5_11(r):
+                    max_qual_size = c
     gates["depth_ge_1"] = min(depth.values()) >= 1
     gates["edge_positive_all_scenarios_some_size"] = max_pos_size is not None
-    # ---------- Rulebook 5.11 cancellation-range exposure (fair-value proxy = last traded price)
+    # ---------- Rule 5.11 detail (top of book, for diagnostics) and the size-conjunctive gate
     rng_detail = {}
     for p in struct.positions:
-        m = meta.get(p.ticker)
-        lp = m.last_price if m else None
-        ask = best[p.ticker].price
-        if lp is None or lp <= 0:
-            rng_detail[p.ticker] = "NO_LAST_PRICE"
-            continue
-        fair_side = lp if p.side == "yes" else 1 - lp
-        rng_detail[p.ticker] = str(abs(ask - fair_side))
-    gates["rule_5_11_within_no_cancel_range"] = all(v not in ("NO_LAST_PRICE",) and Decimal(v) <= RULE_5_11_NO_CANCEL_RANGE
-                                                    for v in rng_detail.values())
+        rng_detail[p.ticker] = "NO_LAST_PRICE" if fair[p.ticker] is None else str(abs(best[p.ticker].price - fair[p.ticker]))
+    if max_pos_size is not None:
+        gates["rule_5_11_within_no_cancel_range"] = max_qual_size is not None
+    else:
+        gates["rule_5_11_within_no_cancel_range"] = all(v != "NO_LAST_PRICE" and Decimal(v) <= RULE_5_11_NO_CANCEL_RANGE
+                                                        for v in rng_detail.values())
     gates["persistence_confirmed"] = bool(persistence_confirmed)
 
     # ---------- status
     failing = [k for k, v in gates.items() if not v]
     reasons = [f"FAIL:{k}" for k in failing]
     data_fail = [k for k in failing if k.startswith(("market_active_fresh", "exchange_trading_active", "skew_ok",
-                                                      "age_ok", "no_checker_bug", "fees_resolved"))]
+                                                      "age_ok", "no_checker_bug", "fees_resolved",
+                                                      "exchange_status_fresh", "metadata_matches_template"))]
     if not fee_ok:
         status = "FEE_UNRESOLVED"          # the fee in force at the snapshot could not be established
     elif data_fail:
@@ -214,7 +236,7 @@ def evaluate(struct: Structural, books: Mapping[str, BookObs], meta: Mapping[str
     persistence_eligible = lock_like and not other_fail
     unwind = {}
     if fee_ok:
-        for c in sorted({Decimal(1)} | ({Decimal(max_pos_size)} if max_pos_size else set())):
+        for c in sorted({Decimal(1)} | {Decimal(x) for x in (max_pos_size, max_qual_size) if x}):
             unwind[str(c)] = unwind_analysis(struct, books, fees, meta, c)
 
     legs = []
@@ -239,6 +261,7 @@ def evaluate(struct: Structural, books: Mapping[str, BookObs], meta: Mapping[str
         "n_positive_integer_sizes": n_pos_sizes,
         "gates": gates,
         "rule_5_11_distance": rng_detail,
+        "max_size_positive_and_rule_5_11": max_qual_size,
         "fractional_depth_levels": fractional_levels,
         "one_leg_discretionary_worst_payoff": str(struct.one_leg_discretionary_worst),
         "residual_risks": list(RESIDUAL_RISKS),
@@ -286,11 +309,16 @@ def unwind_analysis(struct: Structural, books: Mapping[str, BookObs], fees: Mapp
 
 
 def _terms_ok(struct: Structural) -> bool:
-    # Categorical R1_SHORT / exclusive pairs rely only on MECNET "at most one market can resolve
-    # to 'yes'" (API definition of mutually_exclusive), not on series-specific terms.
+    """EVERY path to RULE_DEFINED_LOCK requires verified binding terms (sarb/terms.py, hash-checked).
+    The categorical (MECNET) path additionally requires the API's at-most-one-YES guarantee, and only
+    R1_SHORT / R1_EXCLUSIVE_PAIR are eligible there. There is no exemption for any family."""
+    if not struct.terms_verified:
+        return False
     if struct.family_key.startswith("MECNET:"):
         return struct.relationship in ("R1_SHORT", "R1_EXCLUSIVE_PAIR")
-    return struct.terms_verified
+    if struct.family_key.startswith("COMBO:"):
+        return False                       # combo terms are never registry-verified
+    return True
 
 
 def _rejected(struct: Structural, reasons: list[str], snapshot_id: str | None) -> CandidateRecord:

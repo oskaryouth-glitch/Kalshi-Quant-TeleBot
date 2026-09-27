@@ -70,6 +70,18 @@ def _now_iso() -> str:
     return U.iso_utc(time.time_ns())
 
 
+def _code_version() -> dict:
+    import subprocess
+    here = os.path.dirname(os.path.abspath(__file__))
+    try:
+        sha = subprocess.run(["git", "-C", here, "rev-parse", "HEAD"], capture_output=True, text=True, timeout=5).stdout.strip()
+        dirty = bool(subprocess.run(["git", "-C", here, "status", "--porcelain", "--", "."], capture_output=True,
+                                    text=True, timeout=5).stdout.strip())
+    except Exception:
+        sha, dirty = "unknown", True
+    return {"git_sha": sha or "unknown", "dirty": dirty, "config_version": config.CONFIG_VERSION}
+
+
 class Collector:
     def __init__(self, client: PublicClient, data_dir: str = DATA_DIR, seed: int | None = None,
                  terms_fetch=None):
@@ -84,6 +96,10 @@ class Collector:
         self.rng = random.Random(seed)
         self.terms_fetch = terms_fetch or (lambda url: requests.get(url, timeout=30).content)
         self._stat_last: dict = {}
+        self._exchange = (False, None, None)      # (trading_active, fetched_mono_ns, fetched_utc_ns)
+        self._event_obj: dict = {}                # event_ticker -> (recv_mono_ns, event body)
+        self._series_obj: dict = {}               # series_ticker -> (recv_mono_ns, series body)
+        self.code_version = _code_version()
 
     def _statscreen(self, key, rec: dict, counts) -> None:
         """Summary-only statistical hits recur every cycle; counts are kept per cycle, but the
@@ -152,15 +168,84 @@ class Collector:
         return evs, fetched_mono
 
     # ------------------------------------------------------------------ fetch helpers
+    def _refresh_exchange(self, force: bool = False, phase: str = "CYCLE", group: str = "") -> None:
+        if not force and self._exchange[1] is not None and time.monotonic_ns() - self._exchange[1] < 10e9:
+            return
+        r = self.c.get("/exchange/status")
+        active = bool((r.body or {}).get("trading_active")) if r.status == 200 and isinstance(r.body, dict) else False
+        self._exchange = (active, r.recv_mono_ns if r.status == 200 else None, r.recv_utc_ns if r.status == 200 else None)
+        self.out.write("books", {"kind": "exchange_status", "phase": phase, "group": group, "ticker": "",
+                                 "status": r.status, "recv_utc_ns": r.recv_utc_ns, "recv_mono_ns": r.recv_mono_ns,
+                                 "body": r.body})
+
+    @property
+    def _exchange_active(self) -> bool:
+        return self._exchange[0]
+
+    def _terms_hash_now(self, url: str) -> str | None:
+        try:
+            return hashlib.sha256(self.terms_fetch(url)).hexdigest()
+        except Exception:
+            return None
+
+    def _consistency(self, u: U.Universe, st: R.Structural, metas_raw: dict, recheck_terms: bool) -> tuple[dict, dict]:
+        """Per leg: the fresh /markets body must match the fingerprint the template was built from; the
+        fresh event object must still belong to the same series (and, for MECNET templates, still be
+        mutually exclusive); the fresh series object must carry the same contract_terms_url; and (at P3,
+        for verified terms) the terms PDF must still hash to the registered value."""
+        from .semantics import market_fingerprint
+        ok, why = {}, {}
+        for p in st.positions:
+            t = p.ticker
+            sp, (ev, _) = u.specs[t], u.raw[t]
+            reasons = []
+            m = metas_raw.get(t)
+            if not m or market_fingerprint(m) != sp.market_fp:
+                reasons.append("MARKET_FIELDS_CHANGED_OR_MISSING")
+            eo = self._event_obj.get(ev["event_ticker"])
+            if not eo or eo[1].get("series_ticker") != ev.get("series_ticker"):
+                reasons.append("EVENT_OBJECT_MISSING_OR_SERIES_CHANGED")
+            elif st.family_key.startswith("MECNET:") and not eo[1].get("mutually_exclusive"):
+                reasons.append("EVENT_NO_LONGER_MUTUALLY_EXCLUSIVE")
+            so = self._series_obj.get(ev.get("series_ticker", ""))
+            if not so or (so[1].get("contract_terms_url") != sp.terms_url):
+                reasons.append("SERIES_TERMS_URL_CHANGED_OR_MISSING")
+            if recheck_terms and st.terms_verified and sp.terms_url:
+                h = self._terms_hash_now(sp.terms_url)
+                if h is None or h != sp.terms_sha:
+                    reasons.append("TERMS_HASH_CHANGED_OR_UNAVAILABLE")
+            ok[t], why[t] = not reasons, reasons
+        return ok, why
+
+    def _provenance(self, u: U.Universe, st: R.Structural) -> dict:
+        legs = {}
+        for p in st.positions:
+            sp = u.specs[p.ticker]
+            legs[p.ticker] = {"side": p.side, "strike_type": sp.strike_type, "readings": sp.readings,
+                              "inner": [repr(i) for i in sp.envelope.inner] if sp.envelope else None,
+                              "outer": [repr(i) for i in sp.envelope.outer] if sp.envelope else None,
+                              "template_sha256": hashlib.sha256((sp.template or "").encode()).hexdigest(),
+                              "template": sp.template, "path_dependent": sp.path_dependent,
+                              "terms_url": sp.terms_url, "terms_sha_at_build": sp.terms_sha,
+                              "terms_status": sp.terms_status, "no_data_all_no": sp.no_data_all_no,
+                              "market_fp_at_build": sp.market_fp, "family_key": sp.family_key}
+        return {"code": self.code_version, "positions": [(p.ticker, p.side, str(p.qty)) for p in st.positions],
+                "checker": {"locked": str(st.locked), "argmin": st.argmin_state, "nominal": str(st.nominal_locked),
+                            "one_leg_discretionary_worst": str(st.one_leg_discretionary_worst)},
+                "legs": legs, "fee_ledger_file": os.path.basename(self.ledger.path or "")}
+
     def _fetch_legs(self, u: U.Universe, tickers: list[str], phase: str, group: str):
-        """Metadata first, then books back-to-back (minimises book skew)."""
-        metas = {}
+        """Exchange status (if > 10 s old) and metadata first, then books back-to-back (minimises skew)."""
+        self._refresh_exchange(phase=phase, group=group)
+        metas, self._last_markets_raw = {}, {}
         for t in tickers:
             r = self.c.get(f"/markets/{t}")
             m = (r.body or {}).get("market") if r.status == 200 else None
             metas[t] = u.meta(t, r.recv_mono_ns, m if m else {"status": f"HTTP_{r.status}"})
+            self._last_markets_raw[t] = m
             self.out.write("books", {"kind": "market", "phase": phase, "group": group, "ticker": t,
                                      "status": r.status, "sent_utc_ns": r.sent_utc_ns, "recv_utc_ns": r.recv_utc_ns,
+                                     "recv_mono_ns": r.recv_mono_ns,
                                      "headers": dict(r.headers), "body": r.body})
         books = {}
         for t in tickers:
@@ -188,27 +273,36 @@ class Collector:
         evs = sorted({u.raw[t][0]["event_ticker"] for t in tickers})
         sers = sorted({u.raw[t][0].get("series_ticker", "") for t in tickers})
         now_utc = time.time_ns()
-        fresh = lambda layer, k: (lambda c: c is not None and now_utc - c[0] < config.OBSERVATION_REUSE_S * 1e9)(  # noqa: E731
-            self.ledger.confirmed.get((layer, k)))
+        now_m = time.monotonic_ns()
+        cache = {"event": self._event_obj, "series": self._series_obj}
+        fresh = lambda layer, k: (lambda c: c is not None and now_m - c[0] < config.OBSERVATION_REUSE_S * 1e9)(  # noqa: E731
+            cache[layer].get(k))
+        # Reused objects are still COPIED into this group's snapshot stream (with their original receive
+        # times), so every group is self-contained for independent reconstruction.
+        for layer, keys in (("event", evs), ("series", sers)):
+            for k in keys:
+                if fresh(layer, k):
+                    mono, body, utc = cache[layer][k]
+                    self.out.write("books", {"kind": layer, "phase": phase, "group": group, "ticker": k, "status": 200,
+                                             "recv_utc_ns": utc, "recv_mono_ns": mono, "reused": True,
+                                             "body": {"event": body} if layer == "event" else {"series": body}})
         evs = [e for e in evs if not fresh("event", e)]
         sers = [x for x in sers if not fresh("series", x)]
         for e in evs:
             r = self.c.get(f"/events/{e}")
             if r.status == 200 and isinstance(r.body, dict) and r.body.get("event"):
                 self.ledger.observe_event(r.body["event"], r.recv_utc_ns)
+                self._event_obj[e] = (r.recv_mono_ns, r.body["event"], r.recv_utc_ns)
             self.out.write("books", {"kind": "event", "phase": phase, "group": group, "ticker": e, "status": r.status,
-                                     "recv_utc_ns": r.recv_utc_ns,
-                                     "fee_fields": {k: (r.body.get("event") or {}).get(k) for k in
-                                                    ("fee_type_override", "fee_multiplier_override")}
-                                     if isinstance(r.body, dict) else None})
+                                     "recv_utc_ns": r.recv_utc_ns, "recv_mono_ns": r.recv_mono_ns,
+                                     "body": {"event": (r.body.get("event") or {})} if isinstance(r.body, dict) else r.body})
         for sr in sers:
             r = self.c.get(f"/series/{sr}")
             if r.status == 200 and isinstance(r.body, dict) and r.body.get("series"):
                 self.ledger.observe_series(r.body, r.recv_utc_ns)
+                self._series_obj[sr] = (r.recv_mono_ns, r.body["series"], r.recv_utc_ns)
             self.out.write("books", {"kind": "series", "phase": phase, "group": group, "ticker": sr, "status": r.status,
-                                     "recv_utc_ns": r.recv_utc_ns,
-                                     "fee_fields": {k: (r.body.get("series") or {}).get(k) for k in ("fee_type", "fee_multiplier")}
-                                     if isinstance(r.body, dict) else None})
+                                     "recv_utc_ns": r.recv_utc_ns, "recv_mono_ns": r.recv_mono_ns, "body": r.body})
         t = time.time_ns()
         out = {}
         for tk in tickers:
@@ -239,8 +333,12 @@ class Collector:
         legs = [p.ticker for p in st.positions]
         t0 = time.monotonic_ns()
         metas, books = self._fetch_legs(u, legs, "P2", group)
+        mraw = dict(self._last_markets_raw)
         fees, t_fee = self._fees(u, legs, "P2", group)
-        out, rec = evaluate(st, books, metas, fees, self._exchange_active, time.monotonic_ns(), t_fee, None)
+        cons, why = self._consistency(u, st, mraw, recheck_terms=False)
+        ev_mono = time.monotonic_ns()
+        out, rec = evaluate(st, books, metas, fees, self._exchange_active, ev_mono, t_fee, None,
+                            exchange_fetched_mono_ns=self._exchange[1], metadata_consistent=cons)
         ok_books = [b for b in books.values() if b.recv_mono_ns]
         if ok_books:
             ops["p2_leg_fetch_ms"].append((max(b.recv_mono_ns for b in ok_books) - t0) / 1e6)
@@ -248,7 +346,10 @@ class Collector:
         counts[key + (rec.status if rec else out)] += 1
         if rec is None:
             return
-        self._log_record(rec, "P2", group, cycle, {"summary_raw": str(summary_raw)})
+        self._log_record(rec, "P2", group, cycle, {"summary_raw": str(summary_raw), "metadata_consistency": why,
+                                                   "provenance": self._provenance(u, st),
+                                                   "eval": {"mono_ns": ev_mono, "utc_ns": t_fee, "persistence_in": None,
+                                                            "exchange": list(self._exchange)}})
         if not rec.extra.get("persistence_eligible"):
             return
         p2_last = max(b.recv_mono_ns for b in ok_books)
@@ -256,14 +357,21 @@ class Collector:
         if wait > 0:
             time.sleep(wait)
         metas3, books3 = self._fetch_legs(u, legs, "P3", group)
+        mraw3 = dict(self._last_markets_raw)
         fees3, t_fee3 = self._fees(u, legs, "P3", group)
-        out3, rec3 = evaluate(st, books3, metas3, fees3, self._exchange_active, time.monotonic_ns(), t_fee3, True)
+        cons3, why3 = self._consistency(u, st, mraw3, recheck_terms=True)
+        ev_mono3 = time.monotonic_ns()
+        out3, rec3 = evaluate(st, books3, metas3, fees3, self._exchange_active, ev_mono3, t_fee3, True,
+                              exchange_fetched_mono_ns=self._exchange[1], metadata_consistent=cons3)
         ok3 = [b for b in books3.values() if b.recv_mono_ns]
         if ok3:
             ops["p3_delay_ms"].append((min(b.sent_mono_ns for b in ok3) - p2_last) / 1e6)
         counts[f"P3|{st.relationship}|" + (rec3.status if rec3 else out3)] += 1
         if rec3 is not None:
-            self._log_record(rec3, "P3", group, cycle, {"summary_raw": str(summary_raw)})
+            self._log_record(rec3, "P3", group, cycle, {"summary_raw": str(summary_raw), "metadata_consistency": why3,
+                                                        "provenance": self._provenance(u, st),
+                                                        "eval": {"mono_ns": ev_mono3, "utc_ns": t_fee3, "persistence_in": True,
+                                                                 "exchange": list(self._exchange)}})
 
     def _audit(self, u: U.Universe, fetched_mono: int, cycle: str, counts: dict, screen: dict):
         fams = [f for f in u.families.values() if 2 <= len(f.specs) <= config.AUDIT_MAX_MARKETS_PER_FAMILY]
@@ -285,7 +393,8 @@ class Collector:
             metas = {t: u.meta(t, fetched_mono) for t in tickers}
             fees, t_fee = self._fees(u, tickers, "AUDIT", group)
             for st in R.numeric_family_templates(fam):          # eager: all templates incl. pairs
-                out, rec = evaluate(st, books, metas, fees, self._exchange_active, time.monotonic_ns(), t_fee, None)
+                out, rec = evaluate(st, books, metas, fees, self._exchange_active, time.monotonic_ns(), t_fee, None,
+                                    exchange_fetched_mono_ns=self._exchange[1], metadata_consistent=None)
                 sk = screen.get((st.relationship, st.positions))
                 counts[f"AUDIT|{st.relationship}|{rec.status if rec else out}"] += 1
                 if out == "LOGGED":
@@ -299,8 +408,7 @@ class Collector:
         from collections import Counter
         counts: Counter = Counter()
         ops = {"p2_leg_fetch_ms": [], "p2_book_skew_ms": [], "p3_delay_ms": []}
-        st_r = self.c.get_retry("/exchange/status")
-        self._exchange_active = bool((st_r.body or {}).get("trading_active")) if st_r.status == 200 else False
+        self._refresh_exchange(force=True)
         refresh = self._refresh(time.monotonic())
         evs, fetched_mono = self._events()
         t_ev = time.monotonic()
@@ -345,7 +453,8 @@ class Collector:
                 for j in range(i + 1, len(no_asks)):
                     raw = 1 - no_asks[i][0] - no_asks[j][0]
                     if raw > 0:
-                        st = U.categorical_pair(ev, no_asks[i][1], no_asks[j][1])
+                        a_, b_ = no_asks[i][1], no_asks[j][1]
+                        st = U.categorical_pair(ev, a_, b_, all(u.specs[x].terms_status == "TERMS_VERIFIED" for x in (a_, b_)))
                         counts["SCREEN|R1_EXCLUSIVE_PAIR_MECNET|FLAGGED_GUARANTEED"] += 1
                         queue.append((raw, st))
             yes = [u.summary_ask(Position(t, "yes")) for t in ts]

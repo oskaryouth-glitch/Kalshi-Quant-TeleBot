@@ -6,7 +6,7 @@ and noting the reason in the research log.
 """
 from decimal import Decimal
 
-CONFIG_VERSION = "2026-09-27.4-validation"
+CONFIG_VERSION = "2026-09-27.5-ready-to-freeze"
 
 PUBLIC_BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
 

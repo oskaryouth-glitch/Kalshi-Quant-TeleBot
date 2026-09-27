@@ -56,8 +56,10 @@ def r2_setup(verified=True):
     return st, books, metas
 
 
-def run(st, books, metas, fees=FEE, persist=True, now_mono=S, active=True):
-    return evaluate(st, books, metas, fees, active, now_mono, NOW_UTC, persist)
+def run(st, books, metas, fees=FEE, persist=True, now_mono=S, active=True, ex_fetched=0, consistent=True):
+    cons = {t: consistent for t in books} if isinstance(consistent, bool) else consistent
+    return evaluate(st, books, metas, fees, active, now_mono, NOW_UTC, persist,
+                    exchange_fetched_mono_ns=ex_fetched, metadata_consistent=cons)
 
 
 def test_true_lock_all_gates_pass_is_rule_defined_lock():
@@ -223,3 +225,84 @@ def test_unchecked_template_is_rejected():
     assert rec.status == "REJECTED" and "FAIL:no_checker_bug" in rec.reasons
     R.check(st)
     assert run(st, books, metas)[1].status == "RULE_DEFINED_LOCK"
+
+
+# ------------------------------------------------------------------ fall-through matrix (methodology audit)
+import itertools as _it
+
+
+def _perturbations():
+    """Each returns (name, mutate(ctx)) where ctx = dict(st, books, metas, fees, kw)."""
+    def unverified(c): c["st"].terms_verified = False
+    def fee_unresolved(c): c["fees"] = {**c["fees"], "B": FEES.UnsupportedFee("FEE_UNRESOLVED:EVENT_OBSERVATION_STALE")}
+    def rate_limited(c): c["books"]["A"] = book("A", [], [], code=429)
+    def missing_book(c): c["books"].pop("B")
+    def crossed(c): c["books"]["A"] = book("A", [["0.45", "5"]], [["0.60", "5"]])
+    def cdn_hit(c): c["books"]["A"] = book("A", [["0.30", "50"]], [["0.40", "100"], ["0.60", "5"]], x_cache="Hit from cloudfront")
+    def checker_bug(c): c["st"].notes.append("BUG_TEMPLATE_VS_CHECKER fast=1 checker=0")
+    def unchecked(c): c["st"].checked = False
+    def statistical(c): c["st"].relationship_class = "STATISTICAL"
+    def not_locked(c): c["st"].locked = Fr(0)
+    def metadata_changed(c): c["kw"]["metadata_consistent"] = {"A": True, "B": False}
+    def metadata_absent(c): c["kw"]["metadata_consistent"] = None
+    def exchange_stale(c): c["kw"]["exchange_fetched_mono_ns"] = None
+    def exchange_halted(c): c["kw"]["active"] = False
+    def market_inactive(c): c["metas"]["B"] = meta("B", "0.47", status="inactive")
+    def skew(c): c["books"]["B"] = book("B", [["0.47", "50"]], [["0.40", "50"]], sent=3 * S, recv=3 * S + 1); c["kw"]["now_mono"] = 3 * S + 2
+    def stale(c): c["kw"]["now_mono"] = 60 * S
+    def no_persistence(c): c["kw"]["persist"] = None
+    def rule_5_11(c): c["metas"]["A"] = meta("A", "0.75")
+    def no_last_price(c): c["metas"]["A"] = meta("A", None)
+    def no_edge(c): c["books"]["B"] = book("B", [["0.39", "50"]], [["0.40", "50"]], sent=S // 10, recv=S // 5)
+    def thin_edge(c): c["books"]["B"] = book("B", [["0.415", "50"]], [["0.40", "50"]], sent=S // 10, recv=S // 5)
+    def fee_high(c): c["fees"] = {t: FEES.ResolvedFee("quadratic", D(3), "t") for t in c["fees"]}
+    return [(f.__name__, f) for f in (unverified, fee_unresolved, rate_limited, missing_book, crossed, cdn_hit,
+                                      checker_bug, unchecked, statistical, not_locked, metadata_changed, metadata_absent,
+                                      exchange_stale, exchange_halted, market_inactive, skew, stale, no_persistence,
+                                      rule_5_11, no_last_price, no_edge, thin_edge, fee_high)]
+
+
+def _ctx():
+    st, books, metas = r2_setup()
+    return {"st": st, "books": books, "metas": metas, "fees": dict(FEE),
+            "kw": {"persist": True, "now_mono": S, "active": True, "ex_fetched": 0,
+                   "exchange_fetched_mono_ns": 0, "metadata_consistent": {"A": True, "B": True}}}
+
+
+def _eval(c):
+    kw = c["kw"]
+    return evaluate(c["st"], c["books"], c["metas"], c["fees"], kw["active"], kw["now_mono"], NOW_UTC, kw["persist"],
+                    exchange_fetched_mono_ns=kw["exchange_fetched_mono_ns"], metadata_consistent=kw["metadata_consistent"])
+
+
+def test_baseline_is_lock():
+    out, rec = _eval(_ctx())
+    assert rec.status == "RULE_DEFINED_LOCK"
+
+
+@pytest.mark.parametrize("combo", [c for k in (1, 2) for c in _it.combinations(range(len(_perturbations())), k)])
+def test_no_disqualifier_falls_through_to_lock(combo):
+    c = _ctx()
+    P_ = _perturbations()
+    for i in combo:
+        P_[i][1](c)
+    try:
+        out, rec = _eval(c)
+    except KeyError:          # a missing leg can never be evaluated at all
+        return
+    assert rec is None or rec.status != "RULE_DEFINED_LOCK", [P_[i][0] for i in combo]
+
+
+def test_rule_5_11_applies_at_the_executed_size_not_only_top_of_book():
+    """Top of book sits exactly on the ±$0.20 band edge, the next level is $0.001 beyond it, and the
+    edge is positive only at sizes that must walk into that deeper level."""
+    st, books, metas = r2_setup()
+    books["A"] = book("A", [["0.30", "50"]], [["0.599", "100"], ["0.60", "1"]])   # YES asks 1@0.40, 100@0.401
+    books["B"] = book("B", [["0.45", "50"]], [["0.40", "50"]], sent=S // 10, recv=S // 5)  # NO asks 50@0.55
+    metas["A"] = meta("A", "0.20")                                                   # fair YES A = 0.20
+    metas["B"] = meta("B", "0.45")
+    _, rec = run(st, books, metas)
+    assert D(rec.extra["rule_5_11_distance"]["A"]) == D("0.20")                     # top of book is inside
+    assert rec.max_executable_size is not None and int(rec.max_executable_size) > 1   # economics positive only deeper
+    assert rec.extra["max_size_positive_and_rule_5_11"] is None
+    assert rec.status != "RULE_DEFINED_LOCK" and "FAIL:rule_5_11_within_no_cancel_range" in rec.reasons

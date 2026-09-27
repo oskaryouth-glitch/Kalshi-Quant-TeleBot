@@ -41,6 +41,7 @@ from __future__ import annotations
 import json
 import os
 import threading
+import time
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -77,7 +78,9 @@ class Change:
 
 
 class FeeLedger:
-    def __init__(self, path: str | None = None):
+    def __init__(self, path: str | None = None, known_as_of_ns: int | None = None):
+        """known_as_of_ns: when loading history, ignore changes first seen after this time (used
+        by sarb/reconstruct.py to avoid look-ahead)."""
         self.path = path
         self._lock = threading.Lock()
         self.changes: dict[tuple[str, str], list[Change]] = {}       # (layer, key) -> sorted
@@ -88,7 +91,12 @@ class FeeLedger:
             with open(path) as fh:
                 for line in fh:
                     if line.strip():
-                        self._apply(json.loads(line), persist=False)
+                        rec = json.loads(line)
+                        if rec["kind"] == "change" and known_as_of_ns is not None and rec.get("seen_ns", 0) > known_as_of_ns:
+                            continue
+                        if rec["kind"] == "obs" and known_as_of_ns is not None:
+                            continue          # reconstruction replays recorded observations explicitly
+                        self._apply(rec, persist=False)
 
     # ------------------------------------------------------------------ ingest
     def _append(self, rec: dict) -> None:
@@ -125,7 +133,7 @@ class FeeLedger:
                        "effective_ns": _iso_to_ns(r["scheduled_ts"]),
                        "state": _state(r.get("fee_type"), r.get("fee_multiplier")),
                        "id": "S:" + str(r.get("id") or json.dumps(r, sort_keys=True)),
-                       "source": f"series_fee_change:{r.get('id')}@{r['scheduled_ts']}"}
+                       "source": f"series_fee_change:{r.get('id')}@{r['scheduled_ts']}", "seen_ns": time.time_ns()}
                 n += self._apply(rec, True)
         return n
 
@@ -137,7 +145,7 @@ class FeeLedger:
                        "effective_ns": _iso_to_ns(r["scheduled_ts"]),
                        "state": _state(r.get("fee_type_override"), r.get("fee_multiplier_override")),
                        "id": "E:" + str(r.get("id") or json.dumps(r, sort_keys=True)),
-                       "source": f"event_fee_change:{r.get('id')}@{r['scheduled_ts']}"}
+                       "source": f"event_fee_change:{r.get('id')}@{r['scheduled_ts']}", "seen_ns": time.time_ns()}
                 n += self._apply(rec, True)
         return n
 
