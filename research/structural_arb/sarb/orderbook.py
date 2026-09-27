@@ -46,9 +46,11 @@ class OrderBook:
         return a[0] if a else None
 
     def is_crossed(self) -> bool:
-        """True if yes_bid + no_bid > 1 (should never be displayed; indicates bad/stale data)."""
+        """True if yes_bid + no_bid >= 1. A YES bid at p and a NO bid at 1-p are the same trade,
+        so the matching engine would have matched them. A crossed OR locked display means the
+        data is stale or inconsistent, and the book is rejected."""
         yb, nb = self.best_bid("yes"), self.best_bid("no")
-        return bool(yb and nb and yb.price + nb.price > ONE)
+        return bool(yb and nb and yb.price + nb.price >= ONE)
 
 
 def _to_levels(raw: Iterable, scale: Decimal) -> tuple[Level, ...]:

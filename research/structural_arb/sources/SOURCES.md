@@ -8,8 +8,17 @@ below establishes is **UNRESOLVED**. It is not assumed.
 | File | SHA-256 | Provenance | Effective / retrieved |
 |---|---|---|---|
 | `kalshi-fee-schedule_2026-07-07.pdf` | `c326a69f596a11e8f8be2620402d39a8d4823920c21cc97c93a114d862699601` | Uploaded by the project owner on 2026-09-27 as the official PDF at `https://kalshi.com/docs/kalshi-fee-schedule.pdf`. It could not be fetched independently, because kalshi.com serves a Vercel bot checkpoint (HTTP 429) to automated clients. PDF title: "Fee Schedule for July 2026 - 7.7.26 Update". 12 pages, rendered by Google Docs. | Every page says "Last updated and effective: July 7, 2026" |
-| `docs_fee_rounding_2026-09-27.md` | `7591cf0fb277eaf8fac8aedaf1645e58b61dacb22b5fed20ba7d8ea9f76ffa22` | `https://docs.kalshi.com/getting_started/fee_rounding.md` | retrieved 2026-09-27 |
+| `docs/getting_started_fee_rounding.md` | `7591cf0fb277eaf8fac8aedaf1645e58b61dacb22b5fed20ba7d8ea9f76ffa22` | `https://docs.kalshi.com/getting_started/fee_rounding.md` | retrieved 2026-09-27 |
 | `api_series_fee_changes_2026-09-27.json` | `8558cf2d877f4193d48d5ed4037c760c490d543592535c007b77a6d2f213e810` | `GET https://api.elections.kalshi.com/trade-api/v2/series/fee_changes?show_historical=true` | retrieved 2026-09-27. 149 changes, 2025-10-04 → 2026-09-23. None scheduled in the future. |
+
+| `Kalshi_DCM_Rulebook_v1.29.pdf` | `3b6d4ffd5b32330d3466179d4cae610372d07511123c9976bc6cbb1b5185240b` | `https://assets.kalshi.com/regulatory/rulebook/Kalshi%20DCM%20Rulebook%20v.1.29.pdf`. The same bytes are on `kalshi-public-docs.s3.amazonaws.com`. Cited rules: 5.11, 6.3, 7.1, 7.2, and the "Market Outcome" definition. | v1.29, uploaded 2026-08-17 |
+| `contract_terms/contract_terms_BTC.pdf` | `e7d857369971e75e9db14c5e2d91c29b94eb9a06e83e2acd9777991c4f2a0e2f` | `https://assets.kalshi.com/contract_terms/BTC.pdf` (KXBTC and KXBTCD) | retrieved 2026-09-27 |
+| `contract_terms/contract_terms_ETH.pdf` | `ae079241099608c13c0c0ed31a6c91be174c6e61abe706dd76e8976ba682cc6d` | `https://assets.kalshi.com/contract_terms/ETH.pdf` (KXETH and KXETHD) | retrieved 2026-09-27 |
+| `contract_terms/contract_terms_INX.pdf` | `9f79e958a612e605d37ec091cbbdc8d1748f4d2831ff338a808814eb75ea9d38` | `https://assets.kalshi.com/contract_terms/INX.pdf` (KXINX and KXINXU) | retrieved 2026-09-27 |
+| `contract_terms/contract_terms_GLOBALTEMPERATURE.pdf` | `160281687cf9d3cd694c1c419522f3d53a8e1a6d4eddd40a7f5559c3a06211d0` | `https://assets.kalshi.com/contract_terms/GLOBALTEMPERATURE.pdf` (KXHIGH*) | retrieved 2026-09-27 |
+| `contract_terms/contract_terms_GOLFFINISH.pdf` | `0aa490eb7fc077b38797e2e9b312214eb0d32ae8a8dbc3a597b908c11a36c9f1` | `https://assets.kalshi.com/contract_terms/GOLFFINISH.pdf`. Evidence for "withdrawal before tee-off → last fair price" and ties. | retrieved 2026-09-27 |
+| `contract_terms/contract_terms_FOOTBALLSTATS.pdf` | `09d5c07d186bee6f632b78732a6c31bc378fd67fe80d4972117b56e7c4e1d64c` | `https://assets.kalshi.com/contract_terms/FOOTBALLSTATS.pdf` (KXMVECROSSCATEGORY combos). Evidence for "product of payouts, floored to the cent". | retrieved 2026-09-27 |
+| `docs/*.md` | see `sha256sum sources/docs/*` | `https://docs.kalshi.com/...` pages and schema excerpts: settlement, lifecycle, order books, fixed point, multi-orderbooks (auth required), event fee changes, get-series/get-event/get-market field definitions | retrieved 2026-09-27 |
 
 ## What the fee schedule PDF establishes (event contracts)
 
@@ -60,10 +69,13 @@ below establishes is **UNRESOLVED**. It is not assumed.
 6. **`margin_market_maker_program_fees`** applies to perpetual futures (`*PERP` series). Those
    are out of scope.
 
+## Member class
+
+The owner states the account was opened directly with Kalshi (not via a broker), so it is
+treated as a **direct member** ($0.0001 balance precision). At the owner's request, research
+results are also computed under non-direct $0.01 precision, and `ARBITRAGE` requires a positive
+edge under that conservative case as well. No credentials are used.
+
 ## UNRESOLVED
 
-* **Member class of the project owner's account (direct vs FCM-cleared).** It sets the balance
-  precision ($0.0001 vs $0.01) and therefore the rounding fee. It is not exposed by any public
-  endpoint. Until it is known, results are reported under **both** precisions, and nothing is
-  labelled `ARBITRAGE` unless it holds under the class that applies.
-* **FCM-imposed fees**, if the account is FCM-cleared.
+See DESIGN.md §F.

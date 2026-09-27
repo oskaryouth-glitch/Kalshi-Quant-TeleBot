@@ -18,14 +18,14 @@ from typing import Any
 
 from . import config
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # Relationship classes
 GUARANTEED = "GUARANTEED"      # locked payoff by contract definition (if rules verified)
 STATISTICAL = "STATISTICAL"    # correlational; never scored as arbitrage
 
 # Outcome statuses
-EXECUTABLE = "GUARANTEED_STRUCTURAL_EXECUTABLE"
+ARBITRAGE = "ARBITRAGE"
 NOT_EXECUTABLE = "GUARANTEED_STRUCTURAL_NOT_EXECUTABLE"
 STAT_ONLY = "STATISTICAL"
 REJECTED = "REJECTED"
@@ -72,6 +72,7 @@ class CandidateRecord:
     persistence_confirmed: bool | None = None
     settlement_evidence: dict = field(default_factory=dict)  # rules text hashes, strike fields
     snapshot_id: str | None = None
+    extra: dict = field(default_factory=dict)                 # gates, per-scenario edges, residual risks
     candidate_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     logged_utc_ns: int = field(default_factory=time.time_ns)
     schema_version: int = SCHEMA_VERSION

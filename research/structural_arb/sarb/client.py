@@ -48,6 +48,7 @@ class TimedResponse:
     recv_utc_ns: int
     sent_mono_ns: int
     recv_mono_ns: int
+    headers: tuple = ()          # (x-cache, age, date) as served -- CDN staleness audit
 
     @property
     def latency_ns(self) -> int:
@@ -98,7 +99,9 @@ class PublicClient:
             body = resp.json()
         except ValueError:
             body = {"_non_json": resp.text[:2000]}
-        return TimedResponse(path, params, resp.status_code, body, sent_utc, recv_utc, sent_mono, recv_mono)
+        h = getattr(resp, "headers", {}) or {}
+        hdrs = tuple((k, h.get(k)) for k in ("x-cache", "age", "date") if h.get(k) is not None)
+        return TimedResponse(path, params, resp.status_code, body, sent_utc, recv_utc, sent_mono, recv_mono, hdrs)
 
     # --- convenience wrappers (all GET) ---
     def exchange_status(self) -> TimedResponse:

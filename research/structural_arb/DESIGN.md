@@ -1,212 +1,264 @@
-# Structural Pricing Inconsistency Scanner — Research Design
+# Structural Pricing Inconsistency Scanner: Design, Derivations and Audit
 
-Status: **DRAFT, awaiting stronger-model validation of §1 (math) and §3 (false-arb modes)
-before any relationship code is written.** This is a research project that only reads data.
-It does not trade. It starts from the null hypothesis that **no executable structural
-arbitrage exists** on Kalshi once fees, spreads, depth, contract rules and timing are
-accounted for. The goal is to test that null, and negative results are first-class outputs.
+Status (2026-09-27): the mathematical model, fee mathematics, semantics layer and evaluator are
+**derived, adversarially tested and verified against official Kalshi sources**. Routine
+collector work and forward collection remain (§H).
 
-## 0. Isolation guarantees (H022 / H038)
+The null hypothesis is that no executable structural arbitrage exists. Negative results are
+first-class outputs.
 
-* H022 and H038 are **not in this repository**. No file, branch or commit in
-  `oskaryouth-glitch/Kalshi-Quant-TeleBot` mentions them (checked with `git log --all` and a
-  full-text grep). Their code, collectors, data and frozen rules live somewhere else, and this
-  project never refers to that location.
-* All code for this project lives under `research/structural_arb/`. It imports **nothing** from
-  `src/` or `telegram_ui/`, and it changes no file outside that directory.
-* Raw data goes to `research/structural_arb/data/`, which git ignores. It has its own file
-  prefix (`sarb_`), so it cannot collide with any other experiment's data.
-* **No credentials.** The HTTP client (`sarb/client.py`) sends only unauthenticated `GET`s to
-  public paths on an allowlist: `/series`, `/events`, `/markets`, `/markets/{t}/orderbook`
-  and `/exchange/status`. It has no code path for POST, PUT or DELETE. It never reads
-  `KALSHI_API_KEY` or any private key, and it never sends an `Authorization` header.
-  Tests enforce all of this.
+## 0. Isolation (H022 / H038)
 
-## 1. Mathematical relationships to test (PROPOSED — to be validated)
+* H022 and H038 are not in this repository, and nothing here references them.
+* All code, data and sources for this project live under `research/structural_arb/`, and no
+  file outside it is modified.
+* The HTTP client can only issue unauthenticated GETs to an allowlist of public paths. It
+  never reads credentials. `tests/test_client.py` enforces this statically and at runtime.
+* No orders are ever placed.
 
-Notation. A binary contract `m` pays $1 per YES contract if event `E_m` occurs, and $1 per NO
-contract otherwise. Kalshi order books show **bids only**:
+## A. Official evidence
 
-* executable YES ask = `1 − (best NO bid)`
-* executable NO ask = `1 − (best YES bid)`
+Every item below is backed by a file in `sources/`, with hashes in `sources/SOURCES.md`.
 
-For size `C`, `cost_side(m, C)` means walking the book: the VWAP of the opposite side's bids,
-turned into asks, multiplied by `C`. `fee(P, C)` is the taker fee for each fill (§2.3). Every
-candidate is a **portfolio of taker buys**. Each is scored by
-`locked_payoff = min over states s of payoff(s)` and
-`edge = locked_payoff − Σ cost − Σ fee`. "Guaranteed" means `edge > 0` in **every** state
-that the settlement rules allow, and those states include voids and cancellations.
-
-Every relationship is also checked independently by a **state-space verifier**. The verifier
-builds the atoms of the underlying's outcome space from every strike involved. It writes each
-leg as a 0/1 payoff vector over those atoms and checks `min_s payoff(s)` by brute force. A
-template is trusted only if the verifier agrees with its closed form on randomized tests.
-
-### R1 — Mutually exclusive and exhaustive (MEE) buckets
-Contracts `m_1..m_n` such that exactly one `E_i` occurs in every allowed state.
-* **Long basket**: buy 1 YES of each. The payoff is exactly 1.
-  Edge = `1 − Σ yes_ask_i − Σ fee_i`.
-* **Short basket**: buy 1 NO of each. The payoff is exactly `n−1`.
-  Edge = `(n−1) − Σ no_ask_i − Σ fee_i`, which equals `Σ yes_bid_i − 1 − Σ fee_i`.
-* If the set is only mutually exclusive (zero winners are possible), the NO basket still locks
-  in at least `n−1`, but the YES basket is **not** guaranteed. It is then classed as a
-  statistical relationship.
-
-### R2 — Nested thresholds (monotonicity)
-Same underlying `X`, same observation time and source, with `E_B ⊆ E_A`. An example is
-`X ≥ B ⇒ X ≥ A` for `A < B`, including the case of equal strikes where `>` is inside `≥`.
-* Portfolio: YES_A + NO_B. The payoff is 1, 2 or 1 across the three regions, so it is at
-  least 1. Edge = `yes_bid_B − yes_ask_A − fees`. That is, the contract that should be
-  cheaper bids more than the ask on the contract that should be dearer.
-* "Below" contracts (`X < K`) are mapped onto the same interval representation, and not
-  handled as a separate case.
-
-### R3 — Ranges and thresholds (probability mass)
-Buckets that partition part of the line, with a threshold `T = ⋃_{i∈S} bucket_i`
-(for example `X ≥ L_k = ⋃_{i≥k} [L_i, U_i)`).
-* (a) YES on every bucket in S + NO_T. Locked payoff 1.
-  Edge = `yes_bid_T − Σ_{i∈S} yes_ask_i − fees`.
-* (b) YES_T + NO on every bucket in S. Locked payoff `|S|`.
-  Edge = `Σ_{i∈S} yes_bid_i − yes_ask_T − fees`.
-* A single range against two thresholds: `[A,B) = {X≥A} \ {X≥B}`. This is the same algebra
-  with `|S| = 1` on the other side.
-* The general case is an LP over the atoms: choose non-negative quantities of YES/NO buys to
-  maximise `min_s payoff(s) − cost − fees`. R1–R3 are the auditable special cases. The LP is
-  an optional cross-check, and never the primary detector.
-
-### R4 — Duplicate / economically equivalent contracts
-Two markets `m`, `m'` with `E_m = E_{m'}` in **every** allowed state. That requires the same
-underlying, source, observation timestamp, strike, strictness, rounding convention and
-void/cancellation rule.
-* YES_m + NO_{m'} locks in payoff 1. Edge = `yes_bid_{m'} − yes_ask_m − fees`, checked in
-  both directions.
-* Complementary pair, where `E_{m'} = ¬E_m`: YES_m + YES_{m'} locks in payoff 1.
-* If equivalence cannot be **proven** from the rules, the pair is logged as `STATISTICAL`
-  and never as arbitrage.
-
-### R5 — Combination (AND) markets vs. components
-A combo `c` with `E_c = E_A ∧ E_B`. The legs must be verified to be the same contracts with
-the same settlement.
-* Upper (Fréchet) bound, `P(c) ≤ P(A)`: YES_A + NO_c locks in payoff 1.
-  Edge = `yes_bid_c − yes_ask_A − fees`.
-* Lower bound, `P(c) ≥ P(A)+P(B)−1`: YES_c + NO_A + NO_B locks in payoff 1.
-  Edge = `1 − yes_ask_c − no_ask_A − no_ask_B − fees`.
-* **Caveat.** Kalshi multivariate/combo markets may be quote-based (RFQ) and show no
-  orderbook. If there is no displayed executable depth, R5 cannot be tested. That result is
-  recorded as a finding, and no depth is ever assumed.
-
-### Not arbitrage (logged separately as `STATISTICAL`)
-These are logged with their raw inconsistency size, but they are never scored as locked
-payoff:
-* related-but-not-nested contracts, such as different stations, observation times or data
-  vintages
-* hourly vs daily index settlement
-* anything that relies on correlation
-
-## 2. Data required
-
-| Data | Endpoint | Used for |
+| # | Fact the maths depends on | Source |
 |---|---|---|
-| Series metadata: `fee_type`, `fee_multiplier`, settlement sources, `contract_url` | `GET /series/{t}` | fees, source equivalence |
-| Scheduled fee changes | `GET /series/fee_changes` | the fee in force at snapshot time |
-| Events with nested markets, `mutually_exclusive` | `GET /events?with_nested_markets=true` | building R1/R3 sets |
-| Market rules: `rules_primary/secondary`, `strike_type`, `floor_strike`, `cap_strike`, `custom_strike`, `expiration_time`, `close_time`, `can_close_early`, `status`, tick/price structure | `GET /markets`, `GET /markets/{t}` | settlement equivalence, interval mapping |
-| Full orderbook depth (YES bids, NO bids) | `GET /markets/{t}/orderbook` | executable prices, depth walk |
-| Exchange trading status | `GET /exchange/status` | reject when halted |
-| Local timestamps: request-sent and response-received (UTC + monotonic) for every leg | client | skew and staleness gating |
+| A1 | Binary settlement: YES iff the Expiration Value is in the Payout Criterion, else NO | Rulebook v1.29, "Market Outcome" definition and Rule 6.3(a) |
+| A2 | **Discretionary settlement** when outcomes can't be determined: last traded price or an Outcome Review Committee "fair allocation" | Rulebook 6.3(c), 7.1 |
+| A3 | Kalshi may change the source agency, underlying or expiration | Rulebook 7.2 |
+| A4 | Trades may be cancelled or adjusted if executed outside ±$0.20 of fair value (the No Cancellation Range) | Rulebook 5.11(c) |
+| A5 | `result ∈ {yes, no, scalar}`. **Scalar results really occur**: 4 live golf markets settled at $0.05, $0.11, $0.22 and $0.45 (a withdrawal before tee-off) | API get-market schema; live data |
+| A6 | `mutually_exclusive = true` ⇔ MECNET ⇔ "at most one market in this event can resolve to 'yes'" | API get-event schema |
+| A7 | Crypto terms (BTC and ETH, identical): "between" is **inclusive**; **"If no data is available … the market resolves to No"** (an ALL_NO state); the underlying is the average of 60 index prints, with no rounding stated | contract_terms/BTC.pdf, ETH.pdf |
+| A8 | INX terms: "between" inclusive; no data → most recent value; "before" variants are path-dependent | contract_terms/INX.pdf |
+| A9 | Temperature terms: above `>`, below `<`, at least `≥`, between inclusive; "full precision reported"; no data → **Exchange-determined "last fair price"** | contract_terms/GLOBALTEMPERATURE.pdf |
+| A10 | Combos: YES pays the **product of component payouts, floored to the cent**; NO pays 1 − YES | contract_terms/FOOTBALLSTATS.pdf |
+| A11 | `floor_strike` / `cap_strike` are the "minimum/maximum expiration value that leads to YES", but live data shows they are an *encoding* that can disagree with the rules text (§B.2) | API schema; live data |
+| A12 | Order book: bids only; YES ask = 1 − best NO bid; levels sorted ascending; dollar strings (≤ 4 dp) and fixed-point counts (≥ 0.01) | docs Orderbook Responses; Fixed-Point |
+| A13 | The multi-market order-book endpoint and WebSockets **require authentication**. The public REST book has **no server timestamp or sequence number**, and responses are served via CloudFront | docs; response headers |
+| A14 | Taker fee: `M × 0.07 × C × P(1−P)`. Fee rounding: `ceil_6dp`, then balance alignment to **$0.0001 (direct)** or **$0.01 (non-direct)**, with a per-order accumulator. No settlement fee | Fee Schedule PDF 2026-07-07; docs Fee Rounding |
+| A15 | M and fee type change over time per series and per **event** (e.g. MLB events switch to M=1 at first pitch). The PDF multiplier table is out of date (63 later changes) | API `/series/fee_changes`, `/events/fee_changes` |
+| A16 | Combo (`KXMVE*`) markets: 5 of the 60 highest-volume ones show any book level. The `/markets` summary reports `no_bid_dollars = 1.0000` on 1,933 empty books, a **sentinel** that would imply a $0 YES ask | live data |
 
-**Historical data caveat.** Kalshi publishes historical trades and candlesticks, but no
-historical order-book depth. Executable structural inconsistencies therefore **cannot be
-backtested**. They can only be measured by forward collection of snapshots. Trade prints or
-candles may be used to generate hypotheses, but never as evidence of executability.
+## B. Formal model
 
-### 2.3 Fees (to be audited)
-* Taker: `fee = roundup(M × 0.07 × C × P × (1−P))`, with a series multiplier `M`.
-  `fee_type ∈ {quadratic, quadratic_with_maker_fees, flat}`.
-* Maker: `0.0175` coefficient on maker-fee series. It is not used, because every detector
-  leg is a taker.
-* Rounding unit: the public fee schedule has historically said "rounded up to the next cent".
-  A secondary source says the 2026 schedule rounds **fee + position cost up to a centicent**
-  (1/100 of a cent). That could not be verified here because the environment blocks
-  kalshi.com. The implementation therefore keeps the rounding rule configurable and defaults
-  to the **conservative** option: round up to a whole cent for each leg and each order. This
-  overstates fees, which biases the scanner against finding arbitrage. The size of each
-  candidate's result under the alternative rounding rule is logged.
-* Settlement: no settlement fee is assumed. This must be confirmed.
+### B.1 State space
 
-## 3. How a false arbitrage can appear (each has a guard)
+Consider a portfolio of taker buys, each in a distinct market. It is scored against explicit
+settlement states. In each state, every market has a worst-case truth `(sure_yes, maybe_yes)`.
+A YES position pays iff `sure_yes`; a NO position pays iff `¬maybe_yes`. The locked payoff is
+`L = min over states of Σ payoffs`.
 
-1. **Asynchronous legs.** REST books for different legs are fetched at different times. Guard:
-   record send/receive timestamps for every leg; reject if `max(recv) − min(sent)` exceeds a
-   skew limit; require the same opportunity on an **immediate re-fetch**, with the
-   persistence duration recorded.
-2. **Stale or derived fields.** `yes_ask` and `last_price` on `/markets` can lag the book.
-   Guard: prices come **only** from `/orderbook` levels. Mids are never used.
-3. **Too little depth.** The top of book may be 1 contract. Guard: walk the book for the
-   proposed `C`; record the VWAP and the maximum `C` at which edge > 0.
-4. **Fee rounding at small size.** `ceil` makes 1-lot legs expensive, so the scanner scores
-   each candidate at several sizes `C`. This is a fixed grid, not optimized.
-5. **Incomplete MEE sets.** Causes: tail or "other" buckets missing; strikes Kalshi adds
-   during the day; markets closed or settled inside the event; `mutually_exclusive`
-   mis-set; a "no winner" outcome. Guard: require complete coverage of the outcome space,
-   proven from strikes. Otherwise downgrade to "ME-only" or statistical.
-6. **Strike boundary semantics.** Examples: `>` vs `≥`; "50–51" meaning `[50,51)` vs
-   `[50,51]`; the underlying reported rounded, such as integer °F or CPI to 0.1; gaps
-   between buckets. Guard: explicit interval mapping plus the reporting precision. If the
-   mapping is unknown, the candidate is rejected.
-7. **Settlement non-equivalence.** Different source, station, time or data vintage; different
-   revision policy; `can_close_early`; different expiration. Guard: an equivalence check that
-   must prove equality field by field. Anything unknown means "not equivalent".
-8. **Void, cancellation or fallback rules** create extra states in which the locked payoff
-   fails. Guard: the rules text is kept alongside every candidate. The payoff under void is
-   checked where the rules define it.
-9. **Non-atomic execution (leg risk).** Kalshi has no multi-leg atomic orders. Displayed depth
-   can be cancelled, and your own first fill moves the market. The scanner reports the
-   theoretical edge **and** how long it persisted. A "guaranteed" label means guaranteed
-   *if all legs fill at the displayed prices*, and the report says so.
-10. **Market state.** Market status is not `active`, the exchange is halted, or trading is
-    paused. Guard: reject the candidate.
-11. **Capital and limits.** Collateral is locked until settlement, which has an opportunity
-    cost. Position limits apply. The scanner records days-to-settlement and the annualised
-    edge, and does not treat edge as free money.
-12. **Multiple testing and data errors.** Thousands of comparisons will produce some glitches.
-    Guard: persistence plus re-fetch confirmation. Each positive is investigated before it is
-    believed.
-13. **Look-ahead.** Only rules and metadata as published at snapshot time are used. Outcomes
-    are never used to decide classification.
-14. **Tick and precision.** Subpenny levels and fixed-point contract counts are handled with
-    `Decimal`, never with floats.
+* **Numeric family** (one underlying X). States are the atoms of all breakpoints: every
+  breakpoint, every open gap between consecutive breakpoints, and both tails. An **ALL_NO**
+  state is added when the terms say no data → No (A7), or when the terms are unverified
+  (conservative). X is **real-valued**, because no verified terms prove a reporting precision
+  (A7, A9). This makes bucket gaps real outcome states: for example (72499.99, 72500) in BTC,
+  and (65, 66) in NYC temperature.
+* **Categorical MECNET event.** Exactly one listed market wins, or a NONE state.
+  Exhaustiveness is never provable, and markets can be added later.
+* **Combo.** All 2^k component outcomes, with the combo = AND of the legs' sides (A10).
+* **Discretionary states (A2, A5).** These are *not* in L. Every Kalshi market can settle at
+  an Exchange-chosen value, so **no Kalshi portfolio is strictly riskless.** This is reported as
+  a residual risk, together with `one_leg_discretionary_worst` (the worst payoff if any one leg
+  goes scalar at an adversarial value, typically 0 or L−1).
 
-## 4. Test architecture
+### B.2 Strike-to-interval mapping (the semantic envelope)
 
-```
-research/structural_arb/
-  DESIGN.md                this document
-  README.md                how to run, safety notes
-  sarb/
-    client.py              GET-only, public-path allowlist, no auth, timing capture, rate limit
-    models.py              dataclasses: MarketMeta, BookSide, OrderBook, BookSnapshot, Leg, Candidate, Evaluation
-    orderbook.py           normalize API formats → Decimal levels; derive asks; depth walk / VWAP / max size
-    fees.py                fee schedule model (fee_type, multiplier, rounding mode), conservative default
-    timing.py              skew / staleness gates
-    payoff.py              state-space verifier (atoms, payoff vectors, min payoff) — independent checker
-    contracts.py           [AFTER CHECKPOINT] strike_type → interval mapping, equivalence proof
-    relationships/         [AFTER CHECKPOINT] r1_mee, r2_monotone, r3_ranges, r4_equivalent, r5_combo
-    evaluator.py           [AFTER CHECKPOINT] candidate + snapshots → Evaluation (pass/fail reasons)
-    research_log.py        append-only JSONL log of EVERY candidate, pass or fail
-    collector.py           discovery + snapshot loop → data/sarb_snapshots_*.jsonl.gz
-    report.py              aggregates: counts by relationship × rejection reason, edge distributions
-  tests/                   pytest; every relationship tested against the brute-force verifier
-  data/                    git-ignored
-```
+For each numeric market, the scanner collects every plausible YES-set reading:
+* the field reading, from `strike_type`, `floor_strike` and `cap_strike`;
+* the text reading(s), parsed from `rules_primary`: `above/below/at least/at or below/N+/between/…`,
+  including `$`, `K`, `billion` and units.
 
-The status assigned to each candidate is one of:
-* `GUARANTEED_STRUCTURAL_EXECUTABLE`: all gates pass; edge > 0 after fees at size ≥ 1.
-* `GUARANTEED_STRUCTURAL_NOT_EXECUTABLE`: the displayed prices are inconsistent, but the
-  candidate fails on fees, depth, timing or persistence.
-* `STATISTICAL`: the relationship relies on correlation and has no locked payoff.
-* `REJECTED_*`, with specific reasons: `STALE`, `SKEW`, `INCOMPLETE_SET`,
-  `SEMANTICS_UNVERIFIED`, `MARKET_INACTIVE`, `NO_DEPTH`, and so on.
+"between" has one reading if its inclusivity is verified, otherwise all four endpoint variants.
+From these readings:
 
-**No parameter tuning.** The skew limit, the size grid and the persistence re-fetch are fixed
-in `config.py` before any data is looked at. They are never tuned to the results.
+    inner = ∩ readings   (YES surely pays)        outer = ∪ readings   (YES possibly pays)
+
+**Theorem (conservativeness).** Each market appears once and payoffs are additive, so for any
+consistent choice of true readings the payoff in every state is ≥ the envelope payoff. Hence
+L_envelope ≤ L_true.
+
+This is tested by exhaustively enumerating concrete readings (`test_envelope_is_never_more_optimistic…`).
+
+Markets are **rejected** when they have:
+* no comparator, or two different comparators;
+* "exactly" (rounding rules differ by series);
+* text and fields in opposite directions;
+* text and field values that aren't plausibly the same number (e.g. POPVOTEMOV's negative
+  field strikes vs positive text).
+
+Live, 61,289 of 62,612 numeric markets map. Examples of the encoding gaps the envelope absorbs:
+* `KXINXU`: fields `≥ 7550` vs text "above 7549.9999";
+* `KXNFLCAREERRSHYDS`: fields `> 13999.5` vs text "at least 14,000";
+* vote share: text "44% to 100%, inclusive" vs fields `≥ 44`.
+
+A consequence, verified in `test_identical_markets_with_encoding_uncertainty_are_not_a_lock`:
+even an exact duplicate pair **cannot** be certified when the envelope is not tight, because
+there is a state where neither leg surely pays.
+
+**Families** (one underlying) share all of:
+* contract-terms URL;
+* rules text with the comparator clause removed;
+* `rules_secondary`, `custom_strike`, `latest_expiration_time` and settlement sources;
+* units.
+
+**Path-dependent** wording ("ever", "any", "during", "through", "before/by <month>") splits
+families by direction. "Ever above K" is a max statistic and "ever below K" a min statistic, so
+they do *not* share an X. Treating them as one would create a false "at most one YES". Between
+markets on path statistics are rejected.
+
+Live, BTC+BTCD and ETH+ETHD merge across series (same terms PDF, identical template), as do
+NHL season-goal thresholds across events. KXRONI shows two distinct events with identical
+rules: a potential R4 duplicate, whose terms are unverified.
+
+### B.3 Relationship derivations
+
+Notation: `a_s(m)` is the executable ask for side s, from walking the book; `b(m)` is the best
+YES bid. Every identity below is checked in tests against the brute-force checker.
+
+**R1 (mutually exclusive and exhaustive buckets).** Take an event with markets m₁…mₙ.
+* Long, YES on all: L = min over states of #{i : X ∈ inner_i}. L = 1 iff the inner sets cover
+  ℝ and there is no ALL_NO state. **Crypto fails** (A7 ALL_NO, plus the .01 gaps), and so does
+  **temperature** (integer gaps are real, A9).
+* Short, NO on all: L = n − max coverage by outer sets. L = n−1 when the outers are disjoint.
+  ALL_NO only raises the payoff to n.
+* **Dominance.** For disjoint markets, NO on any k of them locks k−1. The edge
+  `Σᵢ(b_i − 1) + 1 − fees` falls with every extra leg, since b_i < 1. So the best R1-short
+  portfolio is **the pair with the two highest YES bids** (`R1_EXCLUSIVE_PAIR`); the full basket
+  is dominated.
+* Categorical MECNET events use only A6 (at most one YES). Long is never locked (NONE state).
+
+**R2 (nesting / monotonicity).** If outer(S) ⊆ inner(B), then YES_B + NO_S pays
+1[B] + 1 − 1[S] ≥ 1 in every X state, and 0 + 1 = 1 under ALL_NO. Hence L = 1, and at top of
+book `edge = b(S) − a_yes(B) − fees`. This covers nested thresholds in either direction, and
+`>` vs `≥` at equal strikes. The atoms include the boundary point.
+
+**R4 (duplicates / complements).** A duplicate is R2 holding in both directions. A cover pair
+(YES_a + YES_b with inner_a ∪ inner_b = ℝ, no ALL_NO) has L = 1. A disjoint NO pair is the
+R1_EXCLUSIVE_PAIR. Cross-series duplicates need the same terms PDF and template, and are
+otherwise never compared.
+
+**R3 (ranges vs threshold).** Take a threshold T and pairwise-disjoint buckets S from one event.
+* (A) YES on all of S + NO_T: L = 1 iff outer(T) ⊆ ∪ inner(S).
+* (B) YES_T + NO on all of S: L = |S| iff ∪ outer(S) ⊆ inner(T).
+
+A misaligned T (splitting a bucket) keeps A but breaks B. This is tested. Overlapping sets can
+lock more than nominal; the evaluator screens on max(nominal, L).
+
+**R5 (combos).**
+* Upper: the position on component j + NO_combo has L = 1.
+* Lower: YES_combo + the opposite side of every leg has L = 1 (the Fréchet bound).
+* Under **scalar** component settlement, with values v ∈ [0,1] and combo = floor_cent(Π v′):
+  * upper = v′_j + 1 − floor(Π v′) ≥ 1, because Π v′ ≤ v′_j;
+  * lower = floor(Π v′) + Σ(1 − v′_i) ≥ 1 − $0.01, because Π v′ + Σ(1 − v′_i) ≥ 1 by induction.
+* So R5 is the only relationship that is robust to discretionary component settlement (up to
+  one cent). **But combos show essentially no displayed depth (A16) and trade by authenticated
+  RFQ.** R5 is therefore untestable under this project's constraints. That is itself a finding.
+
+## C. Labels and gates
+
+Every candidate whose top-of-book prices violate its relationship (`max(nominal, L) − Σ asks > 0`)
+is logged. Consistent observations and missing-ask observations are counted in aggregate.
+
+| Status | Meaning |
+|---|---|
+| `ARBITRAGE` | L ≥ 1 in every determinate state; verified terms (or MECNET for categorical R1-short/pairs); all gates pass; edge > 0 under **every** fee scenario at some integer size; persistence confirmed on an independent re-fetch |
+| `GUARANTEED_STRUCTURAL_NOT_EXECUTABLE` | lock holds, some execution gate fails (fees/depth/5.11/persistence) |
+| `CANDIDATE_TERMS_UNVERIFIED` | lock holds under the conservative model; series terms not yet reviewed |
+| `STATISTICAL` | displayed prices violate the naive relationship but L < nominal (gap, ALL_NO, uncertainty) |
+| `REJECTED` | book unavailable, CDN cache hit, crossed/locked book, stale metadata, inactive market or halted exchange, leg skew > 2 s, age > 5 s, fee unresolvable, or a checker/template disagreement |
+
+The residual risks below are **attached to every record**:
+* Rule 6.3(c) and 7.1 discretionary settlement;
+* Rule 7.2 contract modification;
+* Rule 5.11 cancellation;
+* non-atomic multi-leg execution;
+* non-simultaneous REST books.
+
+The Rule 5.11 gate uses the last traded price as a proxy for fair value, requires every leg to
+be within $0.20 of it, and fails when no last price exists.
+
+## D. Fees (proofs in `sarb/fees.py`, tests in `tests/test_fees.py`)
+
+* The documented per-order algorithm is implemented exactly. It reproduces:
+  * the docs' worked example, to $0.000001;
+  * **all 42 cells** of the PDF table at $0.01 precision.
+
+  (The PDF's text says "centicent" but its table is the cent-precision case. The docs resolve
+  this by member class.)
+* **Bounds when the fill split is unknown.** Displayed levels aggregate resting orders, and
+  fills are at least `min_fill_unit` contracts: 1 if every consumed level shows an integer
+  quantity, else 0.01.
+  * (B1) Σ model ≤ Σ trade_fee < Σ model + n·1e-6.
+  * (B2) If every fill's revenue is on the balance grid g, then Σ tf ≤ net < Σ tf + g.
+    Proof: the rebate cap never binds, so the accumulator stays below g.
+  * (B3) Otherwise, net < Σ tf + n·g.
+  * Checked on 4,800 random fragmentations, plus a 100-fill adversarial case.
+* **Scenarios**, all reported for every candidate:
+  * `direct_expected`: g = $0.0001, API M, one fill per level. This is the owner's account.
+  * `direct_bound`: g = $0.0001, worst-case fragmentation.
+  * `nondirect_conservative`: g = $0.01, M = max(API M, PDF taker M), worst-case fragmentation.
+    This is the binding scenario for `ARBITRAGE`.
+
+  Fee waivers are ignored (conservative). `flat` and `margin_*` fee types are rejected.
+
+## E. Timing and execution audit
+
+1. **No simultaneity evidence.** Without authentication there are no WebSockets, no batch
+   books, and no server timestamps or sequence numbers. The only defensible bound is local:
+   `skew = max(recv) − min(sent)` over *the candidate's legs*, on the monotonic clock (wall
+   clock can step).
+2. **Live finding.** Sweeping a 160-market family at 8 req/s takes about 20 s. A single sweep
+   therefore cannot meet the gates. The **collector must be two-phase**:
+   * (i) screening sweep;
+   * (ii) for every candidate with raw > 0, re-fetch only its legs back to back, together with
+     `GET /markets/{t}` for status and last price, and evaluate those fresh books;
+   * (iii) after `PERSISTENCE_REFETCH_DELAY_S`, re-fetch and re-evaluate. Persistence = still
+     `ARBITRAGE`-eligible.
+3. **CDN.** The `x-cache` header is recorded, and hits are rejected. None were observed in
+   probes.
+4. **Crossed or locked books** (yes_bid + no_bid ≥ 1) are impossible on a live matching
+   engine, so they are rejected as stale or inconsistent.
+5. **Depth.** Every leg is walked to size C, and C must fill completely. The scanner reports
+   edges on the frozen grid {1, 10, 100}, and the **largest integer C** (≤ 5000) positive under
+   all scenarios. Edge is not monotone in C, because of rounding.
+6. **Partial fills / leg risk.** Legs are separate orders. A "locked" label is conditional on
+   all legs filling at the displayed prices. The per-leg abandon (round-trip) loss is **not yet
+   computed** (§H).
+7. **Summary-field trap (A16).** Prices come only from `/orderbook` levels. Prices ≥ 1 or ≤ 0
+   are rejected at parse time.
+8. **Look-ahead.** Only metadata and rules fetched before evaluation are used. Terms are
+   hash-checked at snapshot time. Outcomes are never used.
+
+## F. Unresolved (not assumed)
+
+* The meaning of `fee_multiplier` for taker vs maker. The docs say "applied to the fee
+  calculations"; the conservative scenario also takes the max with the PDF taker column.
+* Fair-price coherence across markets in discretionary settlement. No evidence either way, so
+  it is excluded from L and reported as residual risk.
+* Reporting precision of any underlying. Treated as real-valued, so integer-only arbitrages
+  (e.g. temperature R1) are classed as STATISTICAL.
+* Terms for all series outside the registry (BTC, ETH, INX, GLOBALTEMPERATURE). These are
+  capped at `CANDIDATE_TERMS_UNVERIFIED`.
+* Fractional resting orders. When a level shows a fractional quantity, the fee bound
+  automatically switches to 0.01-contract fills.
+
+## G. Verification evidence
+
+* 489 unit/property tests.
+* A one-off stress run: 3,000 random families, 3,000 partition/gap/R3 cases, 800 envelope
+  enumerations, and 300 × 200 scalar combo draws. **No counterexample was found.**
+* Live smoke (2026-09-27 17:10 UTC): BTC+BTCD, ETH+ETHD and KXHIGHNY-26SEP28. 246 markets were
+  all parsed, all terms hash-verified, and all fees resolved. **Zero displayed structural
+  inconsistencies.** Every relationship was price-consistent or lacked an ask. This is one
+  snapshot, not a conclusion.
+
+## H. Remaining work (routine, High mode)
+
+See the HIGH-MODE CHECKPOINT message. In short:
+* the two-phase family collector (§E.2), including terms hashing, fee-change fetching and
+  categorical MECNET scanning;
+* the leg-abandon metric;
+* updating `report.py` for schema v2;
+* long-running collection;
+* final negative/positive results report.

@@ -38,9 +38,13 @@ def test_bad_formats(bad):
         parse_orderbook("T", bad)
 
 
-def test_crossed_detection():
+def test_crossed_and_locked_detection():
     ob = parse_orderbook("T", {"orderbook_fp": {"yes_dollars": [["0.6", "1"]], "no_dollars": [["0.5", "1"]]}})
     assert ob.is_crossed()
+    locked = parse_orderbook("T", {"orderbook_fp": {"yes_dollars": [["0.6", "1"]], "no_dollars": [["0.4", "1"]]}})
+    assert locked.is_crossed()
+    ok = parse_orderbook("T", {"orderbook_fp": {"yes_dollars": [["0.6", "1"]], "no_dollars": [["0.39", "1"]]}})
+    assert not ok.is_crossed()
 
 
 def test_walk_depth():
