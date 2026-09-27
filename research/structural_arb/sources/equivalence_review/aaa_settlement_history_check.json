@@ -1,0 +1,23 @@
+{
+ "('KXAAAGASD', 'KXAAAGASW')": {
+  "paired_dates": 10,
+  "numeric_differences": [],
+  "decimals_seen": [
+   2,
+   3,
+   4
+  ],
+  "results_consistent_strict_gt": 1588,
+  "results_inconsistent": []
+ },
+ "('KXAAAGASDNJ', 'KXAAAGASWNJ')": {
+  "paired_dates": 4,
+  "numeric_differences": [],
+  "decimals_seen": [
+   3,
+   4
+  ],
+  "results_consistent_strict_gt": 693,
+  "results_inconsistent": []
+ }
+}

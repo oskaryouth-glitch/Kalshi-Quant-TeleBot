@@ -1,0 +1,870 @@
+{
+ "events": {
+  "KXAAAGASD-26SEP28": {
+   "body": {
+    "event": {
+     "category": "Economics",
+     "collateral_return_type": "DIRECNET",
+     "event_ticker": "KXAAAGASD-26SEP28",
+     "exchange_index": 0,
+     "last_updated_ts": "0001-01-01T00:00:00Z",
+     "mutually_exclusive": false,
+     "series_ticker": "KXAAAGASD",
+     "settlement_sources": [
+      {
+       "name": "AAA",
+       "url": "https://gasprices.aaa.com/"
+      }
+     ],
+     "strike_date": "2026-09-28T03:59:00Z",
+     "strike_period": "",
+     "sub_title": "On Sep 28, 2026",
+     "title": "US gas prices tomorrow"
+    }
+   },
+   "recv_utc_ns": 1790535944429859544,
+   "status": 200
+  },
+  "KXAAAGASDNJ-26SEP28": {
+   "body": {
+    "event": {
+     "category": "Economics",
+     "collateral_return_type": "DIRECNET",
+     "event_ticker": "KXAAAGASDNJ-26SEP28",
+     "exchange_index": 0,
+     "last_updated_ts": "0001-01-01T00:00:00Z",
+     "mutually_exclusive": false,
+     "series_ticker": "KXAAAGASDNJ",
+     "settlement_sources": [
+      {
+       "name": "AAA",
+       "url": "https://gasprices.aaa.com/?state=NJ"
+      }
+     ],
+     "strike_date": "2026-09-28T03:59:00Z",
+     "strike_period": "",
+     "sub_title": "On Sep 28, 2026",
+     "title": "New Jersey gas prices tomorrow"
+    }
+   },
+   "recv_utc_ns": 1790535944772239747,
+   "status": 200
+  },
+  "KXAAAGASW-26SEP28": {
+   "body": {
+    "event": {
+     "category": "Economics",
+     "collateral_return_type": "DIRECNET",
+     "event_ticker": "KXAAAGASW-26SEP28",
+     "exchange_index": 0,
+     "last_updated_ts": "0001-01-01T00:00:00Z",
+     "mutually_exclusive": false,
+     "series_ticker": "KXAAAGASW",
+     "settlement_sources": [
+      {
+       "name": "AAA",
+       "url": "https://gasprices.aaa.com/"
+      }
+     ],
+     "strike_date": "2026-09-28T03:59:00Z",
+     "strike_period": "",
+     "sub_title": "On Sep 28, 2026",
+     "title": "US gas prices this week"
+    }
+   },
+   "recv_utc_ns": 1790535945095529130,
+   "status": 200
+  },
+  "KXAAAGASWNJ-26SEP28": {
+   "body": {
+    "event": {
+     "category": "Economics",
+     "collateral_return_type": "DIRECNET",
+     "event_ticker": "KXAAAGASWNJ-26SEP28",
+     "exchange_index": 0,
+     "last_updated_ts": "0001-01-01T00:00:00Z",
+     "mutually_exclusive": false,
+     "series_ticker": "KXAAAGASWNJ",
+     "settlement_sources": [
+      {
+       "name": "AAA",
+       "url": "https://gasprices.aaa.com/?state=NJ"
+      }
+     ],
+     "strike_date": "2026-09-28T03:59:00Z",
+     "strike_period": "",
+     "sub_title": "On Sep 28, 2026",
+     "title": "New Jersey gas prices this week"
+    }
+   },
+   "recv_utc_ns": 1790535945430392891,
+   "status": 200
+  },
+  "KXSOL26500-27JAN0100": {
+   "body": {
+    "event": {
+     "category": "Crypto",
+     "collateral_return_type": "",
+     "event_ticker": "KXSOL26500-27JAN0100",
+     "exchange_index": 0,
+     "last_updated_ts": "0001-01-01T00:00:00Z",
+     "mutually_exclusive": false,
+     "series_ticker": "KXSOL26500",
+     "settlement_sources": [
+      {
+       "name": "CF Benchmarks",
+       "url": "https://www.cfbenchmarks.com/"
+      }
+     ],
+     "strike_date": "2027-01-01T05:00:00Z",
+     "strike_period": "",
+     "sub_title": "On Jan 1, 2027 at 12am EST",
+     "title": "Will Solana end 2026 over $500?"
+    }
+   },
+   "recv_utc_ns": 1790535945778258803,
+   "status": 200
+  },
+  "KXSOLD26-27JAN0100": {
+   "body": {
+    "event": {
+     "category": "Crypto",
+     "collateral_return_type": "DIRECNET",
+     "event_ticker": "KXSOLD26-27JAN0100",
+     "exchange_index": 0,
+     "last_updated_ts": "0001-01-01T00:00:00Z",
+     "mutually_exclusive": false,
+     "series_ticker": "KXSOLD26",
+     "settlement_sources": [
+      {
+       "name": "CF Benchmarks",
+       "url": "https://www.cfbenchmarks.com/"
+      }
+     ],
+     "strike_date": "2027-01-01T05:00:00Z",
+     "strike_period": "",
+     "sub_title": "On Jan 1, 2027 at 12am EST",
+     "title": "Price of Solana by end of 2026?"
+    }
+   },
+   "recv_utc_ns": 1790535946105448508,
+   "status": 200
+  }
+ },
+ "markets": {
+  "KXAAAGASD-26SEP28-4.4650": {
+   "body": {
+    "market": {
+     "can_close_early": true,
+     "close_time": "2026-09-28T03:59:00Z",
+     "created_time": "2026-09-27T10:00:35.795318Z",
+     "event_ticker": "KXAAAGASD-26SEP28",
+     "exchange_index": 0,
+     "expected_expiration_time": "2026-09-28T14:00:00Z",
+     "expiration_time": "2026-10-05T14:00:00Z",
+     "expiration_value": "",
+     "floor_strike": 4.465,
+     "last_price_dollars": "0.9600",
+     "latest_expiration_time": "2026-10-05T14:00:00Z",
+     "liquidity_dollars": "0.0000",
+     "market_type": "binary",
+     "no_ask_dollars": "0.0300",
+     "no_bid_dollars": "0.0100",
+     "no_sub_title": "Above 4.4650",
+     "notional_value_dollars": "1.0000",
+     "occurrence_datetime": "2026-09-28T14:00:00Z",
+     "open_interest_fp": "11168.63",
+     "open_time": "2026-09-27T12:00:00Z",
+     "previous_price_dollars": "0.0000",
+     "previous_yes_ask_dollars": "0.0000",
+     "previous_yes_bid_dollars": "0.0000",
+     "price_level_structure": "linear_cent",
+     "price_ranges": [
+      {
+       "end": "1.0000",
+       "start": "0.0000",
+       "step": "0.0100"
+      }
+     ],
+     "result": "",
+     "rules_primary": "If average regular gas prices for United States are strictly greater than $4.4650 on Sep 28, 2026 according to AAA, then the market resolves to Yes.",
+     "rules_secondary": "",
+     "settlement_timer_seconds": 300,
+     "status": "active",
+     "strike_type": "greater",
+     "ticker": "KXAAAGASD-26SEP28-4.4650",
+     "title": "Will average **gas prices** be above $4.4650?",
+     "updated_time": "2026-09-27T12:00:00.994899Z",
+     "volume_24h_fp": "17625.52",
+     "volume_fp": "17625.52",
+     "yes_ask_dollars": "0.9900",
+     "yes_ask_size_fp": "1309.00",
+     "yes_bid_dollars": "0.9700",
+     "yes_bid_size_fp": "1000.00",
+     "yes_sub_title": "Above 4.4650"
+    }
+   },
+   "recv_utc_ns": 1790535941685017757,
+   "status": 200
+  },
+  "KXAAAGASD-26SEP28-4.4850": {
+   "body": {
+    "market": {
+     "can_close_early": true,
+     "close_time": "2026-09-28T03:59:00Z",
+     "created_time": "2026-09-27T10:00:35.795318Z",
+     "event_ticker": "KXAAAGASD-26SEP28",
+     "exchange_index": 0,
+     "expected_expiration_time": "2026-09-28T14:00:00Z",
+     "expiration_time": "2026-10-05T14:00:00Z",
+     "expiration_value": "",
+     "floor_strike": 4.485,
+     "last_price_dollars": "0.0200",
+     "latest_expiration_time": "2026-10-05T14:00:00Z",
+     "liquidity_dollars": "0.0000",
+     "market_type": "binary",
+     "no_ask_dollars": "0.9900",
+     "no_bid_dollars": "0.9800",
+     "no_sub_title": "Above 4.4850",
+     "notional_value_dollars": "1.0000",
+     "occurrence_datetime": "2026-09-28T14:00:00Z",
+     "open_interest_fp": "6265.42",
+     "open_time": "2026-09-27T12:00:00Z",
+     "previous_price_dollars": "0.0000",
+     "previous_yes_ask_dollars": "0.0000",
+     "previous_yes_bid_dollars": "0.0000",
+     "price_level_structure": "linear_cent",
+     "price_ranges": [
+      {
+       "end": "1.0000",
+       "start": "0.0000",
+       "step": "0.0100"
+      }
+     ],
+     "result": "",
+     "rules_primary": "If average regular gas prices for United States are strictly greater than $4.4850 on Sep 28, 2026 according to AAA, then the market resolves to Yes.",
+     "rules_secondary": "",
+     "settlement_timer_seconds": 300,
+     "status": "active",
+     "strike_type": "greater",
+     "ticker": "KXAAAGASD-26SEP28-4.4850",
+     "title": "Will average **gas prices** be above $4.4850?",
+     "updated_time": "2026-09-27T12:00:00.994899Z",
+     "volume_24h_fp": "10551.96",
+     "volume_fp": "10567.46",
+     "yes_ask_dollars": "0.0200",
+     "yes_ask_size_fp": "1001.50",
+     "yes_bid_dollars": "0.0100",
+     "yes_bid_size_fp": "1000.00",
+     "yes_sub_title": "Above 4.4850"
+    }
+   },
+   "recv_utc_ns": 1790535942426796404,
+   "status": 200
+  },
+  "KXAAAGASDNJ-26SEP28-4.3950": {
+   "body": {
+    "market": {
+     "can_close_early": true,
+     "close_time": "2026-09-28T03:59:00Z",
+     "created_time": "2026-09-27T10:00:39.223005Z",
+     "event_ticker": "KXAAAGASDNJ-26SEP28",
+     "exchange_index": 0,
+     "expected_expiration_time": "2026-09-28T14:00:00Z",
+     "expiration_time": "2026-10-05T14:00:00Z",
+     "expiration_value": "",
+     "floor_strike": 4.395,
+     "last_price_dollars": "0.0200",
+     "latest_expiration_time": "2026-10-05T14:00:00Z",
+     "liquidity_dollars": "0.0000",
+     "market_type": "binary",
+     "no_ask_dollars": "0.9900",
+     "no_bid_dollars": "0.9800",
+     "no_sub_title": "Above 4.3950",
+     "notional_value_dollars": "1.0000",
+     "occurrence_datetime": "2026-09-28T14:00:00Z",
+     "open_interest_fp": "2280.00",
+     "open_time": "2026-09-27T12:00:00Z",
+     "previous_price_dollars": "0.0000",
+     "previous_yes_ask_dollars": "0.0000",
+     "previous_yes_bid_dollars": "0.0000",
+     "price_level_structure": "linear_cent",
+     "price_ranges": [
+      {
+       "end": "1.0000",
+       "start": "0.0000",
+       "step": "0.0100"
+      }
+     ],
+     "result": "",
+     "rules_primary": "If average regular gas prices for New Jersey are strictly greater than $4.3950 on Sep 28, 2026 according to AAA, then the market resolves to Yes.",
+     "rules_secondary": "",
+     "settlement_timer_seconds": 300,
+     "status": "active",
+     "strike_type": "greater",
+     "ticker": "KXAAAGASDNJ-26SEP28-4.3950",
+     "title": "Will average **gas prices** be above $4.3950?",
+     "updated_time": "2026-09-27T12:00:01.124061Z",
+     "volume_24h_fp": "2310.19",
+     "volume_fp": "2310.19",
+     "yes_ask_dollars": "0.0200",
+     "yes_ask_size_fp": "4259.81",
+     "yes_bid_dollars": "0.0100",
+     "yes_bid_size_fp": "11263.16",
+     "yes_sub_title": "Above 4.3950"
+    }
+   },
+   "recv_utc_ns": 1790535942758036550,
+   "status": 200
+  },
+  "KXAAAGASDNJ-26SEP28-4.4000": {
+   "body": {
+    "market": {
+     "can_close_early": true,
+     "close_time": "2026-09-28T03:59:00Z",
+     "created_time": "2026-09-27T10:00:39.223005Z",
+     "event_ticker": "KXAAAGASDNJ-26SEP28",
+     "exchange_index": 0,
+     "expected_expiration_time": "2026-09-28T14:00:00Z",
+     "expiration_time": "2026-10-05T14:00:00Z",
+     "expiration_value": "",
+     "floor_strike": 4.4,
+     "last_price_dollars": "0.0200",
+     "latest_expiration_time": "2026-10-05T14:00:00Z",
+     "liquidity_dollars": "0.0000",
+     "market_type": "binary",
+     "no_ask_dollars": "0.9900",
+     "no_bid_dollars": "0.9800",
+     "no_sub_title": "Above 4.4000",
+     "notional_value_dollars": "1.0000",
+     "occurrence_datetime": "2026-09-28T14:00:00Z",
+     "open_interest_fp": "49.00",
+     "open_time": "2026-09-27T12:00:00Z",
+     "previous_price_dollars": "0.0000",
+     "previous_yes_ask_dollars": "0.0000",
+     "previous_yes_bid_dollars": "0.0000",
+     "price_level_structure": "linear_cent",
+     "price_ranges": [
+      {
+       "end": "1.0000",
+       "start": "0.0000",
+       "step": "0.0100"
+      }
+     ],
+     "result": "",
+     "rules_primary": "If average regular gas prices for New Jersey are strictly greater than $4.4000 on Sep 28, 2026 according to AAA, then the market resolves to Yes.",
+     "rules_secondary": "",
+     "settlement_timer_seconds": 300,
+     "status": "active",
+     "strike_type": "greater",
+     "ticker": "KXAAAGASDNJ-26SEP28-4.4000",
+     "title": "Will average **gas prices** be above $4.4000?",
+     "updated_time": "2026-09-27T12:00:01.124061Z",
+     "volume_24h_fp": "49.00",
+     "volume_fp": "49.00",
+     "yes_ask_dollars": "0.0200",
+     "yes_ask_size_fp": "3264.00",
+     "yes_bid_dollars": "0.0100",
+     "yes_bid_size_fp": "5555.57",
+     "yes_sub_title": "Above 4.4000"
+    }
+   },
+   "recv_utc_ns": 1790535943424031354,
+   "status": 200
+  },
+  "KXAAAGASW-26SEP28-4.4660": {
+   "body": {
+    "market": {
+     "can_close_early": true,
+     "close_time": "2026-09-28T03:59:00Z",
+     "created_time": "2026-09-25T16:30:19.511693Z",
+     "event_ticker": "KXAAAGASW-26SEP28",
+     "exchange_index": 0,
+     "expected_expiration_time": "2026-09-28T14:00:00Z",
+     "expiration_time": "2026-10-05T14:00:00Z",
+     "expiration_value": "",
+     "floor_strike": 4.466,
+     "last_price_dollars": "0.9800",
+     "latest_expiration_time": "2026-10-05T14:00:00Z",
+     "liquidity_dollars": "0.0000",
+     "market_type": "binary",
+     "no_ask_dollars": "0.0200",
+     "no_bid_dollars": "0.0100",
+     "no_sub_title": "Above 4.4660",
+     "notional_value_dollars": "1.0000",
+     "occurrence_datetime": "2026-09-28T14:00:00Z",
+     "open_interest_fp": "9830.10",
+     "open_time": "2026-09-25T17:00:00Z",
+     "previous_price_dollars": "0.9900",
+     "previous_yes_ask_dollars": "0.9900",
+     "previous_yes_bid_dollars": "0.9800",
+     "price_level_structure": "linear_cent",
+     "price_ranges": [
+      {
+       "end": "1.0000",
+       "start": "0.0000",
+       "step": "0.0100"
+      }
+     ],
+     "result": "",
+     "rules_primary": "If average regular gas prices for United States are strictly greater than $4.4660 on Sep 28, 2026 according to AAA, then the market resolves to Yes.",
+     "rules_secondary": "",
+     "settlement_timer_seconds": 300,
+     "status": "active",
+     "strike_type": "greater",
+     "ticker": "KXAAAGASW-26SEP28-4.4660",
+     "title": "Will average **gas prices** be above $4.4660?",
+     "updated_time": "2026-09-25T17:00:00.118472Z",
+     "volume_24h_fp": "6823.15",
+     "volume_fp": "16429.59",
+     "yes_ask_dollars": "0.9900",
+     "yes_ask_size_fp": "1201.00",
+     "yes_bid_dollars": "0.9800",
+     "yes_bid_size_fp": "1048.82",
+     "yes_sub_title": "Above 4.4660"
+    }
+   },
+   "recv_utc_ns": 1790535941769720384,
+   "status": 200
+  },
+  "KXAAAGASW-26SEP28-4.4840": {
+   "body": {
+    "market": {
+     "can_close_early": true,
+     "close_time": "2026-09-28T03:59:00Z",
+     "created_time": "2026-09-25T16:33:38.992454Z",
+     "event_ticker": "KXAAAGASW-26SEP28",
+     "exchange_index": 0,
+     "expected_expiration_time": "2026-09-28T14:00:00Z",
+     "expiration_time": "2026-10-05T14:00:00Z",
+     "expiration_value": "",
+     "floor_strike": 4.484,
+     "last_price_dollars": "0.0300",
+     "latest_expiration_time": "2026-10-05T14:00:00Z",
+     "liquidity_dollars": "0.0000",
+     "market_type": "binary",
+     "no_ask_dollars": "0.9800",
+     "no_bid_dollars": "0.9700",
+     "no_sub_title": "Above 4.4840",
+     "notional_value_dollars": "1.0000",
+     "occurrence_datetime": "2026-09-28T14:00:00Z",
+     "open_interest_fp": "10501.45",
+     "open_time": "2026-09-25T17:00:00Z",
+     "previous_price_dollars": "0.0800",
+     "previous_yes_ask_dollars": "0.0500",
+     "previous_yes_bid_dollars": "0.0300",
+     "price_level_structure": "linear_cent",
+     "price_ranges": [
+      {
+       "end": "1.0000",
+       "start": "0.0000",
+       "step": "0.0100"
+      }
+     ],
+     "result": "",
+     "rules_primary": "If average regular gas prices for United States are strictly greater than $4.4840 on Sep 28, 2026 according to AAA, then the market resolves to Yes.",
+     "rules_secondary": "",
+     "settlement_timer_seconds": 300,
+     "status": "active",
+     "strike_type": "greater",
+     "ticker": "KXAAAGASW-26SEP28-4.4840",
+     "title": "Will average **gas prices** be above $4.4840?",
+     "updated_time": "2026-09-25T17:00:00.118472Z",
+     "volume_24h_fp": "23160.22",
+     "volume_fp": "62705.58",
+     "yes_ask_dollars": "0.0300",
+     "yes_ask_size_fp": "1025.00",
+     "yes_bid_dollars": "0.0200",
+     "yes_bid_size_fp": "5.00",
+     "yes_sub_title": "Above 4.4840"
+    }
+   },
+   "recv_utc_ns": 1790535942097471282,
+   "status": 200
+  },
+  "KXAAAGASWNJ-26SEP28-4.4000": {
+   "body": {
+    "market": {
+     "can_close_early": true,
+     "close_time": "2026-09-28T03:59:00Z",
+     "created_time": "2026-09-21T13:51:15.143526Z",
+     "event_ticker": "KXAAAGASWNJ-26SEP28",
+     "exchange_index": 0,
+     "expected_expiration_time": "2026-09-28T14:00:00Z",
+     "expiration_time": "2026-10-05T14:00:00Z",
+     "expiration_value": "",
+     "floor_strike": 4.4,
+     "last_price_dollars": "0.2000",
+     "latest_expiration_time": "2026-10-05T14:00:00Z",
+     "liquidity_dollars": "0.0000",
+     "market_type": "binary",
+     "no_ask_dollars": "0.9700",
+     "no_bid_dollars": "0.8100",
+     "no_sub_title": "Above 4.4000",
+     "notional_value_dollars": "1.0000",
+     "occurrence_datetime": "2026-09-28T14:00:00Z",
+     "open_interest_fp": "583.59",
+     "open_time": "2026-09-21T14:00:00Z",
+     "previous_price_dollars": "0.4000",
+     "previous_yes_ask_dollars": "0.1800",
+     "previous_yes_bid_dollars": "0.0300",
+     "price_level_structure": "linear_cent",
+     "price_ranges": [
+      {
+       "end": "1.0000",
+       "start": "0.0000",
+       "step": "0.0100"
+      }
+     ],
+     "result": "",
+     "rules_primary": "If average regular gas prices for New Jersey are strictly greater than $4.4000 on Sep 28, 2026 according to AAA, then the market resolves to Yes.",
+     "rules_secondary": "",
+     "settlement_timer_seconds": 300,
+     "status": "active",
+     "strike_type": "greater",
+     "ticker": "KXAAAGASWNJ-26SEP28-4.4000",
+     "title": "Will average **gas prices** be above $4.4000?",
+     "updated_time": "2026-09-21T14:00:01.009033Z",
+     "volume_24h_fp": "73.33",
+     "volume_fp": "938.78",
+     "yes_ask_dollars": "0.1900",
+     "yes_ask_size_fp": "1.00",
+     "yes_bid_dollars": "0.0300",
+     "yes_bid_size_fp": "69.81",
+     "yes_sub_title": "Above 4.4000"
+    }
+   },
+   "recv_utc_ns": 1790535943095947356,
+   "status": 200
+  },
+  "KXSOL26500-27JAN0100-T500": {
+   "body": {
+    "market": {
+     "can_close_early": true,
+     "close_time": "2027-01-01T05:00:00Z",
+     "created_time": "2025-12-03T16:59:40.795082Z",
+     "event_ticker": "KXSOL26500-27JAN0100",
+     "exchange_index": 0,
+     "expected_expiration_time": "2027-01-01T05:05:00Z",
+     "expiration_time": "2027-01-08T05:00:00Z",
+     "expiration_value": "",
+     "floor_strike": 500,
+     "last_price_dollars": "0.0400",
+     "latest_expiration_time": "2027-01-08T05:00:00Z",
+     "liquidity_dollars": "0.0000",
+     "market_type": "binary",
+     "no_ask_dollars": "0.9500",
+     "no_bid_dollars": "0.9400",
+     "no_sub_title": "na",
+     "notional_value_dollars": "1.0000",
+     "open_interest_fp": "67165.95",
+     "open_time": "2025-12-03T17:30:00Z",
+     "previous_price_dollars": "0.0400",
+     "previous_yes_ask_dollars": "0.0600",
+     "previous_yes_bid_dollars": "0.0500",
+     "price_level_structure": "linear_cent",
+     "price_ranges": [
+      {
+       "end": "1.0000",
+       "start": "0.0000",
+       "step": "0.0100"
+      }
+     ],
+     "result": "",
+     "rules_primary": "If the simple average of the sixty seconds of CF Benchmarks' SOLUSD_RTI is above $500.00 at 12 AM EST on Jan 1, 2027, then the market resolves to Yes.",
+     "rules_secondary": "Not all cryptocurrency price data is the same. While checking a source like Google or Coinbase may help guide your decision, the price used to determine this market is based on CF Benchmarks' corresponding Real Time Index (RTI). At the last minute before expiration, 60 RTI prices are collected. The official and final value is the average of these prices.",
+     "settlement_timer_seconds": 1800,
+     "status": "active",
+     "strike_type": "greater",
+     "ticker": "KXSOL26500-27JAN0100-T500",
+     "title": "Solana price above $500  on Jan 1, 2027?",
+     "updated_time": "2026-04-09T09:40:16.317232Z",
+     "volume_24h_fp": "2281.70",
+     "volume_fp": "355007.64",
+     "yes_ask_dollars": "0.0600",
+     "yes_ask_size_fp": "54.36",
+     "yes_bid_dollars": "0.0500",
+     "yes_bid_size_fp": "17.35",
+     "yes_sub_title": "na"
+    }
+   },
+   "recv_utc_ns": 1790535944091934874,
+   "status": 200
+  },
+  "KXSOLD26-27JAN0100-T449.99": {
+   "body": {
+    "market": {
+     "can_close_early": true,
+     "close_time": "2027-01-01T05:00:00Z",
+     "created_time": "2025-12-03T17:02:36.398815Z",
+     "event_ticker": "KXSOLD26-27JAN0100",
+     "exchange_index": 0,
+     "expected_expiration_time": "2027-01-01T05:05:00Z",
+     "expiration_time": "2027-01-08T05:00:00Z",
+     "expiration_value": "",
+     "floor_strike": 449.99,
+     "last_price_dollars": "0.0200",
+     "latest_expiration_time": "2027-01-08T05:00:00Z",
+     "liquidity_dollars": "0.0000",
+     "market_type": "binary",
+     "no_ask_dollars": "0.9800",
+     "no_bid_dollars": "0.9600",
+     "no_sub_title": "450 or above",
+     "notional_value_dollars": "1.0000",
+     "open_interest_fp": "3361.22",
+     "open_time": "2025-12-03T17:30:00Z",
+     "previous_price_dollars": "0.0200",
+     "previous_yes_ask_dollars": "0.0400",
+     "previous_yes_bid_dollars": "0.0300",
+     "price_level_structure": "linear_cent",
+     "price_ranges": [
+      {
+       "end": "1.0000",
+       "start": "0.0000",
+       "step": "0.0100"
+      }
+     ],
+     "result": "",
+     "rules_primary": "If the simple average of the sixty seconds of CF Benchmarks' SOLUSD_RTI is above $449.99 at 12 AM EST on Jan 1, 2027, then the market resolves to Yes.",
+     "rules_secondary": "Not all cryptocurrency price data is the same. While checking a source like Google or Coinbase may help guide your decision, the price used to determine this market is based on CF Benchmarks' corresponding Real Time Index (RTI). At the last minute before expiration, 60 RTI prices are collected. The official and final value is the average of these prices.",
+     "settlement_timer_seconds": 1800,
+     "status": "active",
+     "strike_type": "greater",
+     "ticker": "KXSOLD26-27JAN0100-T449.99",
+     "title": "SOL price  on Jan 1, 2027?",
+     "updated_time": "2026-04-09T09:44:10.116834Z",
+     "volume_24h_fp": "0.00",
+     "volume_fp": "7508.91",
+     "yes_ask_dollars": "0.0400",
+     "yes_ask_size_fp": "150.00",
+     "yes_bid_dollars": "0.0200",
+     "yes_bid_size_fp": "129.85",
+     "yes_sub_title": "450 or above"
+    }
+   },
+   "recv_utc_ns": 1790535943757909422,
+   "status": 200
+  }
+ },
+ "series": {
+  "KXAAAGASD": {
+   "body": {
+    "series": {
+     "additional_prohibitions": [
+      "Persons who are employed by any of the Source Agencies are not permitted to trade on the Contract.",
+      "Persons who hold any material, non-public information on the Underlying are not permitted to trade on the Contract."
+     ],
+     "categories": [
+      "Economics",
+      "Commodities"
+     ],
+     "category": "Economics",
+     "contract_terms_url": "https://assets.kalshi.com/contract_terms/AAAGAS.pdf",
+     "contract_url": "https://assets.kalshi.com/regulatory/product-certifications/AAAGAS.pdf",
+     "exchange_index": 0,
+     "fee_multiplier": 1,
+     "fee_type": "quadratic",
+     "frequency": "daily",
+     "last_updated_ts": "2026-09-23T20:55:17.411854Z",
+     "product_metadata": {
+      "scope": "Gasoline"
+     },
+     "settlement_sources": [
+      {
+       "name": "AAA",
+       "url": "https://gasprices.aaa.com/"
+      }
+     ],
+     "tags": [
+      "Oil & Gas",
+      "Oil and energy",
+      "Econ Daily"
+     ],
+     "ticker": "KXAAAGASD",
+     "title": "US gas price up"
+    }
+   },
+   "recv_utc_ns": 1790535946422546030,
+   "status": 200
+  },
+  "KXAAAGASDNJ": {
+   "body": {
+    "series": {
+     "additional_prohibitions": [
+      "Persons who are employed by any of the Source Agencies are not permitted to trade on the Contract.",
+      "Persons who hold any material, non-public information on the Underlying are not permitted to trade on the Contract."
+     ],
+     "categories": [
+      "Economics",
+      "Commodities"
+     ],
+     "category": "Economics",
+     "contract_terms_url": "https://assets.kalshi.com/contract_terms/AAAGAS.pdf",
+     "contract_url": "https://assets.kalshi.com/regulatory/product-certifications/AAAGAS.pdf",
+     "exchange_index": 0,
+     "fee_multiplier": 1,
+     "fee_type": "quadratic",
+     "frequency": "daily",
+     "last_updated_ts": "2026-09-23T20:55:17.469562Z",
+     "settlement_sources": [
+      {
+       "name": "AAA",
+       "url": "https://gasprices.aaa.com/?state=NJ"
+      }
+     ],
+     "tags": [
+      "Oil and energy",
+      "Econ Daily"
+     ],
+     "ticker": "KXAAAGASDNJ",
+     "title": "New Jersey gas prices"
+    }
+   },
+   "recv_utc_ns": 1790535946762299829,
+   "status": 200
+  },
+  "KXAAAGASW": {
+   "body": {
+    "series": {
+     "additional_prohibitions": [
+      "Persons who are employed by any of the Source Agencies are not permitted to trade on the Contract.",
+      "Persons who hold any material, non-public information on the Underlying are not permitted to trade on the Contract."
+     ],
+     "categories": [
+      "Economics",
+      "Commodities"
+     ],
+     "category": "Economics",
+     "contract_terms_url": "https://assets.kalshi.com/contract_terms/AAAGAS.pdf",
+     "contract_url": "https://assets.kalshi.com/regulatory/product-certifications/AAAGAS.pdf",
+     "exchange_index": 0,
+     "fee_multiplier": 1,
+     "fee_type": "quadratic",
+     "frequency": "weekly",
+     "last_updated_ts": "2026-09-23T20:55:17.431266Z",
+     "product_metadata": {
+      "scope": "Gasoline"
+     },
+     "settlement_sources": [
+      {
+       "name": "AAA",
+       "url": "https://gasprices.aaa.com/"
+      }
+     ],
+     "tags": [
+      "Econ Weekly",
+      "Oil and energy"
+     ],
+     "ticker": "KXAAAGASW",
+     "title": "US gas price up"
+    }
+   },
+   "recv_utc_ns": 1790535947102348709,
+   "status": 200
+  },
+  "KXAAAGASWNJ": {
+   "body": {
+    "series": {
+     "additional_prohibitions": [
+      "Persons who are employed by any of the Source Agencies are not permitted to trade on the Contract.",
+      "Persons who hold any material, non-public information on the Underlying are not permitted to trade on the Contract."
+     ],
+     "categories": [
+      "Economics",
+      "Commodities"
+     ],
+     "category": "Economics",
+     "contract_terms_url": "https://assets.kalshi.com/contract_terms/AAAGAS.pdf",
+     "contract_url": "https://assets.kalshi.com/regulatory/product-certifications/AAAGAS.pdf",
+     "exchange_index": 0,
+     "fee_multiplier": 1,
+     "fee_type": "quadratic",
+     "frequency": "weekly",
+     "last_updated_ts": "2026-09-23T20:55:17.296682Z",
+     "settlement_sources": [
+      {
+       "name": "AAA",
+       "url": "https://gasprices.aaa.com/?state=NJ"
+      }
+     ],
+     "tags": [
+      "Econ Weekly",
+      "Oil and energy"
+     ],
+     "ticker": "KXAAAGASWNJ",
+     "title": "New Jersey gas price this week"
+    }
+   },
+   "recv_utc_ns": 1790535947426887760,
+   "status": 200
+  },
+  "KXSOL26500": {
+   "body": {
+    "series": {
+     "additional_prohibitions": [
+      "Persons who are employed by any of the Source Agencies are not permitted to trade on the Contract.",
+      "Persons who hold any material, non-public information on the Underlying are not permitted to trade on the Contract."
+     ],
+     "categories": [
+      "Crypto"
+     ],
+     "category": "Crypto",
+     "contract_terms_url": "https://assets.kalshi.com/contract_terms/CRYPTO.pdf",
+     "contract_url": "https://assets.kalshi.com/regulatory/product-certifications/CRYPTO.pdf",
+     "exchange_index": 2,
+     "fee_multiplier": 1,
+     "fee_type": "quadratic",
+     "frequency": "one_off",
+     "last_updated_ts": "2026-09-18T15:20:18.219936Z",
+     "settlement_sources": [
+      {
+       "name": "CF Benchmarks",
+       "url": "https://www.cfbenchmarks.com/"
+      }
+     ],
+     "tags": [
+      "SOL"
+     ],
+     "ticker": "KXSOL26500",
+     "title": "Sol above 500 in 2026"
+    }
+   },
+   "recv_utc_ns": 1790535947771026545,
+   "status": 200
+  },
+  "KXSOLD26": {
+   "body": {
+    "series": {
+     "additional_prohibitions": [
+      "Persons who are employed by any of the Source Agencies are not permitted to trade on the Contract.",
+      "Persons who hold any material, non-public information on the Underlying are not permitted to trade on the Contract."
+     ],
+     "categories": [
+      "Crypto"
+     ],
+     "category": "Crypto",
+     "contract_terms_url": "https://assets.kalshi.com/contract_terms/CRYPTO.pdf",
+     "contract_url": "https://assets.kalshi.com/regulatory/product-certifications/CRYPTO.pdf",
+     "exchange_index": 2,
+     "fee_multiplier": 1,
+     "fee_type": "quadratic",
+     "frequency": "annual",
+     "last_updated_ts": "2026-09-18T15:20:18.18309Z",
+     "settlement_sources": [
+      {
+       "name": "CF Benchmarks",
+       "url": "https://www.cfbenchmarks.com/"
+      }
+     ],
+     "tags": [
+      "SOL"
+     ],
+     "ticker": "KXSOLD26",
+     "title": "SOL price end of 2026?"
+    }
+   },
+   "recv_utc_ns": 1790535948093899050,
+   "status": 200
+  }
+ }
+}

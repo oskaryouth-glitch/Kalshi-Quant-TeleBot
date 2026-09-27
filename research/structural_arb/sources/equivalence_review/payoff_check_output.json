@@ -1,0 +1,179 @@
+[
+ {
+  "pair": "AAA US: KXAAAGASD 4.4650 YES / KXAAAGASW 4.4660 NO",
+  "strikes": {
+   "yes_leg_gt": "4.465",
+   "no_leg_gt": "4.466"
+  },
+  "shared_model": [
+   {
+    "state": "X < k_yes (X=693/200)",
+    "payoff": "1"
+   },
+   {
+    "state": "X = k_yes (X=893/200)",
+    "payoff": "1"
+   },
+   {
+    "state": "k_yes < X < k_no (X=8931/2000)",
+    "payoff": "2"
+   },
+   {
+    "state": "X = k_no (X=2233/500)",
+    "payoff": "2"
+   },
+   {
+    "state": "X > k_no (X=2733/500)",
+    "payoff": "1"
+   }
+  ],
+  "shared_min_payoff": "1",
+  "divergent_min_payoff": "0",
+  "divergent_failing_states": [
+   "X_yes=693/200 | X_no=2733/500",
+   "X_yes=893/200 | X_no=2733/500"
+  ],
+  "n_divergent_states": 25
+ },
+ {
+  "pair": "AAA US: KXAAAGASW 4.4840 YES / KXAAAGASD 4.4850 NO",
+  "strikes": {
+   "yes_leg_gt": "4.484",
+   "no_leg_gt": "4.485"
+  },
+  "shared_model": [
+   {
+    "state": "X < k_yes (X=871/250)",
+    "payoff": "1"
+   },
+   {
+    "state": "X = k_yes (X=1121/250)",
+    "payoff": "1"
+   },
+   {
+    "state": "k_yes < X < k_no (X=8969/2000)",
+    "payoff": "2"
+   },
+   {
+    "state": "X = k_no (X=897/200)",
+    "payoff": "2"
+   },
+   {
+    "state": "X > k_no (X=1097/200)",
+    "payoff": "1"
+   }
+  ],
+  "shared_min_payoff": "1",
+  "divergent_min_payoff": "0",
+  "divergent_failing_states": [
+   "X_yes=871/250 | X_no=1097/200",
+   "X_yes=1121/250 | X_no=1097/200"
+  ],
+  "n_divergent_states": 25
+ },
+ {
+  "pair": "AAA NJ: KXAAAGASDNJ 4.3950 YES / KXAAAGASWNJ 4.4000 NO",
+  "strikes": {
+   "yes_leg_gt": "4.395",
+   "no_leg_gt": "4.400"
+  },
+  "shared_model": [
+   {
+    "state": "X < k_yes (X=679/200)",
+    "payoff": "1"
+   },
+   {
+    "state": "X = k_yes (X=879/200)",
+    "payoff": "1"
+   },
+   {
+    "state": "k_yes < X < k_no (X=1759/400)",
+    "payoff": "2"
+   },
+   {
+    "state": "X = k_no (X=22/5)",
+    "payoff": "2"
+   },
+   {
+    "state": "X > k_no (X=27/5)",
+    "payoff": "1"
+   }
+  ],
+  "shared_min_payoff": "1",
+  "divergent_min_payoff": "0",
+  "divergent_failing_states": [
+   "X_yes=679/200 | X_no=27/5",
+   "X_yes=879/200 | X_no=27/5"
+  ],
+  "n_divergent_states": 25
+ },
+ {
+  "pair": "AAA NJ duplicate: KXAAAGASDNJ 4.4000 YES / KXAAAGASWNJ 4.4000 NO",
+  "strikes": {
+   "yes_leg_gt": "4.400",
+   "no_leg_gt": "4.400"
+  },
+  "shared_model": [
+   {
+    "state": "X < k_yes (X=17/5)",
+    "payoff": "1"
+   },
+   {
+    "state": "X = k_yes (X=22/5)",
+    "payoff": "1"
+   },
+   {
+    "state": "X > k_no (X=27/5)",
+    "payoff": "1"
+   }
+  ],
+  "shared_min_payoff": "1",
+  "divergent_min_payoff": "0",
+  "divergent_failing_states": [
+   "X_yes=17/5 | X_no=27/5",
+   "X_yes=22/5 | X_no=27/5"
+  ],
+  "n_divergent_states": 9
+ },
+ {
+  "pair": "SOL: KXSOLD26 >449.99 YES / KXSOL26500 >500 NO",
+  "strikes": {
+   "yes_leg_gt": "449.99",
+   "no_leg_gt": "500"
+  },
+  "shared_model": [
+   {
+    "state": "X < k_yes (X=44899/100)",
+    "payoff": "1"
+   },
+   {
+    "state": "X = k_yes (X=44999/100)",
+    "payoff": "1"
+   },
+   {
+    "state": "k_yes < X < k_no (X=94999/200)",
+    "payoff": "2"
+   },
+   {
+    "state": "X = k_no (X=500)",
+    "payoff": "2"
+   },
+   {
+    "state": "X > k_no (X=501)",
+    "payoff": "1"
+   },
+   {
+    "state": "NO_DATA both -> both resolve No",
+    "payoff": "1"
+   }
+  ],
+  "shared_min_payoff": "1",
+  "divergent_min_payoff": "0",
+  "divergent_failing_states": [
+   "X_yes=44899/100 | X_no=501",
+   "X_yes=44999/100 | X_no=501",
+   "NO_DATA(this market) -> No | X_no=501"
+  ],
+  "n_divergent_states": 36
+ }
+]
