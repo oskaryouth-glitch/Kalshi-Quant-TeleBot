@@ -25,7 +25,7 @@ GUARANTEED = "GUARANTEED"      # locked payoff by contract definition (if rules 
 STATISTICAL = "STATISTICAL"    # correlational; never scored as arbitrage
 
 # Outcome statuses
-ARBITRAGE = "ARBITRAGE"
+RULE_DEFINED_LOCK = "RULE_DEFINED_LOCK"
 NOT_EXECUTABLE = "GUARANTEED_STRUCTURAL_NOT_EXECUTABLE"
 STAT_ONLY = "STATISTICAL"
 REJECTED = "REJECTED"
@@ -53,7 +53,7 @@ class LegRecord:
 class CandidateRecord:
     relationship: str               # R1_MEE_LONG, R2_MONOTONE, ...
     relationship_class: str         # GUARANTEED | STATISTICAL
-    status: str                     # EXECUTABLE | NOT_EXECUTABLE | STATISTICAL | REJECTED
+    status: str                     # RULE_DEFINED_LOCK | GUARANTEED_STRUCTURAL_NOT_EXECUTABLE | CANDIDATE_TERMS_UNVERIFIED | STATISTICAL | REJECTED
     reasons: list[str]              # why it passed / failed (every gate listed)
     event_tickers: list[str]
     size: str

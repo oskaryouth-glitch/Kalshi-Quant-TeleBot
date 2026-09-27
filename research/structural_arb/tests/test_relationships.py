@@ -316,3 +316,40 @@ def test_r3_skips_threshold_ladders_as_bucket_sets():
     T = spec("T", [P.ge(11)], event="ET")
     out = R.numeric_family_templates(R.Family(ladder + [T]))
     assert not any(s.relationship.startswith("R3") for s in out)
+
+
+@pytest.mark.parametrize("seed", range(30))
+def test_lazy_templates_check_to_same_result_as_eager(seed):
+    rng = random.Random(seed)
+    specs = [spec(f"M{i}", [rand_interval(rng)], event=rng.choice(["E1", "E2"]), all_no=rng.random() < 0.4)
+             for i in range(rng.randint(2, 6))]
+    eager = R.numeric_family_templates(R.Family(specs))
+    lazy = R.numeric_family_templates(R.Family(specs), lazy=True)
+    assert len(eager) == len(lazy) and not any(s.checked for s in lazy)
+    for e, l in zip(eager, lazy):
+        R.check(l)
+        assert (e.relationship, e.positions, e.locked, e.relationship_class, e.argmin_state,
+                e.one_leg_discretionary_worst, e.notes) == \
+               (l.relationship, l.positions, l.locked, l.relationship_class, l.argmin_state,
+                l.one_leg_discretionary_worst, l.notes)
+
+
+@pytest.mark.parametrize("seed", range(80))
+def test_screen_pairs_equals_full_enumeration_filtered_by_price(seed):
+    rng = random.Random(seed)
+    specs = [spec(f"M{i}", [rand_interval(rng)], event=rng.choice(["E1", "E2"]), all_no=rng.random() < 0.4)
+             for i in range(rng.randint(2, 9))]
+    fam = R.Family(specs)
+    quotes = {(s.ticker, side): (None if rng.random() < 0.15 else D(rng.randint(1, 99)) / 100)
+              for s in specs for side in ("yes", "no")}
+    ask = lambda t, side: quotes[(t, side)]  # noqa: E731
+    pair_rels = {"R2_NESTED", "R4_DUPLICATE", "R4_COVER_PAIR", "R1_EXCLUSIVE_PAIR"}
+    full = {(s.relationship, s.positions) for s in R.numeric_family_templates(fam)
+            if s.relationship in pair_rels
+            and all(ask(p.ticker, p.side) is not None for p in s.positions)
+            and sum(ask(p.ticker, p.side) for p in s.positions) < 1}
+    got = R.screen_pairs(fam, ask)
+    assert {(s.relationship, s.positions) for s in got} == full
+    for s in got:
+        R.check(s)
+        assert s.checked and not s.notes and s.locked >= 1

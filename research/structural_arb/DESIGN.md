@@ -157,12 +157,22 @@ lock more than nominal; the evaluator screens on max(nominal, L).
 
 ## C. Labels and gates
 
+`RULE_DEFINED_LOCK` (renamed from `ARBITRAGE` on 2026-09-27 at the owner's request) means:
+positive locked payoff across every settlement state that the verified contract rules require
+the model to enumerate, with Kalshi's discretionary-settlement and cancellation risks shown
+separately on every record. It is **not** a claim of riskless arbitrage.
+
+The **Rule 5.11 gate** (every leg within ±$0.20 of the last traded price) is a hard
+qualification gate. Records it blocks are also written to a separate `rule511` stream, with
+`only_rule_5_11_and_or_persistence_failed`, and still get the persistence re-fetch. This
+measures what the gate removes; the results must **not** be used to loosen it.
+
 Every candidate whose top-of-book prices violate its relationship (`max(nominal, L) − Σ asks > 0`)
 is logged. Consistent observations and missing-ask observations are counted in aggregate.
 
 | Status | Meaning |
 |---|---|
-| `ARBITRAGE` | L ≥ 1 in every determinate state; verified terms (or MECNET for categorical R1-short/pairs); all gates pass; edge > 0 under **every** fee scenario at some integer size; persistence confirmed on an independent re-fetch |
+| `RULE_DEFINED_LOCK` | L ≥ 1 in every settlement state the verified contract rules require the model to enumerate; verified terms (or MECNET for categorical R1-short/pairs); all gates pass; edge > 0 under **every** fee scenario at some integer size; persistence confirmed on an independent re-fetch |
 | `GUARANTEED_STRUCTURAL_NOT_EXECUTABLE` | lock holds, some execution gate fails (fees/depth/5.11/persistence) |
 | `CANDIDATE_TERMS_UNVERIFIED` | lock holds under the conservative model; series terms not yet reviewed |
 | `STATISTICAL` | displayed prices violate the naive relationship but L < nominal (gap, ALL_NO, uncertainty) |
@@ -198,7 +208,7 @@ be within $0.20 of it, and fails when no last price exists.
   * `direct_expected`: g = $0.0001, API M, one fill per level. This is the owner's account.
   * `direct_bound`: g = $0.0001, worst-case fragmentation.
   * `nondirect_conservative`: g = $0.01, M = max(API M, PDF taker M), worst-case fragmentation.
-    This is the binding scenario for `ARBITRAGE`.
+    This is the binding scenario for `RULE_DEFINED_LOCK`.
 
   Fee waivers are ignored (conservative). `flat` and `margin_*` fee types are rejected.
 
@@ -214,7 +224,7 @@ be within $0.20 of it, and fails when no last price exists.
    * (ii) for every candidate with raw > 0, re-fetch only its legs back to back, together with
      `GET /markets/{t}` for status and last price, and evaluate those fresh books;
    * (iii) after `PERSISTENCE_REFETCH_DELAY_S`, re-fetch and re-evaluate. Persistence = still
-     `ARBITRAGE`-eligible.
+     `RULE_DEFINED_LOCK`-eligible.
 3. **CDN.** The `x-cache` header is recorded, and hits are rejected. None were observed in
    probes.
 4. **Crossed or locked books** (yes_bid + no_bid ≥ 1) are impossible on a live matching
@@ -253,12 +263,50 @@ be within $0.20 of it, and fails when no last price exists.
   inconsistencies.** Every relationship was price-consistent or lacked an ask. This is one
   snapshot, not a conclusion.
 
-## H. Remaining work (routine, High mode)
+## H. Collector protocol (implemented; to be frozen before the long collection)
 
-See the HIGH-MODE CHECKPOINT message. In short:
-* the two-phase family collector (§E.2), including terms hashing, fee-change fetching and
-  categorical MECNET scanning;
-* the leg-abandon metric;
-* updating `report.py` for schema v2;
-* long-running collection;
-* final negative/positive results report.
+`sarb/collector.py`, parameters in `sarb/config.py`:
+
+1. **Refresh.**
+   * `/series` list: one call, every 6 h.
+   * Registry terms PDFs, SHA-256: every 1 h.
+   * `/series/fee_changes` and `/events/fee_changes`: every 5 min, into the **fee ledger**.
+     The event endpoint returns ONLY future-scheduled overrides (verified 2026-09-27), so
+     overrides vanish once in force. The ledger keeps every change ever seen, and series with
+     observed overrides get M floored at the largest observed override multiplier.
+2. **Discovery and screen.** `/events` pages are paced at ≤ 4 req/s; validation run 1 saw
+   429s only here. The universe is rebuilt incrementally: specs are cached by rules/strike
+   fingerprint, families by membership. The screen uses summary quotes only:
+   * R1/R3 templates;
+   * **pairs via `screen_pairs`** (not enumerated: 600-market crypto families would give
+     180k pairs; equivalence with full enumeration is proven by a property test);
+   * MECNET categorical top-3 pairs (R1 dominance).
+3. **P2**, for each flagged candidate, in order of summary raw, capped at 40 per cycle
+   (skipped candidates are counted):
+   * the independent checker (the evaluator rejects unchecked templates);
+   * `GET /markets/{t}` for each leg;
+   * the legs' order books back-to-back;
+   * evaluation.
+4. **P3.** Persistence-eligible records are re-fetched after 1 s and re-evaluated with
+   `persistence_confirmed=True`.
+5. **AUDIT.** Two random families (≤ 30 markets) per cycle are evaluated from books,
+   regardless of the screen. `summary_missed` counts measure the screen's false-negative rate.
+6. **Streams** (`data/`, gzip JSONL):
+   * `candidates`;
+   * `rule511`;
+   * `books` (every market and order-book response, with timings and CDN headers);
+   * `statscreen` (summary-price statistical hits, deduplicated to one per key per 30 min;
+     counts are kept every cycle);
+   * `counts`, `ops`, `universe`;
+   * `sarb_fee_ledger.json`.
+7. **Unwind metric** (`evaluator.unwind_analysis`). For each leg: the conservative buy cost
+   minus the conservative proceeds from selling straight back into the displayed bids (0 if
+   there are none). The worst partial outcome is the sum of positive losses minus the smallest.
+8. **Report.** `python -m sarb.report data/<dir>` gives:
+   * statuses by phase;
+   * gate failures of lock-like records;
+   * direct-vs-broker edge signs;
+   * unwind and size distributions;
+   * 5.11 statistics;
+   * ops (request rate, 429s, latencies, P2 re-fetch, skew, P3 delay);
+   * integrity (every P2/P3 leg has market and book snapshots; every P3 has a P2).

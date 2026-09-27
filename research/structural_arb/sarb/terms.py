@@ -1,6 +1,6 @@
 """Registry of contract terms that have been VERIFIED by reading the official PDF.
 
-A family of markets can only reach the ARBITRAGE label if its series' `contract_terms_url` is in
+A family of markets can only reach the RULE_DEFINED_LOCK label if its series' `contract_terms_url` is in
 this registry AND the PDF fetched at snapshot time has the recorded SHA-256. If Kalshi edits
 the terms, the hash changes and verification lapses automatically.
 

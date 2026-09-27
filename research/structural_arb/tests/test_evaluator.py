@@ -60,10 +60,10 @@ def run(st, books, metas, fees=FEE, persist=True, now_mono=S, active=True):
     return evaluate(st, books, metas, fees, active, now_mono, NOW_UTC, persist)
 
 
-def test_true_lock_all_gates_pass_is_arbitrage():
+def test_true_lock_all_gates_pass_is_rule_defined_lock():
     st, books, metas = r2_setup()
     out, rec = run(st, books, metas)
-    assert out == "LOGGED" and rec.status == "ARBITRAGE", rec.reasons
+    assert out == "LOGGED" and rec.status == "RULE_DEFINED_LOCK", rec.reasons
     assert D(rec.raw_inconsistency) == D("0.47") - D("0.40")      # closed form: yes_bid_small - yes_ask_big
     assert rec.max_executable_size == "5"                          # depth at 0.40 is 5; next level kills edge
     edges = rec.extra["edges_by_size"]["1"]
@@ -179,3 +179,46 @@ def test_r1_long_gap_is_statistical_even_if_asks_sum_below_one():
     # asks: 0.22*3 + 0.20 = 0.86 < 1, but (199.99, 200) is an uncovered real state
     assert out == "LOGGED" and rec.status == "STATISTICAL"
     assert any(r.startswith("NOT_LOCKED:min_payoff=0@X=") for r in rec.reasons)
+
+
+def test_rule_5_11_rejections_are_flagged_for_separate_logging():
+    st, books, metas = r2_setup()
+    metas["A"] = meta("A", "0.75")
+    _, rec = run(st, books, metas, persist=None)
+    assert rec.status == "GUARANTEED_STRUCTURAL_NOT_EXECUTABLE"                  # still a hard gate
+    assert rec.extra["rule_5_11"] == {"blocked_by_rule_5_11": True, "only_rule_5_11_and_or_persistence_failed": True}
+    # still re-fetched for persistence (to measure what the gate removes) but can never be a lock
+    assert rec.extra["persistence_eligible"] is True
+    _, rec2 = run(st, books, metas, persist=True)
+    assert rec2.status == "GUARANTEED_STRUCTURAL_NOT_EXECUTABLE"
+
+
+def test_persistence_eligibility_and_unwind():
+    st, books, metas = r2_setup()
+    _, rec = run(st, books, metas, persist=None)
+    assert rec.extra["persistence_eligible"] is True
+    u = rec.extra["unwind"]["1"]
+    assert u["complete"] and set(u["per_leg"]) == {"A", "B"}
+    # buy YES A at 0.40 then sell back at YES bid 0.30 -> loss >= 0.10 + fees
+    assert D(u["per_leg"]["A"]["loss"]) > D("0.10")
+    losses = sorted(D(v["loss"]) for v in u["per_leg"].values())
+    assert D(u["worst_partial_fill_unwind_loss"]) == losses[1]
+
+
+def test_unwind_with_no_bids_values_leg_at_zero():
+    st, books, metas = r2_setup()
+    books["A"] = book("A", [], [["0.60", "5"], ["0.40", "100"]])
+    _, rec = run(st, books, metas, persist=None)
+    leg = rec.extra["unwind"]["1"]["per_leg"]["A"]
+    assert D(leg["unwind_proceeds"]) == 0 and D(leg["loss"]) == D(leg["cash_out"])
+
+
+def test_unchecked_template_is_rejected():
+    fam = R.Family([spec("A", P.gt(10)), spec("B", P.gt(12))])
+    st = R.pair_struct(fam, "A", "yes", "B", "no", lazy=True)
+    assert not st.checked
+    _, books, metas = r2_setup()
+    _, rec = run(st, books, metas)
+    assert rec.status == "REJECTED" and "FAIL:no_checker_bug" in rec.reasons
+    R.check(st)
+    assert run(st, books, metas)[1].status == "RULE_DEFINED_LOCK"

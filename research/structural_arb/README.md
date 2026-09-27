@@ -19,6 +19,10 @@ The collector needs outbound HTTPS to `api.elections.kalshi.com`.
 
 | Module | State |
 |---|---|
-| client, orderbook, fees (official, with proven bounds), payoff checker, semantics (envelope), terms registry, relationships R1–R5, evaluator, research_log | derived, adversarially tested |
-| collector | per-event prototype; must become the two-phase family collector (DESIGN §E.2) |
-| report | needs updating for schema v2 |
+| client, orderbook, fees, payoff checker, semantics, terms registry, relationships R1–R5, evaluator (incl. unwind), universe, two-phase collector, report | implemented and tested |
+| long collection | NOT started; protocol to be frozen after operational validation |
+
+```bash
+python -m sarb.collector --duration-s 1500 --data-dir data/validation_run2
+python -m sarb.report data/validation_run2
+```

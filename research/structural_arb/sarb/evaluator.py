@@ -3,7 +3,7 @@
 Pure function of its inputs (no I/O), so any snapshot can be re-evaluated offline.
 
 Label semantics (DESIGN.md §C):
-  ARBITRAGE  = GUARANTEED lock (checker L >= 1 in every determinate state, incl. ALL_NO where
+  RULE_DEFINED_LOCK = GUARANTEED lock (checker L >= 1 in every determinate state, incl. ALL_NO where
                applicable) AND verified contract terms (or MECNET for categorical R1) AND every
                gate passes AND edge > 0 under ALL fee scenarios (the binding one is non-direct
                cent rounding with worst-case fill fragmentation) AND persistence confirmed on
@@ -142,7 +142,7 @@ def evaluate(struct: Structural, books: Mapping[str, BookObs], meta: Mapping[str
     gates["age_ok"] = 0 <= age <= config.MAX_SNAPSHOT_AGE_NS
     # ---------- structural gates
     gates["locked_guaranteed"] = struct.relationship_class == "GUARANTEED" and struct.locked >= 1
-    gates["no_checker_bug"] = not any(n.startswith("BUG") for n in struct.notes)
+    gates["no_checker_bug"] = struct.checked and not any(n.startswith("BUG") for n in struct.notes)
     # ---------- fees
     fee_ok = all(isinstance(fees_or_err.get(t), FEES.ResolvedFee) for t in tick)
     gates["fees_resolved"] = fee_ok
@@ -194,9 +194,23 @@ def evaluate(struct: Structural, books: Mapping[str, BookObs], meta: Mapping[str
     elif failing:
         status = "GUARANTEED_STRUCTURAL_NOT_EXECUTABLE"
     else:
-        status = "ARBITRAGE"
+        status = "RULE_DEFINED_LOCK"
     if not failing:
         reasons.append("ALL_GATES_PASSED")
+    # Rule 5.11 stays a HARD gate. These flags only let the collector log separately the
+    # candidates it rejects, so its effect can be measured later without loosening it.
+    lock_like = status in ("GUARANTEED_STRUCTURAL_NOT_EXECUTABLE", "CANDIDATE_TERMS_UNVERIFIED", "RULE_DEFINED_LOCK")
+    other_fail = set(failing) - {"rule_5_11_within_no_cancel_range", "persistence_confirmed"}
+    rule_5_11_flags = {
+        "blocked_by_rule_5_11": "rule_5_11_within_no_cancel_range" in failing,
+        "only_rule_5_11_and_or_persistence_failed": lock_like and not other_fail
+                                                     and "rule_5_11_within_no_cancel_range" in failing,
+    }
+    persistence_eligible = lock_like and not other_fail
+    unwind = {}
+    if fee_ok:
+        for c in sorted({Decimal(1)} | ({Decimal(max_pos_size)} if max_pos_size else set())):
+            unwind[str(c)] = unwind_analysis(struct, books, fees, meta, c)
 
     legs = []
     for p in struct.positions:
@@ -224,8 +238,45 @@ def evaluate(struct: Structural, books: Mapping[str, BookObs], meta: Mapping[str
         "one_leg_discretionary_worst_payoff": str(struct.one_leg_discretionary_worst),
         "residual_risks": list(RESIDUAL_RISKS),
         "fee_provenance": {t: (f.source, str(f.multiplier), f.fee_type) for t, f in fees.items()},
+        "rule_5_11": rule_5_11_flags,
+        "persistence_eligible": persistence_eligible,
+        "unwind": unwind,
     }
     return "LOGGED", rec
+
+
+def unwind_analysis(struct: Structural, books: Mapping[str, BookObs], fees: Mapping[str, FEES.ResolvedFee],
+                    meta: Mapping[str, MarketMeta], size: Decimal) -> dict:
+    """Partial-fill exposure: legs are separate orders, so some may fill and others not. For each
+    leg: loss = conservative cash out (buy at walked asks, non-direct fee bound) minus
+    conservative proceeds from immediately selling the same side back into its displayed bids
+    (walked; the fee upper bound is subtracted). If the bid depth is insufficient, the unsold
+    remainder is valued at 0. The worst partial outcome is: every leg except one fills and is
+    unwound, i.e. the sum of positive losses minus the smallest positive loss (if >= 2 legs).
+    This is a displayed-book estimate. After a fill the book may be worse."""
+    sc = FEES.NONDIRECT_CONSERVATIVE
+    per_leg = {}
+    for p in struct.positions:
+        b = books[p.ticker].book
+        buy = walk(b.asks(p.side), size)
+        if not buy.complete:
+            per_leg[p.ticker] = {"status": "INSUFFICIENT_ASK_DEPTH"}
+            continue
+        cash = FEES.leg_cash_out(buy.fills, meta[p.ticker].series_ticker, fees[p.ticker], sc)
+        bids = b.yes_bids if p.side == "yes" else b.no_bids
+        sell = walk(bids, size)
+        m = FEES.conservative_multiplier(meta[p.ticker].series_ticker, fees[p.ticker].multiplier)
+        proceeds = Decimal(0)
+        if sell.filled:
+            bnd = FEES.order_fee_bound(sell.fills, m, sc.precision)
+            proceeds = sell.cost - bnd.upper
+        per_leg[p.ticker] = {"cash_out": str(cash), "unwind_proceeds": str(proceeds),
+                             "unwind_filled": str(sell.filled), "loss": str(cash - proceeds)}
+    losses = [Decimal(v["loss"]) for v in per_leg.values() if "loss" in v]
+    pos = sorted(max(Decimal(0), x) for x in losses)
+    worst = (sum(pos, Decimal(0)) - pos[0]) if len(pos) >= 2 else Decimal(0)
+    return {"per_leg": per_leg, "worst_partial_fill_unwind_loss": str(worst),
+            "complete": len(losses) == len(struct.positions)}
 
 
 def _terms_ok(struct: Structural) -> bool:

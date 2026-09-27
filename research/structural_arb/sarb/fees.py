@@ -212,7 +212,7 @@ DIRECT_EXPECTED = FeeScenario("direct_expected", DIRECT_PRECISION, False, True)
 DIRECT_BOUND = FeeScenario("direct_bound", DIRECT_PRECISION, False, False)
 NONDIRECT_CONSERVATIVE = FeeScenario("nondirect_conservative", NON_DIRECT_PRECISION, True, False)
 SCENARIOS = (DIRECT_EXPECTED, DIRECT_BOUND, NONDIRECT_CONSERVATIVE)
-# The ARBITRAGE label requires edge > 0 under EVERY scenario (NONDIRECT_CONSERVATIVE is the binding one).
+# The RULE_DEFINED_LOCK label requires edge > 0 under EVERY scenario (NONDIRECT_CONSERVATIVE is the binding one).
 
 
 def leg_cash_out(levels_taken: Sequence[Level], series_ticker: str, fee: ResolvedFee,
