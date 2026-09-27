@@ -1,0 +1,6 @@
+data/
+!data/.gitkeep
+*.jsonl
+*.jsonl.gz
+__pycache__/
+.pytest_cache/
