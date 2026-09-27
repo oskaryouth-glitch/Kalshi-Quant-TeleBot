@@ -6,7 +6,7 @@ and noting the reason in the research log.
 """
 from decimal import Decimal
 
-CONFIG_VERSION = "2026-09-27.2-validation"
+CONFIG_VERSION = "2026-09-27.3-validation-feeledger"
 
 PUBLIC_BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
 
@@ -36,7 +36,7 @@ CYCLE_TARGET_S = 60                      # screening cycle cadence
 MAX_PHASE2_CANDIDATES_PER_CYCLE = 40     # budget cap; skipped candidates are counted, not dropped silently
 AUDIT_FAMILIES_PER_CYCLE = 2             # random families fetched from books regardless of the summary screen
 AUDIT_MAX_MARKETS_PER_FAMILY = 30
-SERIES_REFRESH_S = 6 * 3600
+SERIES_REFRESH_S = 6 * 3600          # universe metadata only; fees use fresh per-leg series objects
 TERMS_REFRESH_S = 3600
 FEE_CHANGES_REFRESH_S = 300
 EVENTS_PAGE_MIN_INTERVAL_S = 0.25        # summary pages paced <= 4/s (run1 saw 429s only on /events pages)

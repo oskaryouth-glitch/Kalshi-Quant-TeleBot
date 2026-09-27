@@ -37,6 +37,7 @@ from decimal import Decimal
 import requests
 
 from . import config
+from .fee_ledger import FeeLedger, FeeUnresolved
 from . import relationships as R
 from . import terms as TERMS
 from . import universe as U
@@ -75,7 +76,7 @@ class Collector:
         self.c = client
         self.out = Streams(data_dir)
         self.cache = U.TemplateCache()
-        self.ledger = U.FeeLedger(os.path.join(data_dir, "sarb_fee_ledger.json"))
+        self.ledger = FeeLedger(os.path.join(data_dir, "sarb_fee_ledger.jsonl"))
         self.series: dict[str, dict] = {}
         self.series_changes: list[dict] = []
         self.terms_sha: dict[str, str] = {}
@@ -117,7 +118,7 @@ class Collector:
         if now - self._last["fees"] >= config.FEE_CHANGES_REFRESH_S:
             r = self.c.get_retry("/series/fee_changes", {"show_historical": "true"})
             if r.status == 200:
-                self.series_changes = r.body.get("series_fee_change_arr", [])
+                info["series_changes_new"] = self.ledger.add_series_changes(r.body.get("series_fee_change_arr", []))
             rows, cur = [], None
             for _ in range(100):
                 p = {"limit": 1000, **({"cursor": cur} if cur else {})}
@@ -128,7 +129,7 @@ class Collector:
                 cur = rr.body.get("cursor")
                 if not cur:
                     break
-            info["fee_ledger_new"] = self.ledger.update(rows, _now_iso())
+            info["event_changes_new"] = self.ledger.add_event_changes(rows)
             self._last["fees"] = now
         return info
 
@@ -143,6 +144,8 @@ class Collector:
             if r.status != 200:
                 raise RuntimeError(f"events page status {r.status}")
             evs += r.body.get("events", [])
+            for ev in r.body.get("events", []):
+                self.ledger.observe_event(ev, r.recv_utc_ns)
             cur = r.body.get("cursor")
             if not cur:
                 break
@@ -179,14 +182,37 @@ class Collector:
                                      "headers": dict(r.headers), "body": r.body})
         return metas, books
 
-    def _fees(self, u: U.Universe, tickers: list[str]) -> dict:
-        at = _now_iso()
+    def _fees(self, u: U.Universe, tickers: list[str], phase: str, group: str) -> tuple[dict, int]:
+        """Observe the event and series objects of every leg NOW (after the books), then resolve
+        the fee in force at the snapshot time via the time-versioned ledger. Returns (fees, t)."""
+        evs = sorted({u.raw[t][0]["event_ticker"] for t in tickers})
+        sers = sorted({u.raw[t][0].get("series_ticker", "") for t in tickers})
+        for e in evs:
+            r = self.c.get(f"/events/{e}")
+            if r.status == 200 and isinstance(r.body, dict) and r.body.get("event"):
+                self.ledger.observe_event(r.body["event"], r.recv_utc_ns)
+            self.out.write("books", {"kind": "event", "phase": phase, "group": group, "ticker": e, "status": r.status,
+                                     "recv_utc_ns": r.recv_utc_ns,
+                                     "fee_fields": {k: (r.body.get("event") or {}).get(k) for k in
+                                                    ("fee_type_override", "fee_multiplier_override")}
+                                     if isinstance(r.body, dict) else None})
+        for sr in sers:
+            r = self.c.get(f"/series/{sr}")
+            if r.status == 200 and isinstance(r.body, dict) and r.body.get("series"):
+                self.ledger.observe_series(r.body, r.recv_utc_ns)
+            self.out.write("books", {"kind": "series", "phase": phase, "group": group, "ticker": sr, "status": r.status,
+                                     "recv_utc_ns": r.recv_utc_ns,
+                                     "fee_fields": {k: (r.body.get("series") or {}).get(k) for k in ("fee_type", "fee_multiplier")}
+                                     if isinstance(r.body, dict) else None})
+        t = time.time_ns()
         out = {}
-        for t in tickers:
-            ev, _ = u.raw[t]
-            st = ev.get("series_ticker", "")
-            out[t] = U.resolve_leg_fee(st, ev["event_ticker"], at, self.series.get(st), self.series_changes, self.ledger)
-        return out
+        for tk in tickers:
+            ev, _ = u.raw[tk]
+            try:
+                out[tk] = self.ledger.resolve(ev.get("series_ticker", ""), ev["event_ticker"], t)
+            except FeeUnresolved as e:
+                out[tk] = e
+        return out, t
 
     def _log_record(self, rec, phase: str, group: str, cycle: str, extra: dict) -> None:
         rec.extra.update({"phase": phase, "group": group, "cycle": cycle, "price_source": "orderbook", **extra})
@@ -208,8 +234,8 @@ class Collector:
         legs = [p.ticker for p in st.positions]
         t0 = time.monotonic_ns()
         metas, books = self._fetch_legs(u, legs, "P2", group)
-        fees = self._fees(u, legs)
-        out, rec = evaluate(st, books, metas, fees, self._exchange_active, time.monotonic_ns(), time.time_ns(), None)
+        fees, t_fee = self._fees(u, legs, "P2", group)
+        out, rec = evaluate(st, books, metas, fees, self._exchange_active, time.monotonic_ns(), t_fee, None)
         ok_books = [b for b in books.values() if b.recv_mono_ns]
         if ok_books:
             ops["p2_leg_fetch_ms"].append((max(b.recv_mono_ns for b in ok_books) - t0) / 1e6)
@@ -225,8 +251,8 @@ class Collector:
         if wait > 0:
             time.sleep(wait)
         metas3, books3 = self._fetch_legs(u, legs, "P3", group)
-        fees3 = self._fees(u, legs)
-        out3, rec3 = evaluate(st, books3, metas3, fees3, self._exchange_active, time.monotonic_ns(), time.time_ns(), True)
+        fees3, t_fee3 = self._fees(u, legs, "P3", group)
+        out3, rec3 = evaluate(st, books3, metas3, fees3, self._exchange_active, time.monotonic_ns(), t_fee3, True)
         ok3 = [b for b in books3.values() if b.recv_mono_ns]
         if ok3:
             ops["p3_delay_ms"].append((min(b.sent_mono_ns for b in ok3) - p2_last) / 1e6)
@@ -252,9 +278,9 @@ class Collector:
                                          "status": r.status, "sent_utc_ns": r.sent_utc_ns, "recv_utc_ns": r.recv_utc_ns,
                                          "headers": dict(r.headers), "body": r.body})
             metas = {t: u.meta(t, fetched_mono) for t in tickers}
-            fees = self._fees(u, tickers)
+            fees, t_fee = self._fees(u, tickers, "AUDIT", group)
             for st in R.numeric_family_templates(fam):          # eager: all templates incl. pairs
-                out, rec = evaluate(st, books, metas, fees, self._exchange_active, time.monotonic_ns(), time.time_ns(), None)
+                out, rec = evaluate(st, books, metas, fees, self._exchange_active, time.monotonic_ns(), t_fee, None)
                 sk = screen.get((st.relationship, st.positions))
                 counts[f"AUDIT|{st.relationship}|{rec.status if rec else out}"] += 1
                 if out == "LOGGED":
@@ -278,7 +304,7 @@ class Collector:
                                     "families": len(u.families), "templates_r1_r3": len(u.structs),
                                     "categorical_events": len(u.categorical), "reject_counts": u.reject_counts,
                                     "build_s": round(u.build_seconds, 2), "refresh": refresh,
-                                    "fee_ledger_size": len(self.ledger.changes),
+                                    "fee_ledger_changes": sum(len(v) for v in self.ledger.changes.values()),
                                     "terms_verified_markets": sum(1 for s in u.specs.values() if s.terms_status == "TERMS_VERIFIED")})
         # ---- SCREEN
         queue, screen = [], {}

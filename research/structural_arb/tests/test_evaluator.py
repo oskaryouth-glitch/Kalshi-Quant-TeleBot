@@ -120,7 +120,8 @@ def test_unresolved_fee_rejected():
     fees = dict(FEE)
     fees["B"] = FEES.UnsupportedFee("flat")
     _, rec = run(st, books, metas, fees=fees)
-    assert rec.status == "REJECTED" and "FAIL:fees_resolved" in rec.reasons
+    assert rec.status == "FEE_UNRESOLVED" and "FAIL:fees_resolved" in rec.reasons
+    assert "B" in rec.extra["fee_unresolved"]
 
 
 def test_unverified_terms_capped():

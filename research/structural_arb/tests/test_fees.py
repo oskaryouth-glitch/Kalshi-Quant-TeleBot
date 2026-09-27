@@ -126,58 +126,6 @@ def test_fee_symmetric_yes_no():
         assert a == b
 
 
-SERIES_CH = [
-    {"series_ticker": "KXA", "fee_type": "quadratic", "fee_multiplier": 1, "scheduled_ts": "2026-01-01T00:00:00Z", "id": "s1"},
-    {"series_ticker": "KXA", "fee_type": "quadratic", "fee_multiplier": 0.5, "scheduled_ts": "2026-08-07T00:00:00Z", "id": "s2"},
-    {"series_ticker": "KXF", "fee_type": "flat", "fee_multiplier": 1, "scheduled_ts": "2026-01-01T00:00:00Z", "id": "s3"},
-    {"series_ticker": "KXL", "fee_type": "quadratic", "fee_multiplier": 1, "scheduled_ts": "2026-12-01T00:00:00Z", "id": "s4"},
-]
-EVENT_CH = [
-    {"event_ticker": "KXA-E1", "series_ticker": "KXA", "fee_type_override": "quadratic", "fee_multiplier_override": 1,
-     "scheduled_ts": "2026-09-27T19:10:00Z", "id": "e1"},
-    {"event_ticker": "KXA-E2", "series_ticker": "KXA", "fee_type_override": "quadratic", "fee_multiplier_override": 2,
-     "scheduled_ts": "2026-09-01T00:00:00Z", "id": "e2"},
-    {"event_ticker": "KXA-E2", "series_ticker": "KXA", "fee_type_override": None, "fee_multiplier_override": None,
-     "scheduled_ts": "2026-09-10T00:00:00Z", "id": "e3"},
-]
-
-
-def test_resolve_fee_precedence_and_time():
-    r = F.resolve_fee("KXA", "KXA-E1", "2026-09-27T19:00:00Z", None, SERIES_CH, EVENT_CH)
-    assert r.multiplier == D("0.5") and r.source.startswith("series_change:s2")
-    r = F.resolve_fee("KXA", "KXA-E1", "2026-09-27T19:10:00Z", None, SERIES_CH, EVENT_CH)
-    assert r.multiplier == 1 and r.source.startswith("event_override:e1")     # in-game override
-    r = F.resolve_fee("KXA", "KXA-E2", "2026-09-05T00:00:00Z", None, SERIES_CH, EVENT_CH)
-    assert r.multiplier == 2
-    r = F.resolve_fee("KXA", "KXA-E2", "2026-09-11T00:00:00Z", None, SERIES_CH, EVENT_CH)
-    assert r.multiplier == D("0.5")                                            # override cleared
-    r = F.resolve_fee("KXA", "X", "2026-03-01T00:00:00Z", None, SERIES_CH, EVENT_CH)
-    assert r.multiplier == 1
-
-
-def test_resolve_fee_rejects_unknown_and_unsupported():
-    with pytest.raises(F.UnsupportedFee):
-        F.resolve_fee("KXF", "e", "2026-09-01T00:00:00Z", None, SERIES_CH, [])
-    with pytest.raises(F.UnsupportedFee):   # only a FUTURE change is known -> value now unknown
-        F.resolve_fee("KXL", "e", "2026-09-01T00:00:00Z", {"series": {"fee_type": "quadratic", "fee_multiplier": 1}},
-                      SERIES_CH, [])
-    with pytest.raises(F.UnsupportedFee):
-        F.resolve_fee("KXZ", "e", "2026-09-01T00:00:00Z", {"series": {}}, SERIES_CH, [])
-    with pytest.raises(F.UnsupportedFee):
-        F.resolve_fee("KXZ", "e", "2026-09-01T00:00:00Z",
-                      {"series": {"fee_type": "margin_market_maker_program_fees", "fee_multiplier": 0}}, SERIES_CH, [])
-    r = F.resolve_fee("KXZ", "e", "2026-09-01T00:00:00Z",
-                      {"series": {"fee_type": "quadratic_with_combo_maker_fees", "fee_multiplier": 1}}, SERIES_CH, [])
-    assert r.source == "series_current"
-
-
-def test_conservative_multiplier():
-    assert F.conservative_multiplier("KXMLBGAME", D("0.5")) == 1         # PDF taker 1 > API 0.5
-    assert F.conservative_multiplier("KXBTCY", D("0.5")) == D("0.5")     # PDF 0 < API
-    assert F.conservative_multiplier("KXMVECROSSCATEGORY", D("0.5")) == 1
-    assert F.conservative_multiplier("KXUNLISTED", D("0.5")) == D("0.5")
-
-
 def test_leg_cash_out_scenarios_ordering():
     lv = [Level(D("0.953"), D(10)), Level(D("0.96"), D(5))]
     rf = F.ResolvedFee("quadratic", D("0.5"), "t")
@@ -185,3 +133,14 @@ def test_leg_cash_out_scenarios_ordering():
     bnd = F.leg_cash_out(lv, "KXMLBGAME", rf, F.DIRECT_BOUND)
     con = F.leg_cash_out(lv, "KXMLBGAME", rf, F.NONDIRECT_CONSERVATIVE)
     assert exp < bnd < con
+
+
+def test_scenarios_use_the_effective_multiplier_only():
+    """No scenario substitutes a historical or maximum multiplier (removed 2026-09-27)."""
+    lv = [Level(D("0.50"), D(100))]
+    half = F.ResolvedFee("quadratic", D("0.5"), "t")
+    one = F.ResolvedFee("quadratic", D(1), "t")
+    for sc in F.SCENARIOS:
+        assert F.leg_cash_out(lv, "KXMLBGAME", half, sc) < F.leg_cash_out(lv, "KXMLBGAME", one, sc)
+    assert F.leg_cash_out(lv, "KXMLBGAME", half, F.DIRECT_EXPECTED) == D("50") + D("0.875")
+    assert not hasattr(F, "conservative_multiplier") and not hasattr(F, "PDF_TAKER_MULTIPLIER")

@@ -16,6 +16,8 @@ Label semantics (DESIGN.md §C):
                are not in the verified registry (sarb/terms.py).
   STATISTICAL = displayed prices violate the naive relationship, but the checker finds no lock
                (coverage gap, ALL_NO state, semantic uncertainty, ...).
+  FEE_UNRESOLVED = the fee configuration in force at the snapshot could not be established
+               (sarb/fee_ledger.py); nothing is priced with a guessed fee.
   REJECTED   = data / timing / metadata failure; the prices cannot be trusted.
 """
 from __future__ import annotations
@@ -146,6 +148,7 @@ def evaluate(struct: Structural, books: Mapping[str, BookObs], meta: Mapping[str
     # ---------- fees
     fee_ok = all(isinstance(fees_or_err.get(t), FEES.ResolvedFee) for t in tick)
     gates["fees_resolved"] = fee_ok
+    fee_unresolved = {t: str(fees_or_err.get(t)) for t in tick if not isinstance(fees_or_err.get(t), FEES.ResolvedFee)}
     fees = {t: fees_or_err[t] for t in tick} if fee_ok else {}
 
     # ---------- depth / edges / sizes
@@ -184,7 +187,9 @@ def evaluate(struct: Structural, books: Mapping[str, BookObs], meta: Mapping[str
     reasons = [f"FAIL:{k}" for k in failing]
     data_fail = [k for k in failing if k.startswith(("market_active_fresh", "exchange_trading_active", "skew_ok",
                                                       "age_ok", "no_checker_bug", "fees_resolved"))]
-    if data_fail:
+    if not fee_ok:
+        status = "FEE_UNRESOLVED"          # the fee in force at the snapshot could not be established
+    elif data_fail:
         status = "REJECTED"
     elif struct.relationship_class != "GUARANTEED" or struct.locked < 1:
         status = "STATISTICAL"
@@ -238,6 +243,7 @@ def evaluate(struct: Structural, books: Mapping[str, BookObs], meta: Mapping[str
         "one_leg_discretionary_worst_payoff": str(struct.one_leg_discretionary_worst),
         "residual_risks": list(RESIDUAL_RISKS),
         "fee_provenance": {t: (f.source, str(f.multiplier), f.fee_type) for t, f in fees.items()},
+        "fee_unresolved": fee_unresolved,
         "rule_5_11": rule_5_11_flags,
         "persistence_eligible": persistence_eligible,
         "unwind": unwind,
@@ -265,7 +271,7 @@ def unwind_analysis(struct: Structural, books: Mapping[str, BookObs], fees: Mapp
         cash = FEES.leg_cash_out(buy.fills, meta[p.ticker].series_ticker, fees[p.ticker], sc)
         bids = b.yes_bids if p.side == "yes" else b.no_bids
         sell = walk(bids, size)
-        m = FEES.conservative_multiplier(meta[p.ticker].series_ticker, fees[p.ticker].multiplier)
+        m = fees[p.ticker].multiplier
         proceeds = Decimal(0)
         if sell.filled:
             bnd = FEES.order_fee_bound(sell.fills, m, sc.precision)

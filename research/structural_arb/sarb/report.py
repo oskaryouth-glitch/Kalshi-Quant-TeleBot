@@ -117,7 +117,9 @@ def summarize(data_dir: str) -> dict:
     out["integrity"] = {"records_missing_leg_snapshots": missing, "p3_without_p2": p3_without_p2,
                         "universe_snapshots": len(uni), "cycles_in_counts": sum(1 for _ in _read(data_dir, "counts")),
                         "terms_verified_markets_last": uni[-1]["terms_verified_markets"] if uni else None,
-                        "fee_ledger_size_last": uni[-1]["fee_ledger_size"] if uni else None}
+                        "fee_ledger_changes_last": uni[-1].get("fee_ledger_changes") if uni else None}
+    out["fee_unresolved_reasons"] = dict(Counter(v.split(":")[1] if ":" in v else v
+                                                 for r in cands for v in (r["extra"].get("fee_unresolved") or {}).values()))
     return out
 
 

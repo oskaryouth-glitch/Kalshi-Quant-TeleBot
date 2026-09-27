@@ -2,9 +2,8 @@
 
 Formula (Fee Schedule PDF, effective 2026-07-07, p.2):
     taker model fee = M x 0.07 x C x P x (1 - P)
-    M = the multiplier for the series or event. The live API is authoritative (GET /series/{t},
-    overridden by GET /events/fee_changes); the PDF table is used only for the conservative
-    max().
+    M = the multiplier in force at the snapshot time for the series/event, from the
+    time-versioned fee ledger (sarb/fee_ledger.py). No maximum or historical substitution.
 
 Rounding (docs.kalshi.com/getting_started/fee_rounding), for each fill k of ONE order:
     revenue_k    = -P_k * c_k                        (buyer)
@@ -51,25 +50,9 @@ MIN_CONTRACT_UNIT = Decimal("0.01")          # docs: fixed-point minimum granula
 SUPPORTED_TAKER_TYPES = frozenset({"quadratic", "quadratic_with_maker_fees",
                                    "quadratic_with_combo_maker_fees"})
 
-# Fee Schedule PDF pp.6-11 "Non-Standard Fees" taker multipliers (maker, taker). Used ONLY to
-# raise M in the conservative scenario: max(API M, PDF taker M). KXMVE was read from the
-# rendered page 8 (maker 2, taker 1) because text extraction garbled that row.
-PDF_TAKER_MULTIPLIER = {
-    **{k: Decimal(1) for k in (
-        "KXAAAGASM KXATPMATCH KXBALLONDOR KXBTCMAX150 KXCPI KXCPIYOY KXEGGS KXEMMYCACTO "
-        "KXEMMYCACTR KXEMMYCSERIES KXEMMYDACTO KXEMMYDACTR KXEMMYDSERIES KXFED KXFEDDECISION "
-        "KXGDP KXHEISMAN KXINXY KXIPO KXLALIGA KXLLM1 KXMARMAD KXMENWORLDCUP KXMLB KXMLBAL "
-        "KXMLBASGAME KXMLBGAME KXMLBNL KXMVE KXNASDAQ100Y KXNBA KXNBAEAST KXNBAMVP KXNBAROY "
-        "KXNBAWEST KXNCAAF KXNCAAFACC KXNCAAFB10 KXNCAAFB12 KXNCAAFGAME KXNCAAFPLAYOFF KXNCAAFSEC "
-        "KXNFLAFCCHAMP KXNFLAFCEAST KXNFLAFCNORTH KXNFLAFCSOUTH KXNFLAFCWEST KXNFLCOTY KXNFLCPOTY "
-        "KXNFLDPOTY KXNFLDROTY KXNFLGAME KXNFLMVP KXNFLNFCCHAMP KXNFLNFCEAST KXNFLNFCNORTH "
-        "KXNFLNFCSOUTH KXNFLNFCWEST KXNFLOPOTY KXNFLOROTY KXNHL KXNHLEAST KXNHLWEST KXPAYROLLS "
-        "KXPGARYDER KXPGASOLHEIM KXPGATOUR KXRATECUTCOUNT KXSB KXSUPERBOWLHEADLINE KXU3 KXUCL "
-        "KXUCLGAME KXWCGAME KXWNBA KXWNBAGAME KXWTAMATCH").split()},
-    **{k: Decimal(0) for k in (
-        "KXBTCY KXCITRINI KXDOED KXELECTIRAN KXETHY KXGAMBLINGREPEAL KXGREENLAND "
-        "KXIRANDEMOCRACY KXLAYOFFSYINFO KXPAHLAVIHEAD").split()},
-}
+# NOTE: the PDF's non-standard multiplier table is NOT used. The multiplier in force comes only
+# from the time-versioned fee ledger (sarb/fee_ledger.py). Substituting historical or maximum
+# values was removed on 2026-09-27: it can overstate AND understate the actual fee.
 
 
 class UnsupportedFee(ValueError):
@@ -149,53 +132,11 @@ def order_fee_bound(levels_taken: Sequence[Level], multiplier: Decimal, precisio
     return FeeBound(model, upper, n, min_fill_unit, on_grid, principal)
 
 
-# ------------------------------------------------------------------ fee resolution (M, type)
-
 @dataclass(frozen=True)
 class ResolvedFee:
     fee_type: str
     multiplier: Decimal
-    source: str               # provenance for the research log
-
-
-def resolve_fee(series_ticker: str, event_ticker: str, at_iso: str, series_body: dict | None,
-                series_changes: Iterable[dict], event_changes: Iterable[dict]) -> ResolvedFee:
-    """Fee type and multiplier in force at time `at_iso` (ISO-8601 UTC string).
-    Precedence: the latest event override with scheduled_ts <= at. A null override clears it,
-    and the series value is used instead. Series value: the latest series change with
-    scheduled_ts <= at; if there is none, the current GET /series value, but only when no
-    series change is scheduled after `at` (otherwise the value in force is unknown ->
-    UnsupportedFee)."""
-    ev = sorted((c for c in event_changes if c.get("event_ticker") == event_ticker
-                 and c.get("scheduled_ts", "") <= at_iso), key=lambda c: c["scheduled_ts"])
-    if ev and ev[-1].get("fee_type_override") is not None and ev[-1].get("fee_multiplier_override") is not None:
-        c = ev[-1]
-        rf = ResolvedFee(str(c["fee_type_override"]), Decimal(str(c["fee_multiplier_override"])),
-                         f"event_override:{c.get('id')}@{c['scheduled_ts']}")
-    else:
-        sc = [c for c in series_changes if c.get("series_ticker") == series_ticker]
-        past = sorted((c for c in sc if c.get("scheduled_ts", "") <= at_iso), key=lambda c: c["scheduled_ts"])
-        if past:
-            c = past[-1]
-            rf = ResolvedFee(str(c["fee_type"]), Decimal(str(c["fee_multiplier"])),
-                             f"series_change:{c.get('id')}@{c['scheduled_ts']}")
-        else:
-            if any(c.get("scheduled_ts", "") > at_iso for c in sc):
-                raise UnsupportedFee(f"{series_ticker}: fee before first recorded change is unknown")
-            s = (series_body or {}).get("series", series_body or {})
-            if s.get("fee_type") is None or s.get("fee_multiplier") is None:
-                raise UnsupportedFee(f"{series_ticker}: series fee fields missing")
-            rf = ResolvedFee(str(s["fee_type"]), Decimal(str(s["fee_multiplier"])), "series_current")
-    if rf.fee_type not in SUPPORTED_TAKER_TYPES:
-        raise UnsupportedFee(f"{series_ticker}/{event_ticker}: fee_type {rf.fee_type!r} not modelled")
-    return rf
-
-
-def conservative_multiplier(series_ticker: str, api_multiplier: Decimal) -> Decimal:
-    pdf = PDF_TAKER_MULTIPLIER.get(series_ticker)
-    if pdf is None and series_ticker.startswith("KXMVE"):
-        pdf = PDF_TAKER_MULTIPLIER["KXMVE"]
-    return max(api_multiplier, pdf) if pdf is not None else api_multiplier
+    source: str               # provenance for the research log (see fee_ledger.py)
 
 
 # ------------------------------------------------------------------ scenarios
@@ -204,13 +145,12 @@ def conservative_multiplier(series_ticker: str, api_multiplier: Decimal) -> Deci
 class FeeScenario:
     name: str
     precision: Decimal
-    conservative_m: bool
     exact_single_fill_per_level: bool   # True: exact algorithm, one fill per level (estimate)
 
 
-DIRECT_EXPECTED = FeeScenario("direct_expected", DIRECT_PRECISION, False, True)
-DIRECT_BOUND = FeeScenario("direct_bound", DIRECT_PRECISION, False, False)
-NONDIRECT_CONSERVATIVE = FeeScenario("nondirect_conservative", NON_DIRECT_PRECISION, True, False)
+DIRECT_EXPECTED = FeeScenario("direct_expected", DIRECT_PRECISION, True)
+DIRECT_BOUND = FeeScenario("direct_bound", DIRECT_PRECISION, False)
+NONDIRECT_CONSERVATIVE = FeeScenario("nondirect_conservative", NON_DIRECT_PRECISION, False)
 SCENARIOS = (DIRECT_EXPECTED, DIRECT_BOUND, NONDIRECT_CONSERVATIVE)
 # The RULE_DEFINED_LOCK label requires edge > 0 under EVERY scenario (NONDIRECT_CONSERVATIVE is the binding one).
 
@@ -218,7 +158,7 @@ SCENARIOS = (DIRECT_EXPECTED, DIRECT_BOUND, NONDIRECT_CONSERVATIVE)
 def leg_cash_out(levels_taken: Sequence[Level], series_ticker: str, fee: ResolvedFee,
                  scenario: FeeScenario) -> Decimal:
     """Principal plus fee. For bound scenarios this is a strict upper bound on the fee."""
-    m = conservative_multiplier(series_ticker, fee.multiplier) if scenario.conservative_m else fee.multiplier
+    m = fee.multiplier      # the multiplier actually in force at the snapshot (fee_ledger)
     if scenario.exact_single_fill_per_level:
         return order_fee_exact(levels_taken, m, scenario.precision).cash_out
     b = order_fee_bound(levels_taken, m, scenario.precision)

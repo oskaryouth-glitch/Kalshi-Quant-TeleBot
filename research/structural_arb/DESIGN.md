@@ -204,13 +204,60 @@ be within $0.20 of it, and fails when no last price exists.
     Proof: the rebate cap never binds, so the accumulator stays below g.
   * (B3) Otherwise, net < Σ tf + n·g.
   * Checked on 4,800 random fragmentations, plus a 100-fill adversarial case.
-* **Scenarios**, all reported for every candidate:
-  * `direct_expected`: g = $0.0001, API M, one fill per level. This is the owner's account.
+* **Scenarios**, all reported for every candidate, and all using the multiplier **in force at
+  the snapshot**:
+  * `direct_expected`: g = $0.0001, one fill per level. This is the owner's account.
   * `direct_bound`: g = $0.0001, worst-case fragmentation.
-  * `nondirect_conservative`: g = $0.01, M = max(API M, PDF taker M), worst-case fragmentation.
-    This is the binding scenario for `RULE_DEFINED_LOCK`.
+  * `nondirect_conservative`: g = $0.01, worst-case fragmentation. This is the binding
+    scenario for `RULE_DEFINED_LOCK`.
 
-  Fee waivers are ignored (conservative). `flat` and `margin_*` fee types are rejected.
+  Fee waivers are ignored (conservative). `flat` and `margin_*` fee types are unresolved.
+
+### D.1 Time-versioned fee ledger (`sarb/fee_ledger.py`, replaces the "max observed multiplier" floor)
+
+**Audit of the replaced design (2026-09-27).** The previous floor, "M ≥ the largest override
+ever observed in the series", and the conservative `max(API M, PDF taker M)` **could produce a
+wrong current fee in both directions**:
+* **Understatement:** an event override already in force before the collector first saw it
+  never appears in `/events/fee_changes` (future-only), so the series value was used.
+* **Overstatement:** pre-game MLB events at true M=0.5 were charged the in-game maximum of 1;
+  decreases and cleared overrides were ignored; the out-of-date PDF table raised
+  KXMLBGAME to 1.
+
+Both were removed. No maximum, floor or historical substitution remains.
+
+**Official facts used:**
+* F1 `/series/fee_changes?show_historical=true` returns *all* previous and upcoming series
+  changes.
+* F2 The Series object equals the latest change in that history (checked live on 5 series).
+* F3 Event objects carry `fee_type_override` / `fee_multiplier_override`, which "when present,
+  take precedence over the series-level fee" (omitempty, so absent means no override).
+* F4 `/events/fee_changes` lists only future event changes and has no history parameter. The
+  WebSocket `event_fee_update` requires authentication.
+
+**Resolution at snapshot time t:**
+1. Every P2/P3/AUDIT leg gets a fresh `GET /events/{e}` and `GET /series/{s}` after its books,
+   so the event state is *observed* at most 30 s before t. Any recorded scheduled change
+   between the observation and t is applied.
+2. If no override is in force, the series layer is the latest of the complete history and the
+   fresh series observation, with consistency checks.
+3. The result is **`FEE_UNRESOLVED`** (a separate status, with the reason logged, e.g.
+   `EVENT_OBSERVATION_STALE`) when:
+   * the event or series was not observed, or the observation is stale;
+   * the schedule and the observed object disagree;
+   * t is within 60 s of a known scheduled change (the API's switch instant is undocumented);
+   * the fee type is not modelled.
+4. **Persistence.** Append-only JSONL holding the scheduled changes plus state-change points of
+   observations. Freshness is in memory only, so after a restart nothing resolves until
+   re-observed.
+5. **Tests** (`tests/test_fee_ledger.py`) cover:
+   * fee increases and decreases;
+   * a temporary override, then expiry and reversion;
+   * multiple changes, with the latest winning and no leakage across events;
+   * an override in force before it was first seen;
+   * downtime across an effective timestamp, for both event and series changes;
+   * conflicts, the boundary guard and unsupported types;
+   * restart from persisted history.
 
 ## E. Timing and execution audit
 
@@ -270,10 +317,10 @@ be within $0.20 of it, and fails when no last price exists.
 1. **Refresh.**
    * `/series` list: one call, every 6 h.
    * Registry terms PDFs, SHA-256: every 1 h.
-   * `/series/fee_changes` and `/events/fee_changes`: every 5 min, into the **fee ledger**.
-     The event endpoint returns ONLY future-scheduled overrides (verified 2026-09-27), so
-     overrides vanish once in force. The ledger keeps every change ever seen, and series with
-     observed overrides get M floored at the largest observed override multiplier.
+   * `/series/fee_changes` (full history) and `/events/fee_changes` (future only): every 5 min,
+     into the **time-versioned fee ledger** (§D.1). Event objects are observed on every
+     `/events` page, and fresh `/events/{e}` and `/series/{s}` objects are fetched for every
+     evaluated leg.
 2. **Discovery and screen.** `/events` pages are paced at ≤ 4 req/s; validation run 1 saw
    429s only here. The universe is rebuilt incrementally: specs are cached by rules/strike
    fingerprint, families by membership. The screen uses summary quotes only:

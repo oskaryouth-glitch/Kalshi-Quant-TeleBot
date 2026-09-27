@@ -35,8 +35,9 @@ class Resp:
 
 
 class Session:
-    def __init__(self, last_a="0.40"):
+    def __init__(self, last_a="0.40", ev_override=None, series_fee=("quadratic", 1)):
         self.headers = {}
+        self.ev_override, self.series_fee = ev_override, series_fee
         self.paths = []
         self.markets = {"A": market("A", 10, "0.40", "0.72", last_a), "B": market("B", 12, "0.55", "0.53", "0.47")}
         self.books = {"A": {"orderbook_fp": {"yes_dollars": [["0.30", "50"]], "no_dollars": [["0.40", "100"], ["0.60", "5"]]}},
@@ -55,6 +56,13 @@ class Session:
             return Resp({"series_fee_change_arr": []})
         if path == "/events/fee_changes":
             return Resp({"event_fee_changes": [], "cursor": ""})
+        if path.startswith("/events/") and path != "/events/fee_changes":
+            return Resp({"event": {"event_ticker": path.split("/")[2], "series_ticker": "KXFAKE",
+                                   **({"fee_type_override": "quadratic", "fee_multiplier_override": self.ev_override}
+                                      if self.ev_override is not None else {})}})
+        if path.startswith("/series/") and path != "/series/fee_changes":
+            return Resp({"series": {"ticker": "KXFAKE", "fee_type": self.series_fee[0], "fee_multiplier": self.series_fee[1],
+                                    "contract_terms_url": FAKE_TERMS}})
         if path == "/events":
             ev = {"event_ticker": "KXFAKE-99", "series_ticker": "KXFAKE", "mutually_exclusive": False,
                   "settlement_sources": [], "markets": list(self.markets.values())}
@@ -104,7 +112,8 @@ def test_cycle_records_everything_and_confirms_lock(tmp_path, fake_registry):
     books = read(tmp_path, "books")
     for phase in ("P2", "P3"):
         kinds = sorted((b["kind"], b["ticker"]) for b in books if b["phase"] == phase)
-        assert kinds == [("market", "A"), ("market", "B"), ("orderbook", "A"), ("orderbook", "B")]
+        assert kinds == [("event", "KXFAKE-99"), ("market", "A"), ("market", "B"),
+                         ("orderbook", "A"), ("orderbook", "B"), ("series", "KXFAKE")]
     assert any(b["phase"] == "AUDIT" for b in books)
     stat = read(tmp_path, "statscreen")
     assert any(r["relationship"] == "R1_LONG" and r["price_source"] == "events_summary_screen_only" for r in stat)
@@ -154,3 +163,21 @@ def test_statscreen_deduplicated_across_cycles(tmp_path, fake_registry):
     n = sum(1 for r in read(tmp_path, "statscreen") if r["relationship"] == "R1_LONG")
     counts = [r["counts"] for r in read(tmp_path, "counts")]
     assert n == 1 and counts[1].get("STATSCREEN|deduplicated", 0) >= 1
+
+
+def test_fee_in_force_is_observed_and_recorded(tmp_path, fake_registry):
+    run_cycle(tmp_path, Session(ev_override=2))
+    p2 = [r for r in read(tmp_path, "candidates") if r["extra"]["phase"] == "P2"]
+    prov = p2[0]["extra"]["fee_provenance"]
+    # M=2 override doubles fees: the planted 0.07 edge no longer survives -> not a lock
+    assert p2[0]["status"] == "GUARANTEED_STRUCTURAL_NOT_EXECUTABLE"
+    assert "FAIL:edge_positive_all_scenarios_some_size" in p2[0]["reasons"]
+    assert all(v[1] == "2" and v[0].startswith("event_object_observed") for v in prov.values())
+    kinds = {b["kind"] for b in read(tmp_path, "books") if b["phase"] == "P2"}
+    assert {"event", "series", "market", "orderbook"} <= kinds
+
+
+def test_unsupported_fee_type_in_force_gives_fee_unresolved(tmp_path, fake_registry):
+    run_cycle(tmp_path, Session(series_fee=("flat", 1)))
+    st = {r["status"] for r in read(tmp_path, "candidates") if r["extra"]["phase"] == "P2"}
+    assert st == {"FEE_UNRESOLVED"}

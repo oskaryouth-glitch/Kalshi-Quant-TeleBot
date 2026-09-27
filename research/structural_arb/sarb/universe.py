@@ -11,7 +11,6 @@ import time
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from . import fees as FEES
 from . import relationships as R
 from . import semantics as SEM
 from .evaluator import MarketMeta
@@ -36,57 +35,6 @@ def _dec(x) -> Decimal | None:
     except Exception:
         return None
     return d
-
-
-# ------------------------------------------------------------------------------ fee ledger
-
-class FeeLedger:
-    """GET /events/fee_changes returns ONLY future-scheduled overrides (verified 2026-09-27),
-    so an override disappears from the API once it takes effect. The ledger stores every
-    change ever observed. Series known to use event overrides get a conservative floor on M:
-    the largest override multiplier ever observed in that series. This means an in-force
-    override we never saw cannot make us understate fees."""
-
-    def __init__(self, path: str):
-        self.path = path
-        self.changes: dict[str, dict] = {}
-        if os.path.exists(path):
-            with open(path) as fh:
-                self.changes = json.load(fh).get("changes", {})
-
-    def update(self, rows: list[dict], seen_iso: str) -> int:
-        new = 0
-        for r in rows:
-            cid = r.get("id") or hashlib.sha256(json.dumps(r, sort_keys=True).encode()).hexdigest()
-            if cid not in self.changes:
-                self.changes[cid] = {**r, "_first_seen": seen_iso}
-                new += 1
-        if new:
-            tmp = self.path + ".tmp"
-            with open(tmp, "w") as fh:
-                json.dump({"changes": self.changes}, fh)
-            os.replace(tmp, self.path)
-        return new
-
-    def event_changes(self) -> list[dict]:
-        return list(self.changes.values())
-
-    def series_override_floor(self, series: str) -> Decimal | None:
-        ms = [Decimal(str(c["fee_multiplier_override"])) for c in self.changes.values()
-              if c.get("series_ticker") == series and c.get("fee_multiplier_override") is not None]
-        return max(ms) if ms else None
-
-
-def resolve_leg_fee(series_ticker: str, event_ticker: str, at_iso: str, series_body: dict | None,
-                    series_changes: list[dict], ledger: FeeLedger):
-    try:
-        rf = FEES.resolve_fee(series_ticker, event_ticker, at_iso, series_body, series_changes, ledger.event_changes())
-    except FEES.UnsupportedFee as e:
-        return e
-    floor = ledger.series_override_floor(series_ticker)
-    if floor is not None and floor > rf.multiplier:
-        rf = FEES.ResolvedFee(rf.fee_type, floor, rf.source + f"+ledger_series_override_floor:{floor}")
-    return rf
 
 
 # ------------------------------------------------------------------------------ universe
