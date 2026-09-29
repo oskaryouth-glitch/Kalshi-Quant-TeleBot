@@ -28,7 +28,19 @@
    - It was filled **before** any golf price was read.
    - Where two sources disagreed on the field size (TECHO26: 133 vs 135; WYC26: 144 vs 147), or no source was found (THCCBN26), the size was left blank. The event is therefore invalid.
    - This strict convention is the literal PREREG rule ("a missing or unsourced value … invalidates the observation"). It was written down before prices were seen.
-5. **Reported-only additions written after the runs:**
+5. **Data-access bug in candlestick parsing** (found after the first M5 run completed; fixed; M2 and M5 rerun):
+   - **Cause.**
+     - The live candlestick endpoint returns `yes_bid.close_dollars`, `yes_ask.close_dollars` and `volume_fp`.
+     - The historical endpoint returns `close` and `volume`.
+     - The frozen code read only the historical names. Every live-tier response therefore parsed as "no bid, ask $1.00, zero volume".
+   - **Effect.**
+     - M5: 5 of 26 valid events broke (3MO26, ROC26, FESJC26, BMC26, TOC26). Every golfer showed A = n, B = 0 and zero volume.
+     - M2: the NFL candle metrics broke. M2's NBA markets and every trade-based number are unaffected.
+     - M6 does not use candles.
+   - **Fix.** `pt1_common._norm_candle` maps the live names onto the historical ones. No definition, threshold, sample or convention changed. `m2_no.py` and `m5_golf.py` are byte-identical to the freeze. `pt1_common.py` sha256 is now `fb8248…`.
+   - **Decisions below use the rerun.** The as-run outputs are kept, unedited, as `outputs/asrun_bug_*`.
+   - **Disclosure.** The bug was noticed *because of* the M5 results: five events with zero two-sided markets and zero volume is impossible for tournaments with 100k-contract markets. It was confirmed from raw responses before any rerun. The as-run M5 decision was also KILL (§M5 reports both).
+6. **Reported-only additions written after the runs:**
    - `m2_detail_reported.py`: price distribution and fill-to-close time of post-certainty NBA trades;
    - `tables.py`: per-market CSVs from the frozen outputs.
 

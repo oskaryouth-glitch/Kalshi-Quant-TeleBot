@@ -1,0 +1,12 @@
+[close] NO-certain markets=173 open after t*=173 closed at/before t*=0
+   window hours median=591.9638888888888
+   executed gross after t* (all)=17602.656600  of which 5.11-unsafe (yes>0.20)=58.690000
+   net 5.11-safe capture: direct=17362.765600 nondirect=17362.226600
+   median of per-market time-median YES bid after t* = 0
+   K1 (net safe capture < $250) = False;  K2 (median YES bid <= $0.01) = True
+   DECISION: KILL
+[settle] NO-certain markets=173 open after t*=173 closed at/before t*=0
+   window hours median=591.9372222222222
+   executed gross after t* (all)=17602.656600  of which 5.11-unsafe (yes>0.20)=58.690000
+   net 5.11-safe capture: direct=17362.765600 nondirect=17362.226600
+   median of per-market time-median YES bid after t* = 0

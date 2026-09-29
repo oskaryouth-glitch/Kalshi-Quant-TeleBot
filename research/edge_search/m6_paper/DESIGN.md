@@ -32,7 +32,7 @@ The experiment asks this for a small participant who quotes both sides of LIP ma
 - Every record carries the local receive time (UTC and monotonic ns). Trades carry exchange timestamps.
 - A tracked market with no book for > 60 s is in a **gap**.
 
-**Measured headroom.** 4,940 live programs need 50 book calls per epoch. About 150 tracked markets need 2 book calls per poll.
+**Measured headroom.** 4,940 live programs need 50 book calls per epoch. Up to about 600 tracked markets need ≤ 6 book calls per poll (≈ 0.6 requests/s at the mean 10 s poll).
 
 ## 3. Units
 
@@ -85,7 +85,7 @@ At every epoch:
 - No exits or additions based on P&L, fills or rewards.
 - No selection after the fact.
 
-**Collector coverage.** The collector tracks every Arm U draw and the top 60 programs by score at each epoch. Arm P at K ≤ $200 can hold at most ~30 programs at C\* ≥ $6, so its choice set is always inside the tracked set. Any breach is logged.
+**Collector coverage.** The collector tracks every Arm U draw and the **top 100** programs by score at each epoch, each for the rest of its period. At K ≤ $200 the greedy fill admitted 16 programs in the feasibility snapshot. Tracking 100 covers the admitted programs plus those skipped as unaffordable. Any Arm P choice outside the tracked set is logged as a breach and reported. Expect up to about 600 tracked markets at once: ≤ 6 book calls per poll.
 
 ## 5. Frozen quoting rule (every episode)
 

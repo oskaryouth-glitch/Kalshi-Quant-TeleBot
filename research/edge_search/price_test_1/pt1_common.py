@@ -109,6 +109,21 @@ def trades(ticker: str, min_ts: int, max_ts: int) -> list[dict]:
     return sorted(out.values(), key=lambda t: t["created_time"])
 
 
+def _norm_candle(c: dict) -> dict:
+    """Post-freeze data-access fix (RESULTS.md): the live candlestick endpoint names its fields
+    `close_dollars` / `volume_fp` / `open_interest_fp`, the historical one `close` / `volume` /
+    `open_interest`. Map the live names onto the historical ones; values are unchanged."""
+    out = dict(c)
+    for k in ("yes_bid", "yes_ask", "price"):
+        v = c.get(k)
+        if isinstance(v, dict):
+            out[k] = {(kk[:-len("_dollars")] if kk.endswith("_dollars") else kk): vv for kk, vv in v.items()}
+    for a, b in (("volume_fp", "volume"), ("open_interest_fp", "open_interest")):
+        if a in c and b not in c:
+            out[b] = c[a]
+    return out
+
+
 def candles(series: str, ticker: str, start_ts: int, end_ts: int, interval: int = 60) -> list[dict]:
     """Candlesticks (period `interval` minutes) with end_period_ts in [start_ts, end_ts]. Tries the
     live endpoint, then the historical one; chunks long windows."""
@@ -121,7 +136,7 @@ def candles(series: str, ticker: str, start_ts: int, end_ts: int, interval: int 
             d = get(path, {"start_ts": a, "end_ts": b, "period_interval": interval}, allow_404=True)
             if d and d.get("candlesticks"):
                 for c in d["candlesticks"]:
-                    out[c["end_period_ts"]] = c
+                    out[c["end_period_ts"]] = _norm_candle(c)
                 break
         a = b + 1
     return [out[k] for k in sorted(out)]
