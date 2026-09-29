@@ -1,0 +1,1134 @@
+diff -ruN a/research/structural_arb/DESIGN.md b/research/structural_arb/DESIGN.md
+--- a/research/structural_arb/DESIGN.md	2026-09-27 20:10:25.000000000 +0000
++++ b/research/structural_arb/DESIGN.md	2026-09-29 04:29:46.809984621 +0000
+@@ -28,9 +28,9 @@
+ | A4 | Trades may be cancelled or adjusted if executed outside ±$0.20 of fair value (the No Cancellation Range) | Rulebook 5.11(c) |
+ | A5 | `result ∈ {yes, no, scalar}`. **Scalar results really occur**: 4 live golf markets settled at $0.05, $0.11, $0.22 and $0.45 (a withdrawal before tee-off) | API get-market schema; live data |
+ | A6 | `mutually_exclusive = true` ⇔ MECNET ⇔ "at most one market in this event can resolve to 'yes'" | API get-event schema |
+-| A7 | Crypto terms (BTC and ETH, identical): "between" is **inclusive**; **"If no data is available … the market resolves to No"** (an ALL_NO state); the underlying is the average of 60 index prints, with no rounding stated | contract_terms/BTC.pdf, ETH.pdf |
++| A7 | Crypto terms (BTC and ETH, identical): "between" is **inclusive**; **"If no data is available … the market resolves to No"** (an ALL_NO state); the underlying is the average of 60 index prints, with no rounding stated | contract_terms/BTC.pdf, ETH.pdf (text contained in the controlling filings "BTC/ETH Amendment 2 for posting.pdf", 2025-04-28) |
+ | A8 | INX terms: "between" inclusive; no data → most recent value; "before" variants are path-dependent | contract_terms/INX.pdf |
+-| A9 | Temperature terms: above `>`, below `<`, at least `≥`, between inclusive; "full precision reported"; no data → **Exchange-determined "last fair price"** | contract_terms/GLOBALTEMPERATURE.pdf |
++| A9 | Temperature terms: above `>`, below `<`, at least `≥`, between inclusive; "full precision reported"; no data → **Exchange-determined "last fair price"**. **SUPERSEDED (2026-09-29):** amendments filed 2026-08-17 (The Weather Company first Source Agency) and 2026-09-02 (Exchange-specified reports; material-error expiration delay) were never reflected in the served PDF. Not verified until re-reviewed | contract_terms/GLOBALTEMPERATURE.pdf (= 2025-12-12 certification); edge_search/TERMS_AUDIT.md |
+ | A10 | Combos: YES pays the **product of component payouts, floored to the cent**; NO pays 1 − YES | contract_terms/FOOTBALLSTATS.pdf |
+ | A11 | `floor_strike` / `cap_strike` are the "minimum/maximum expiration value that leads to YES", but live data shows they are an *encoding* that can disagree with the rules text (§B.2) | API schema; live data |
+ | A12 | Order book: bids only; YES ask = 1 − best NO bid; levels sorted ascending; dollar strings (≤ 4 dp) and fixed-point counts (≥ 0.01) | docs Orderbook Responses; Fixed-Point |
+@@ -172,7 +172,7 @@
+ 
+ | Status | Meaning |
+ |---|---|
+-| `RULE_DEFINED_LOCK` | L ≥ 1 in every settlement state the verified contract rules require the model to enumerate; verified terms (or MECNET for categorical R1-short/pairs); all gates pass; edge > 0 under **every** fee scenario at some integer size; persistence confirmed on an independent re-fetch |
++| `RULE_DEFINED_LOCK` | L ≥ 1 in every settlement state the verified contract rules require the model to enumerate; verified terms (for every family, categorical MECNET included); all gates pass; edge > 0 under **every** fee scenario at some integer size; persistence confirmed on an independent re-fetch |
+ | `GUARANTEED_STRUCTURAL_NOT_EXECUTABLE` | lock holds, some execution gate fails (fees/depth/5.11/persistence) |
+ | `CANDIDATE_TERMS_UNVERIFIED` | lock holds under the conservative model; series terms not yet reviewed |
+ | `STATISTICAL` | displayed prices violate the naive relationship but L < nominal (gap, ALL_NO, uncertainty) |
+@@ -364,7 +364,7 @@
+ 
+ | Requirement | Enforced by |
+ |---|---|
+-| Verified binding settlement semantics | `_terms_ok`: `terms_verified` for **every** family, including categorical MECNET (the former MECNET exemption was removed in this audit); combos never qualify; registry entries need a hash match at build, a documented `common_determination`, and a supported `no_data` |
++| Verified binding settlement semantics | `_terms_ok`: `terms_verified` for **every** family, including categorical MECNET (the former MECNET exemption was removed in this audit); combos never qualify; since 2026-09-29 `terms_verified` also requires an OK **filing-record** check (`sarb/filings.py`: complete fresh bucket listing equal to the reviewed filing set, controlling filing re-hashed, not inside the Reg. 40.6 waiting period) and no contradiction between the live market rules and the entry's `rules_required`/`rules_forbidden`; registry entries need a hash match at build, a documented `common_determination`, and a supported `no_data` |
+ | Independent checker agreement over every modelled permitted state | gate `no_checker_bug` (checker must have run, and `fast == checker`); gate `locked_guaranteed` (relationship class GUARANTEED, L ≥ 1) |
+ | Fresh executable order books | book integrity (HTTP 200, parsed, no CDN hit, not crossed or locked); gates `skew_ok` (≤ 2 s) and `age_ok` (≤ 5 s) |
+ | Depth for the modelled quantity | every leg walked to size C, and C must fill completely |
+@@ -405,8 +405,17 @@
+ 
+ ### I.4 Terms registry after the audit
+ 
+-* Verified: **BTC.pdf, ETH.pdf, GLOBALTEMPERATURE.pdf**, each with its documented
+-  common-determination basis.
++* Verified: **BTC.pdf, ETH.pdf** (re-keyed on 2026-09-29 to their controlling "Amendment 2" filings;
++  pending independent sign-off), each with its documented common-determination basis.
++* **GLOBALTEMPERATURE.pdf: SUPERSEDED (2026-09-29).** The served PDF was never updated for the
++  2026-08-17 and 2026-09-02 amendments, which the live markets already follow. The entry stays pinned
++  to what was reviewed, so `sarb/filings.py` reports `TERMS_SUPERSEDED` and every weather family is
++  capped at `CANDIDATE_TERMS_UNVERIFIED` until a human re-review against Amendment 2 decides whether
++  the material-error expiration delay still permits a common determination (edge_search/TERMS_AUDIT.md §4).
++* Amendment-aware verification (`sarb/filings.py`, `scripts/terms_retro_report.py`): code can only demote.
++  Recorded lock-like candidates are re-evaluated demote-only by `sarb/terms_retro.py`; on the 2026-09-27
++  validation data it demotes the 47 weather R1_SHORT records (TERMS_SUPERSEDED_AT_SNAPSHOT) and the 362
++  pre-audit MECNET R1_EXCLUSIVE_PAIR records (TERMS_NOT_VERIFIED_AT_SNAPSHOT).
+ * **INX.pdf removed.** Its expiration time "at least one minute after `<time>`", with revisions
+   after expiration ignored and Kalshi as Source Agency, does not force a common determination
+   instant: the same divergence channel as AAA gas.
+diff -ruN a/research/structural_arb/sarb/collector.py b/research/structural_arb/sarb/collector.py
+--- a/research/structural_arb/sarb/collector.py	2026-09-27 20:07:28.000000000 +0000
++++ b/research/structural_arb/sarb/collector.py	2026-09-29 04:26:01.247357296 +0000
+@@ -39,6 +39,7 @@
+ from . import config
+ from .fee_ledger import FeeLedger, FeeUnresolved
+ from . import relationships as R
++from . import filings as FL
+ from . import terms as TERMS
+ from . import universe as U
+ from .client import PublicClient
+@@ -84,7 +85,7 @@
+ 
+ class Collector:
+     def __init__(self, client: PublicClient, data_dir: str = DATA_DIR, seed: int | None = None,
+-                 terms_fetch=None):
++                 terms_fetch=None, filings_list=None, filings_fetch=None):
+         self.c = client
+         self.out = Streams(data_dir)
+         self.cache = U.TemplateCache()
+@@ -95,6 +96,10 @@
+         self._last = {"series": float("-inf"), "terms": float("-inf"), "fees": float("-inf")}
+         self.rng = random.Random(seed)
+         self.terms_fetch = terms_fetch or (lambda url: requests.get(url, timeout=30).content)
++        # filing record of every registered template (sarb/filings.py); empty -> nothing verifies
++        self.filings: dict[str, FL.Listing] = {}
++        self.filings_list = filings_list or FL.http_list
++        self.filings_fetch = filings_fetch or FL.http_fetch
+         self._stat_last: dict = {}
+         self._exchange = (False, None, None)      # (trading_active, fetched_mono_ns, fetched_utc_ns)
+         self._event_obj: dict = {}                # event_ticker -> (recv_mono_ns, event body)
+@@ -129,8 +134,13 @@
+                 except Exception as e:
+                     self.terms_sha.pop(url, None)
+                     info.setdefault("terms_errors", []).append(f"{url}:{e!r}"[:200])
++            self.filings = FL.refresh(TERMS.REGISTRY, self.filings_list, self.filings_fetch)
+             self._last["terms"] = now
+             info["terms_sha"] = dict(self.terms_sha)
++            info["filings"] = {url: {"template": l.template, "listed_utc_ns": l.listed_utc_ns,
++                                     "objects": None if l.objects is None else [list(vars(f).values()) for f in l.objects],
++                                     "controlling_sha256": l.controlling_sha256, "error": l.error}
++                               for url, l in self.filings.items()}
+         if now - self._last["fees"] >= config.FEE_CHANGES_REFRESH_S:
+             r = self.c.get_retry("/series/fee_changes", {"show_historical": "true"})
+             if r.status == 200:
+@@ -182,6 +192,11 @@
+     def _exchange_active(self) -> bool:
+         return self._exchange[0]
+ 
++    def _filing_status(self, now_utc_ns: int | None = None) -> dict[str, str]:
++        """filings.status() of every registered template for the current listing, evaluated now."""
++        now = time.time_ns() if now_utc_ns is None else now_utc_ns
++        return {url: FL.status(t, self.filings.get(url), now) for url, t in TERMS.REGISTRY.items()}
++
+     def _terms_hash_now(self, url: str) -> str | None:
+         try:
+             return hashlib.sha256(self.terms_fetch(url)).hexdigest()
+@@ -214,6 +229,9 @@
+                 h = self._terms_hash_now(sp.terms_url)
+                 if h is None or h != sp.terms_sha:
+                     reasons.append("TERMS_HASH_CHANGED_OR_UNAVAILABLE")
++                fs = self._filing_status().get(sp.terms_url)
++                if fs != FL.OK:                  # listing aged out, or the filing record changed
++                    reasons.append(f"TERMS_FILINGS_NOT_OK:{fs}")
+             ok[t], why[t] = not reasons, reasons
+         return ok, why
+ 
+@@ -227,6 +245,13 @@
+                               "template_sha256": hashlib.sha256((sp.template or "").encode()).hexdigest(),
+                               "template": sp.template, "path_dependent": sp.path_dependent,
+                               "terms_url": sp.terms_url, "terms_sha_at_build": sp.terms_sha,
++                              "terms_filing_status": sp.terms_filing_status,
++                              "terms_rules_conflicts": sp.terms_rules_conflicts,
++                              "terms_controlling_filing": sp.terms.controlling_filing if sp.terms else None,
++                              "terms_controlling_filing_sha256": sp.terms.controlling_filing_sha256 if sp.terms else None,
++                              "terms_known_filings": [list(vars(f).values()) for f in sp.terms.known_filings] if sp.terms else None,
++                              "filings_listed_utc_ns": (self.filings.get(sp.terms_url).listed_utc_ns
++                                                        if sp.terms_url in self.filings else None),
+                               "terms_status": sp.terms_status, "no_data_all_no": sp.no_data_all_no,
+                               "market_fp_at_build": sp.market_fp, "family_key": sp.family_key}
+         return {"code": self.code_version, "positions": [(p.ticker, p.side, str(p.qty)) for p in st.positions],
+@@ -412,13 +437,15 @@
+         refresh = self._refresh(time.monotonic())
+         evs, fetched_mono = self._events()
+         t_ev = time.monotonic()
+-        u = U.build_universe(evs, self.series, self.terms_sha, self.cache)
++        fstat = self._filing_status()
++        u = U.build_universe(evs, self.series, self.terms_sha, self.cache, fstat)
+         self.out.write("universe", {"cycle": cycle, "utc": _now_iso(), "events": len(evs), "markets": len(u.raw),
+                                     "families": len(u.families), "templates_r1_r3": len(u.structs),
+                                     "categorical_events": len(u.categorical), "reject_counts": u.reject_counts,
+                                     "build_s": round(u.build_seconds, 2), "refresh": refresh,
+                                     "fee_ledger_changes": sum(len(v) for v in self.ledger.changes.values()),
+-                                    "terms_verified_markets": sum(1 for s in u.specs.values() if s.terms_status == "TERMS_VERIFIED")})
++                                    "terms_verified_markets": sum(1 for s in u.specs.values() if s.terms_status == "TERMS_VERIFIED"),
++                                    "terms_filing_status": fstat})
+         # ---- SCREEN
+         queue, screen = [], {}
+         for st in u.structs:
+diff -ruN a/research/structural_arb/sarb/config.py b/research/structural_arb/sarb/config.py
+--- a/research/structural_arb/sarb/config.py	2026-09-27 20:10:25.000000000 +0000
++++ b/research/structural_arb/sarb/config.py	2026-09-29 04:25:25.316635568 +0000
+@@ -6,7 +6,7 @@
+ """
+ from decimal import Decimal
+ 
+-CONFIG_VERSION = "2026-09-27.5-ready-to-freeze"
++CONFIG_VERSION = "2026-09-29.6-amendment-aware-terms"
+ 
+ PUBLIC_BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
+ 
+@@ -38,6 +38,9 @@
+ AUDIT_MAX_MARKETS_PER_FAMILY = 30
+ SERIES_REFRESH_S = 6 * 3600          # universe metadata only; fees use fresh per-leg series objects
+ TERMS_REFRESH_S = 3600
++# Amendment-aware terms verification (sarb/filings.py; edge_search/TERMS_AUDIT.md). Fail closed.
++MAX_FILINGS_LISTING_AGE_S = 2 * TERMS_REFRESH_S   # a filing listing older than this verifies nothing
++AMENDMENT_PENDING_S = 16 * 86400                  # >= 10 business days (Reg. 40.6(a)) incl. up to 2 holidays
+ FEE_CHANGES_REFRESH_S = 300
+ EVENTS_PAGE_MIN_INTERVAL_S = 0.25        # summary pages paced <= 4/s (run1 saw 429s only on /events pages)
+ STATSCREEN_REWRITE_S = 1800              # a given summary-only statistical hit is re-logged at most every 30 min
+diff -ruN a/research/structural_arb/sarb/filings.py b/research/structural_arb/sarb/filings.py
+--- a/research/structural_arb/sarb/filings.py	1970-01-01 00:00:00.000000000 +0000
++++ b/research/structural_arb/sarb/filings.py	2026-09-29 04:26:01.247541185 +0000
+@@ -0,0 +1,168 @@
++"""Amendment-aware terms verification: the filing record for each registered template.
++
++Why this exists (TERMS_AUDIT.md, 2026-09-29): the registry used to pin only the bytes of the PDF
++served at `contract_terms_url`. Kalshi amended GLOBALTEMPERATURE twice under CFTC Reg. 40.6
++(2026-08-17, 2026-09-02) without replacing that PDF, so every weather series stayed
++TERMS_VERIFIED against superseded terms. A served-PDF hash cannot detect an amendment.
++
++This module checks the FILING RECORD instead. Kalshi posts every product certification and
++amendment to the public regulatory bucket. For each registered template the registry records
++the complete set of objects that existed for that template when a human reviewed it
++(`VerifiedTerms.known_filings`) and which filing's Appendix A was reviewed
++(`controlling_filing`). A fresh, complete listing must reproduce that set exactly, and the
++controlling filing must still hash to the reviewed value. Every other outcome is a non-OK
++status, and nothing here can turn a non-OK status into OK.
++
++FAIL-CLOSED RULES
++  * a listing that errored, was truncated or could not be parsed  -> TERMS_FILINGS_UNAVAILABLE
++  * a listing older than config.MAX_FILINGS_LISTING_AGE_S          -> TERMS_FILINGS_STALE
++  * a new regulatory object for the template                       -> TERMS_SUPERSEDED
++  * any other new object for the template                          -> TERMS_FILINGS_UNRECOGNISED
++  * a reviewed object missing from the listing                     -> TERMS_FILINGS_INCOMPLETE
++  * a reviewed object whose LastModified or size changed           -> TERMS_FILING_CHANGED
++  * the controlling filing not fetched, or its sha256 differs      -> TERMS_CONTROLLING_FILING_UNCONFIRMED
++  * controlling filing posted < config.AMENDMENT_PENDING_S ago     -> TERMS_AMENDMENT_PENDING
++    (Reg. 40.6(a): a self-certified change may take effect 10 business days after filing, so
++     the previous version may still be in force; 16 calendar days bounds 10 business days
++     with up to two holidays)
++
++A key belongs to template T if T occurs anywhere in its file name as a whole token (case-insensitive,
++not adjacent to a letter or digit). So "BTCMINMAX.pdf" and "KXBTC.pdf" are not BTC's, but
++"BTC Amendment 3.pdf", "BTC_v2.pdf" and "processed-BTC modification (3).pdf" all are. The bucket has
++names of that last shape, so the whole of each prefix is listed rather than a name-prefix query.
++An ambiguous name therefore counts against verification, never for it.
++
++Residual risk (not removable here): a filing that is never posted to the bucket, or posted
++late, is invisible. The CFTC portal is authoritative. See TERMS_AUDIT.md §6.4.
++"""
++from __future__ import annotations
++
++import datetime as dt
++import hashlib
++import re
++import time
++import urllib.parse
++import xml.etree.ElementTree as ET
++from dataclasses import dataclass
++
++from . import config
++
++BUCKET_URL = "https://kalshi-public-docs.s3.amazonaws.com/"
++PREFIXES = ("regulatory/product-certifications/", "regulatory/notices/", "contract_terms/")
++_NS = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
++
++OK = "OK"
++NON_OK_STATUSES = ("TERMS_FILINGS_NOT_CHECKED", "TERMS_FILINGS_UNAVAILABLE", "TERMS_FILINGS_STALE",
++                   "TERMS_SUPERSEDED", "TERMS_FILINGS_UNRECOGNISED", "TERMS_FILINGS_INCOMPLETE",
++                   "TERMS_FILING_CHANGED", "TERMS_CONTROLLING_FILING_UNCONFIRMED", "TERMS_AMENDMENT_PENDING")
++
++
++@dataclass(frozen=True)
++class Filing:
++    key: str             # object key in the public regulatory bucket
++    last_modified: str   # S3 LastModified (ISO 8601, as listed)
++    size: int
++
++
++@dataclass(frozen=True)
++class Listing:
++    """One complete listing of a template's objects, made at `listed_utc_ns`. `objects` is None if
++    the listing failed; `controlling_sha256` is the sha256 of the controlling filing fetched in the
++    same refresh (None if it was not fetched or the fetch failed)."""
++    template: str
++    listed_utc_ns: int
++    objects: tuple[Filing, ...] | None
++    controlling_sha256: str | None = None
++    error: str = ""
++
++
++def belongs(template: str, key: str) -> bool:
++    for pre in PREFIXES:
++        if key.startswith(pre):
++            return re.search(rf"(?<![A-Za-z0-9]){re.escape(template)}(?![A-Za-z0-9])", key[len(pre):], re.I) is not None
++    return False
++
++
++def iso_to_ns(s: str) -> int:
++    return int(dt.datetime.fromisoformat(s.replace("Z", "+00:00")).timestamp() * 1e9)
++
++
++def status(terms, listing: Listing | None, now_utc_ns: int) -> str:
++    """terms: a VerifiedTerms. Pure function; returns OK or one of NON_OK_STATUSES."""
++    if listing is None:
++        return "TERMS_FILINGS_NOT_CHECKED"
++    if listing.objects is None:
++        return "TERMS_FILINGS_UNAVAILABLE"
++    if now_utc_ns - listing.listed_utc_ns > config.MAX_FILINGS_LISTING_AGE_S * 1e9 or now_utc_ns < listing.listed_utc_ns:
++        return "TERMS_FILINGS_STALE"
++    known = {f.key: f for f in terms.known_filings}
++    now = {f.key: f for f in listing.objects if belongs(terms.template, f.key)}
++    new = [k for k in now if k not in known]
++    if any(k.startswith("regulatory/") for k in new):
++        return "TERMS_SUPERSEDED"
++    if new:
++        return "TERMS_FILINGS_UNRECOGNISED"
++    if any(k not in now for k in known):
++        return "TERMS_FILINGS_INCOMPLETE"
++    if any(now[k] != known[k] for k in known):
++        return "TERMS_FILING_CHANGED"
++    if listing.controlling_sha256 is None or listing.controlling_sha256 != terms.controlling_filing_sha256:
++        return "TERMS_CONTROLLING_FILING_UNCONFIRMED"
++    if now_utc_ns - iso_to_ns(known[terms.controlling_filing].last_modified) < config.AMENDMENT_PENDING_S * 1e9:
++        return "TERMS_AMENDMENT_PENDING"
++    return OK
++
++
++# ---------------------------------------------------------------------------------------------- I/O
++def http_list(prefix: str, get=None) -> list[Filing]:
++    """Every object under `prefix` (paginated to completion). Raises on any HTTP or parse error, so a
++    partial listing can never be mistaken for a complete one."""
++    import requests
++    get = get or (lambda url: requests.get(url, timeout=30))
++    out, token = [], None
++    for _ in range(1000):
++        q = {"list-type": "2", "prefix": prefix, **({"continuation-token": token} if token else {})}
++        r = get(BUCKET_URL + "?" + urllib.parse.urlencode(q))
++        if r.status_code != 200:
++            raise RuntimeError(f"bucket listing HTTP {r.status_code}")
++        root = ET.fromstring(r.content)
++        for c in root.findall("s3:Contents", _NS):
++            out.append(Filing(c.findtext("s3:Key", namespaces=_NS), c.findtext("s3:LastModified", namespaces=_NS),
++                              int(c.findtext("s3:Size", namespaces=_NS))))
++        if root.findtext("s3:IsTruncated", namespaces=_NS) != "true":
++            return out
++        token = root.findtext("s3:NextContinuationToken", namespaces=_NS)
++        if not token:
++            raise RuntimeError("truncated listing without a continuation token")
++    raise RuntimeError("bucket listing did not terminate")
++
++
++def http_fetch(key: str) -> bytes:
++    import requests
++    r = requests.get(BUCKET_URL + urllib.parse.quote(key), timeout=60)
++    if r.status_code != 200:
++        raise RuntimeError(f"filing fetch HTTP {r.status_code}")
++    return r.content
++
++
++def refresh(registry, lister=http_list, fetcher=http_fetch, now_ns=time.time_ns) -> dict[str, Listing]:
++    """One complete listing of every prefix, split per registered template, plus a fresh hash of each
++    template's controlling filing. Returns {registry url: Listing}. A listing error makes every
++    template's Listing objects=None (-> TERMS_FILINGS_UNAVAILABLE); a fetch error leaves that
++    template's controlling_sha256 None (-> TERMS_CONTROLLING_FILING_UNCONFIRMED)."""
++    t0 = now_ns()
++    if not registry:
++        return {}
++    try:
++        everything = [f for pre in PREFIXES for f in lister(pre)]
++    except Exception as e:                                       # noqa: BLE001  (fail closed on anything)
++        return {url: Listing(t.template, t0, None, None, repr(e)[:200]) for url, t in registry.items()}
++    out = {}
++    for url, t in registry.items():
++        objs = tuple(f for f in everything if belongs(t.template, f.key))
++        try:
++            sha = hashlib.sha256(fetcher(t.controlling_filing)).hexdigest()
++            out[url] = Listing(t.template, t0, objs, sha)
++        except Exception as e:                                   # noqa: BLE001
++            out[url] = Listing(t.template, t0, objs, None, repr(e)[:200])
++    return out
+diff -ruN a/research/structural_arb/sarb/reconstruct.py b/research/structural_arb/sarb/reconstruct.py
+--- a/research/structural_arb/sarb/reconstruct.py	2026-09-27 20:06:54.000000000 +0000
++++ b/research/structural_arb/sarb/reconstruct.py	2026-09-29 04:26:01.247681747 +0000
+@@ -10,7 +10,8 @@
+   -> every evaluator gate (sarb.evaluator.evaluate)
+ and compares everything with the logged record. Nothing is fetched from the network. The one
+ exception is the fresh terms re-hash at P3, which cannot be redone later: its recorded outcome
+-(metadata_consistency) is used, alongside the stored terms hashes.
++(metadata_consistency) is used, alongside the stored terms hashes. The filing-record status (sarb/filings.py)
++is likewise taken as recorded; a record without one cannot re-verify its terms.
+ 
+     python -m sarb.reconstruct <data_dir> [--status RULE_DEFINED_LOCK]
+ """
+@@ -77,7 +78,10 @@
+         ledger.observe_series(ser, sb["recv_utc_ns"])
+         pl = prov["legs"][t]
+         terms_sha = {pl["terms_url"]: pl["terms_sha_at_build"]} if pl["terms_url"] and pl["terms_sha_at_build"] else {}
+-        sp = SEM.build_market_spec(ev, m, ser, terms_sha)
++        # The filing check is a live network observation, taken as recorded (like the P3 re-hash). Records
++        # written before amendment-aware verification carry none, so their terms cannot re-verify.
++        fstat = {pl["terms_url"]: pl["terms_filing_status"]} if pl["terms_url"] and pl.get("terms_filing_status") else {}
++        sp = SEM.build_market_spec(ev, m, ser, terms_sha, fstat)
+         specs[t] = sp
+         for k_rec, v_now in (("readings", sp.readings), ("terms_status", sp.terms_status),
+                              ("strike_type", sp.strike_type),
+@@ -134,7 +138,8 @@
+         mecnet_ok = (not rec["settlement_evidence"]["family_key"].startswith("MECNET:")
+                      or bool(events[t].get("mutually_exclusive")))
+         cons[t] = (SEM.market_fingerprint(markets[t]) == pl["market_fp_at_build"] and sp.terms_url == pl["terms_url"]
+-                   and "TERMS_HASH_CHANGED_OR_UNAVAILABLE" not in recorded and mecnet_ok)
++                   and "TERMS_HASH_CHANGED_OR_UNAVAILABLE" not in recorded
++                   and not any(x.startswith("TERMS_FILINGS_NOT_OK") for x in recorded) and mecnet_ok)
+     active, ex_mono, _ = ev_info["exchange"]
+     out, rec2 = evaluate(st, books, metas, fees, active, ev_info["mono_ns"], ev_info["utc_ns"], ev_info["persistence_in"],
+                          exchange_fetched_mono_ns=ex_mono, metadata_consistent=cons)
+diff -ruN a/research/structural_arb/sarb/semantics.py b/research/structural_arb/sarb/semantics.py
+--- a/research/structural_arb/sarb/semantics.py	2026-09-27 19:57:57.000000000 +0000
++++ b/research/structural_arb/sarb/semantics.py	2026-09-29 04:25:25.316923748 +0000
+@@ -217,6 +217,8 @@
+     market_fp: str | None = None        # fingerprint of the market fields the spec was built from
+     terms_url: str | None = None
+     terms_sha: str | None = None        # hash observed when the spec was built (None if not checked)
++    terms_filing_status: str | None = None   # filings.status() for terms_url when built (None: not checked)
++    terms_rules_conflicts: list[str] = field(default_factory=list)
+ 
+ 
+ MARKET_FP_FIELDS = ("ticker", "rules_primary", "rules_secondary", "strike_type", "floor_strike", "cap_strike",
+@@ -230,18 +232,25 @@
+                                      default=str).encode()).hexdigest()
+ 
+ 
+-def build_market_spec(event: dict, market: dict, series: dict | None, terms_sha: dict[str, str]) -> MarketSpec:
++def build_market_spec(event: dict, market: dict, series: dict | None, terms_sha: dict[str, str],
++                      filing_status: dict[str, str] | None = None) -> MarketSpec:
+     """event: /events item (event-level fields); market: nested market; series: /series body.
+-    terms_sha: contract_terms_url -> sha256 fetched in this run."""
++    terms_sha: contract_terms_url -> sha256 fetched in this run.
++    filing_status: contract_terms_url -> filings.status() in this run (missing -> not verified)."""
+     st = market.get("strike_type")
+     s = (series or {}).get("series", series or {})
+     url = s.get("contract_terms_url")
+-    vt, tstatus = terms_mod.lookup(url, terms_sha.get(url) if url else None)
++    fstatus = (filing_status or {}).get(url) if url else None
++    vt, tstatus = terms_mod.lookup(url, terms_sha.get(url) if url else None, fstatus)
++    conflicts = terms_mod.rules_conflicts(vt, market) if vt is not None else []
++    if conflicts:                                     # live market rules contradict the reviewed terms
++        vt, tstatus = None, "TERMS_RULES_CONFLICT"
+     spec = MarketSpec(market["ticker"], event["event_ticker"], event.get("series_ticker", ""), st,
+                       terms=vt, terms_status=tstatus,
+                       no_data_all_no=(vt is None or vt.no_data == "ALL_NO"),
+                       market_fp=market_fingerprint(market), terms_url=url,
+-                      terms_sha=terms_sha.get(url) if url else None)
++                      terms_sha=terms_sha.get(url) if url else None,
++                      terms_filing_status=fstatus, terms_rules_conflicts=conflicts)
+     try:
+         if market.get("market_type") != "binary":
+             raise SemanticsError("NOT_BINARY", str(market.get("market_type")))
+diff -ruN a/research/structural_arb/sarb/terms.py b/research/structural_arb/sarb/terms.py
+--- a/research/structural_arb/sarb/terms.py	2026-09-27 20:03:24.000000000 +0000
++++ b/research/structural_arb/sarb/terms.py	2026-09-29 04:25:05.946558498 +0000
+@@ -1,8 +1,16 @@
+-"""Registry of contract terms that have been VERIFIED by reading the official PDF.
++"""Registry of contract terms that have been VERIFIED by reading the CONTROLLING FILED terms.
+ 
+ A family of markets can only reach the RULE_DEFINED_LOCK label if its series' `contract_terms_url` is in
+-this registry AND the PDF fetched at snapshot time has the recorded SHA-256. If Kalshi edits
+-the terms, the hash changes and verification lapses automatically.
++this registry AND all of the following hold at snapshot time (`lookup`):
++  * the PDF served at that URL has the recorded SHA-256 (a change means someone must re-review);
++  * the filing record is unchanged (sarb/filings.py): a fresh, complete listing of the public
++    regulatory bucket shows exactly the objects that existed for the template when it was
++    reviewed, the controlling filing still hashes to the reviewed value, and it is not inside
++    the Reg. 40.6 waiting period. A new amendment therefore lapses verification automatically,
++    even if the served PDF is never replaced (the GLOBALTEMPERATURE failure; TERMS_AUDIT.md);
++  * the live market rules text contains every `rules_required` phrase and no `rules_forbidden`
++    phrase (checked per market in semantics.build_market_spec -> TERMS_RULES_CONFLICT).
++Code can only DEMOTE an entry. Promotion needs a human re-review that writes a new entry.
+ 
+ Each entry records the facts the payoff model depends on. Every fact cites its clause.
+   between_inclusive : "between" includes both endpoints (True/False), or None if unstated.
+@@ -29,21 +37,42 @@
+ 
+ from dataclasses import dataclass
+ 
++from . import filings as FL
++from .filings import Filing
++
+ 
+ @dataclass(frozen=True)
+ class VerifiedTerms:
+     url: str
+-    sha256: str
++    sha256: str                        # served PDF at `url`, as reviewed
+     between_inclusive: bool | None
+     no_data: str
+-    citations: tuple[str, ...]
++    citations: tuple[str, ...]         # quote the CONTROLLING filing's Appendix A
+     common_determination: str = ""     # why all contracts of a family share one Expiration Value
++    template: str = ""                 # filing name ("Rulebook: <template>")
++    controlling_filing: str = ""       # bucket key of the filing whose Appendix A was reviewed
++    controlling_filing_sha256: str = ""
++    known_filings: tuple[Filing, ...] = ()   # EVERY bucket object for the template at review time
++    rules_required: tuple[str, ...] = ()     # phrases every live market's rules text must contain
++    rules_forbidden: tuple[str, ...] = ()    # phrases no live market's rules text may contain
++    reviewed: str = ""                 # who reviewed, when, against what
+ 
+     def __post_init__(self):
+         if self.no_data not in SUPPORTED_NO_DATA:
+             raise ValueError(f"{self.url}: no_data={self.no_data!r} is not supported by the payoff model")
+         if not self.common_determination:
+             raise ValueError(f"{self.url}: common-determination basis must be documented")
++        if not (self.template and self.controlling_filing.startswith("regulatory/")
++                and len(self.controlling_filing_sha256) == 64 and self.reviewed):
++            raise ValueError(f"{self.url}: controlling filing, its sha256 and the review record are required")
++        keys = [f.key for f in self.known_filings]
++        if self.controlling_filing not in keys or len(set(keys)) != len(keys):
++            raise ValueError(f"{self.url}: known_filings must list the controlling filing once")
++        if not all(FL.belongs(self.template, k) for k in keys):
++            raise ValueError(f"{self.url}: known_filings contains an object that is not {self.template}'s")
++        ctrl = next(f for f in self.known_filings if f.key == self.controlling_filing)
++        if any(f.key.startswith("regulatory/") and f.last_modified > ctrl.last_modified for f in self.known_filings):
++            raise ValueError(f"{self.url}: a known filing is newer than the controlling filing (review the newest)")
+ 
+ 
+ SUPPORTED_NO_DATA = frozenset({"ALL_NO", "LAST_VALUE", "DISCRETIONARY"})
+@@ -69,13 +98,48 @@
+ # therefore capped at CANDIDATE_TERMS_UNVERIFIED.
+ REMOVED = {"https://assets.kalshi.com/contract_terms/INX.pdf": "no common determination instant (see comment)"}
+ 
++_BTC_FILINGS = (
++    Filing("regulatory/product-certifications/BTC.pdf", "2024-03-14T21:20:02.000Z", 158894),
++    Filing("regulatory/notices/BTC Amendment for posting.pdf", "2024-11-12T07:33:48.000Z", 256777),
++    Filing("contract_terms/BTC.pdf", "2025-03-17T08:34:12.000Z", 24445),
++    Filing("regulatory/notices/BTC Amendment 2 for posting.pdf", "2025-04-28T14:27:29.000Z", 274431),
++)
++_ETH_FILINGS = (
++    Filing("regulatory/product-certifications/ETH.pdf", "2024-03-14T21:20:03.000Z", 158589),
++    Filing("regulatory/notices/ETH Amendment for posting.pdf", "2024-11-12T07:33:59.000Z", 255887),
++    Filing("contract_terms/ETH.pdf", "2025-03-17T08:33:33.000Z", 24347),
++    Filing("regulatory/notices/ETH Amendment 2 for posting.pdf", "2025-04-28T14:27:37.000Z", 273544),
++)
++_CRYPTO_REVIEW = ("PROPOSED 2026-09-29 (edge_search/TERMS_AUDIT.md): every sentence of the served PDF (sha as "
++                  "registered 2026-09-27) occurs in the Amendment 2 Appendix A; the only extra lines are filing "
++                  "letterhead. Facts and citations unchanged. REQUIRES independent reviewer sign-off.")
++
++# GLOBALTEMPERATURE: SUPERSEDED. The entry stays pinned to what was actually reviewed on 2026-09-27: the
++# served PDF, whose Appendix A equals the 2025-12-12 product certification. Amendments filed 2026-08-17
++# (The Weather Company becomes first Source Agency) and 2026-09-02 (Exchange-specified reports; material-
++# error expiration delay) are NOT in known_filings, so filings.status() returns TERMS_SUPERSEDED and the
++# `rules_required` check fails on live rules that name The Weather Company. Re-registration needs a human
++# re-review against Amendment 2, including whether the material-error delay breaks the common
++# determination (the INX question; TERMS_AUDIT.md §4). Until then every weather family is capped at
++# CANDIDATE_TERMS_UNVERIFIED.
++_GLOBALTEMPERATURE_FILINGS = (
++    Filing("regulatory/product-certifications/GLOBALTEMPERATURE.pdf", "2025-12-12T18:08:25.000Z", 267225),
++    Filing("contract_terms/GLOBALTEMPERATURE.pdf", "2025-12-12T18:08:27.000Z", 31861),
++)
++
+ REGISTRY: dict[str, VerifiedTerms] = {t.url: t for t in (
+     VerifiedTerms("https://assets.kalshi.com/contract_terms/BTC.pdf",
+                   "e7d857369971e75e9db14c5e2d91c29b94eb9a06e83e2acd9777991c4f2a0e2f",
+-                  True, "ALL_NO", _CRYPTO_CITES, _CRYPTO_COMMON),
++                  True, "ALL_NO", _CRYPTO_CITES, _CRYPTO_COMMON,
++                  template="BTC", controlling_filing="regulatory/notices/BTC Amendment 2 for posting.pdf",
++                  controlling_filing_sha256="efd80967164d20f1ebfe71e88e21a8d79083957b2d16d7af4e535fc2f9042dd8",
++                  known_filings=_BTC_FILINGS, rules_required=("CF Benchmarks", "BRTI"), reviewed=_CRYPTO_REVIEW),
+     VerifiedTerms("https://assets.kalshi.com/contract_terms/ETH.pdf",
+                   "ae079241099608c13c0c0ed31a6c91be174c6e61abe706dd76e8976ba682cc6d",
+-                  True, "ALL_NO", _CRYPTO_CITES, _CRYPTO_COMMON),
++                  True, "ALL_NO", _CRYPTO_CITES, _CRYPTO_COMMON,
++                  template="ETH", controlling_filing="regulatory/notices/ETH Amendment 2 for posting.pdf",
++                  controlling_filing_sha256="1c62e7e6faf01b125078ef847e6c0592b89adf95b52950b73fc0c99e0c69a995",
++                  known_filings=_ETH_FILINGS, rules_required=("CF Benchmarks", "ERTI"), reviewed=_CRYPTO_REVIEW),
+     VerifiedTerms("https://assets.kalshi.com/contract_terms/GLOBALTEMPERATURE.pdf",
+                   "160281687cf9d3cd694c1c419522f3d53a8e1a6d4eddd40a7f5559c3a06211d0",
+                   True, "DISCRETIONARY", (
+@@ -83,14 +147,23 @@
+                       "'exactly' = equal when rounded to one decimal place (not supported by the scanner)",
+                       "'If no data is available ... all strikes shall resolve to the last fair price as determined in the sole discretion of the Exchange.'",
+                       "'Contract resolution is based on the full precision reported by the Source Agency.' (no integer rounding -> real-valued)",
++                      "Source Agency: 'in hierarchical order, National Weather Service, the national weather service for <area>'",
+                   ), "'Only the first official non-preliminary report published by the Source Agencies that includes "
+                      "the relevant data will be used for resolution' -> one report fixes the value for every contract, "
+-                     "whatever each contract's expiration instant (Expiration time fixed at 10:00 AM ET)."),
++                     "whatever each contract's expiration instant (Expiration time fixed at 10:00 AM ET).",
++                  template="GLOBALTEMPERATURE",
++                  controlling_filing="regulatory/product-certifications/GLOBALTEMPERATURE.pdf",
++                  controlling_filing_sha256="44fe7807bd884def6f2890813220a746802ac7bd3791d17c69607dbf66ba03fc",
++                  known_filings=_GLOBALTEMPERATURE_FILINGS, rules_required=("National Weather Service",),
++                  reviewed="2026-09-27 methodology audit, against the served PDF (= 2025-12-12 certification "
++                           "Appendix A). SUPERSEDED by the 2026-08-17 and 2026-09-02 amendments; see comment above."),
+ )}
+ 
+ 
+-def lookup(url: str | None, fetched_sha256: str | None) -> tuple[VerifiedTerms | None, str]:
+-    """Returns (terms, reason). terms is None unless the URL is registered AND the hash matches."""
++def lookup(url: str | None, fetched_sha256: str | None,
++           filing_status: str | None = None) -> tuple[VerifiedTerms | None, str]:
++    """Returns (terms, reason). terms is None unless the URL is registered, the served PDF hash matches
++    AND `filing_status` (filings.status() for this URL, now) is OK. Not checked -> not verified."""
+     if not url:
+         return None, "TERMS_URL_MISSING"
+     t = REGISTRY.get(url)
+@@ -100,4 +173,15 @@
+         return None, "TERMS_HASH_NOT_CHECKED"
+     if fetched_sha256 != t.sha256:
+         return None, "TERMS_HASH_CHANGED"
++    if filing_status is None:
++        return None, "TERMS_FILINGS_NOT_CHECKED"
++    if filing_status != FL.OK:
++        return None, filing_status if filing_status in FL.NON_OK_STATUSES else "TERMS_FILINGS_NOT_CHECKED"
+     return t, "TERMS_VERIFIED"
++
++
++def rules_conflicts(t: VerifiedTerms, market: dict) -> list[str]:
++    """Live market rules text vs the reviewed terms: required phrases missing, forbidden phrases present."""
++    text = f"{market.get('rules_primary') or ''} {market.get('rules_secondary') or ''}".casefold()
++    return ([f"MISSING:{p}" for p in t.rules_required if p.casefold() not in text]
++            + [f"FORBIDDEN:{p}" for p in t.rules_forbidden if p.casefold() in text])
+diff -ruN a/research/structural_arb/sarb/terms_retro.py b/research/structural_arb/sarb/terms_retro.py
+--- a/research/structural_arb/sarb/terms_retro.py	1970-01-01 00:00:00.000000000 +0000
++++ b/research/structural_arb/sarb/terms_retro.py	2026-09-29 04:27:21.633040815 +0000
+@@ -0,0 +1,61 @@
++"""Retroactive, DEMOTE-ONLY re-evaluation of recorded lock-like candidates against the filing record.
++
++A recorded GUARANTEED_STRUCTURAL_NOT_EXECUTABLE or RULE_DEFINED_LOCK keeps its label only if, for
++every leg, the terms were registry-verified at the snapshot with an OK filing check, AND no
++regulatory filing for that template that was already posted at the snapshot (LastModified <= snapshot
+++ grace) is missing from the filing set the record relied on. Anything else becomes
++CANDIDATE_TERMS_UNVERIFIED with a reason. Nothing is ever promoted and no data file is modified.
++
++Reasons:
++  TERMS_NOT_VERIFIED_AT_SNAPSHOT        a leg's series was not registry-verified (e.g. the MECNET
++                                        exemption removed on 2026-09-27, or a de-registered template)
++  TERMS_FILINGS_NOT_CHECKED_AT_SNAPSHOT a record written before amendment-aware verification, with no
++                                        superseding filing found either
++  TERMS_SUPERSEDED_AT_SNAPSHOT          a regulatory filing for the template had been posted by the
++                                        snapshot but was not in the set the verification relied on
++"""
++from __future__ import annotations
++
++from . import filings as FL
++from . import terms as TERMS
++
++LOCK_LIKE = ("GUARANTEED_STRUCTURAL_NOT_EXECUTABLE", "RULE_DEFINED_LOCK")
++DEMOTED = "CANDIDATE_TERMS_UNVERIFIED"
++
++
++def _series(event_ticker: str) -> str:
++    return event_ticker.split("-")[0]
++
++
++def retro_status(rec: dict, bucket: list[FL.Filing], series_terms: dict[str, str | None],
++                 grace_s: float = 0.0) -> tuple[str, str | None]:
++    """rec: a recorded candidate. bucket: a complete current listing of the regulatory bucket.
++    series_terms: series ticker -> contract_terms_url (used when the record carries no provenance).
++    Returns (status, reason); reason is None when the recorded status stands."""
++    status = rec.get("status")
++    if status not in LOCK_LIKE:
++        return status, None
++    snap_ns = int(rec["logged_utc_ns"]) + int(grace_s * 1e9)
++    legs = ((rec.get("extra") or {}).get("provenance") or {}).get("legs") or {}
++    if legs:
++        leg_info = [(pl.get("terms_url"), pl.get("terms_status"), pl.get("terms_filing_status"),
++                     pl.get("terms_known_filings")) for pl in legs.values()]
++    else:                                           # legacy record: series -> terms URL, nothing checked
++        leg_info = [(series_terms.get(_series(e)), None, None, None) for e in rec.get("event_tickers", [])]
++    reasons = []
++    for url, tstatus, fstatus, known in leg_info:
++        t = TERMS.REGISTRY.get(url or "")
++        if t is None or (legs and tstatus != "TERMS_VERIFIED"):
++            reasons.append("TERMS_NOT_VERIFIED_AT_SNAPSHOT")
++            continue
++        relied_on = {k[0] for k in known} if (fstatus == FL.OK and known) else {f.key for f in t.known_filings}
++        posted = [f for f in bucket if FL.belongs(t.template, f.key) and f.key.startswith("regulatory/")
++                  and FL.iso_to_ns(f.last_modified) <= snap_ns and f.key not in relied_on]
++        if posted:
++            reasons.append("TERMS_SUPERSEDED_AT_SNAPSHOT")
++        elif fstatus != FL.OK:
++            reasons.append("TERMS_FILINGS_NOT_CHECKED_AT_SNAPSHOT")
++    if not reasons:
++        return status, None
++    order = ("TERMS_SUPERSEDED_AT_SNAPSHOT", "TERMS_NOT_VERIFIED_AT_SNAPSHOT", "TERMS_FILINGS_NOT_CHECKED_AT_SNAPSHOT")
++    return DEMOTED, next(r for r in order if r in reasons)
+diff -ruN a/research/structural_arb/sarb/universe.py b/research/structural_arb/sarb/universe.py
+--- a/research/structural_arb/sarb/universe.py	2026-09-27 19:57:57.000000000 +0000
++++ b/research/structural_arb/sarb/universe.py	2026-09-29 04:25:25.317074350 +0000
+@@ -73,19 +73,20 @@
+         self._c: dict[str, tuple] = {}
+         self._spec: dict[str, tuple[str, SEM.MarketSpec]] = {}
+ 
+-    def spec(self, ev: dict, m: dict, series: dict | None, terms_sha: dict[str, str]) -> SEM.MarketSpec:
++    def spec(self, ev: dict, m: dict, series: dict | None, terms_sha: dict[str, str],
++             filing_status: dict[str, str] | None = None) -> SEM.MarketSpec:
+         s = (series or {}).get("series", series or {})
+         fp_src = [m.get(k) for k in ("rules_primary", "rules_secondary", "strike_type", "floor_strike", "cap_strike",
+                                      "custom_strike", "latest_expiration_time", "market_type",
+                                      "notional_value_dollars")]
+         url = s.get("contract_terms_url")
+         fp_src += [ev.get("event_ticker"), ev.get("series_ticker"), ev.get("settlement_sources"), url,
+-                   terms_sha.get(url) if url else None]
++                   terms_sha.get(url) if url else None, (filing_status or {}).get(url) if url else None]
+         fp = hashlib.sha256(json.dumps(fp_src, sort_keys=True, default=str).encode()).hexdigest()
+         hit = self._spec.get(m["ticker"])
+         if hit and hit[0] == fp:
+             return hit[1]
+-        sp = SEM.build_market_spec(ev, m, series, terms_sha)
++        sp = SEM.build_market_spec(ev, m, series, terms_sha, filing_status)
+         self._spec[m["ticker"]] = (fp, sp)
+         return sp
+ 
+@@ -110,7 +111,7 @@
+ 
+ 
+ def build_universe(events: list[dict], series_by_ticker: dict[str, dict], terms_sha: dict[str, str],
+-                   cache: TemplateCache) -> Universe:
++                   cache: TemplateCache, filing_status: dict[str, str] | None = None) -> Universe:
+     t0 = time.monotonic()
+     u = Universe(built_utc_ns=time.time_ns())
+     for ev in events:
+@@ -118,7 +119,7 @@
+             if m.get("status") != "active":
+                 continue
+             u.raw[m["ticker"]] = (ev, m)
+-            sp = cache.spec(ev, m, series_by_ticker.get(ev.get("series_ticker")), terms_sha)
++            sp = cache.spec(ev, m, series_by_ticker.get(ev.get("series_ticker")), terms_sha, filing_status)
+             u.specs[m["ticker"]] = sp
+             u.reject_counts[sp.reject or "OK"] = u.reject_counts.get(sp.reject or "OK", 0) + 1
+     live = set()
+diff -ruN a/research/structural_arb/scripts/terms_retro_report.py b/research/structural_arb/scripts/terms_retro_report.py
+--- a/research/structural_arb/scripts/terms_retro_report.py	1970-01-01 00:00:00.000000000 +0000
++++ b/research/structural_arb/scripts/terms_retro_report.py	2026-09-29 04:27:29.185041264 +0000
+@@ -0,0 +1,50 @@
++"""Report (never rewrite) how recorded lock-like candidates relabel under amendment-aware terms verification.
++
++usage: python scripts/terms_retro_report.py DATA_DIR [DATA_DIR ...] [--grace-days N]
++
++Lists the public regulatory bucket and GET /series once (public, unauthenticated), then prints, per data
++directory, recorded status -> retro status counts with reasons (sarb/terms_retro.py). Data files are
++only read.
++"""
++from __future__ import annotations
++
++import argparse
++import collections
++import glob
++import gzip
++import json
++import os
++import sys
++
++sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
++from sarb import filings as FL          # noqa: E402
++from sarb import terms_retro as TR      # noqa: E402
++from sarb.client import PublicClient    # noqa: E402
++
++
++def main(argv=None):
++    ap = argparse.ArgumentParser()
++    ap.add_argument("dirs", nargs="+")
++    ap.add_argument("--grace-days", type=float, default=0.0)
++    a = ap.parse_args(argv)
++    bucket = [f for pre in FL.PREFIXES for f in FL.http_list(pre)]
++    r = PublicClient().get_retry("/series", {"limit": 1000})
++    if r.status != 200:
++        raise SystemExit(f"/series HTTP {r.status}")
++    series_terms = {s["ticker"]: s.get("contract_terms_url") for s in r.body.get("series", [])}
++    out = {}
++    for d in a.dirs:
++        c = collections.Counter()
++        for f in sorted(glob.glob(os.path.join(d, "sarb_candidates_*.jsonl.gz"))):
++            with gzip.open(f, "rt") as fh:
++                for line in fh:
++                    rec = json.loads(line)
++                    new, why = TR.retro_status(rec, bucket, series_terms, a.grace_days * 86400)
++                    if rec.get("status") in TR.LOCK_LIKE:
++                        c[f"{rec['status']} -> {new} ({why or 'stands'}) [{rec.get('relationship')}]"] += 1
++        out[d] = dict(sorted(c.items()))
++    print(json.dumps(out, indent=1))
++
++
++if __name__ == "__main__":
++    main()
+diff -ruN a/research/structural_arb/tests/test_collector.py b/research/structural_arb/tests/test_collector.py
+--- a/research/structural_arb/tests/test_collector.py	2026-09-27 20:07:28.000000000 +0000
++++ b/research/structural_arb/tests/test_collector.py	2026-09-29 04:28:05.175773823 +0000
+@@ -3,17 +3,32 @@
+ import hashlib
+ import json
+ import os
++import sys
+ import time
+ import urllib.parse
+ 
+ import pytest
+ 
+-from sarb import config, terms as TERMS
++from sarb import config, filings as FL, terms as TERMS
+ from sarb.client import PublicClient
+ from sarb.collector import Collector
+ 
+ FAKE_TERMS = "https://assets.kalshi.com/contract_terms/FAKE.pdf"
+ FAKE_BYTES = b"fake terms for tests"
++FAKE_FILING = "regulatory/product-certifications/FAKE.pdf"
++FAKE_FILING_BYTES = b"fake filed terms for tests"
++FAKE_KNOWN = (FL.Filing(FAKE_FILING, "2020-01-01T00:00:00.000Z", len(FAKE_FILING_BYTES)),
++              FL.Filing("contract_terms/FAKE.pdf", "2020-01-01T00:00:01.000Z", len(FAKE_BYTES)))
++BUCKET = list(FAKE_KNOWN)       # the fake regulatory bucket; tests append/replace objects
++
++
++def fake_list(prefix):
++    return [f for f in BUCKET if f.key.startswith(prefix)]
++
++
++def fake_fetch(key):
++    assert key == FAKE_FILING
++    return FAKE_FILING_BYTES
+ FUTURE = "2099-01-01T00:00:00Z"
+ TXT = "If the Fake Index on Jan 1, 2099 is above {k}, then the market resolves to Yes."
+ 
+@@ -77,8 +92,12 @@
+ @pytest.fixture
+ def fake_registry(monkeypatch):
+     t = TERMS.VerifiedTerms(FAKE_TERMS, hashlib.sha256(FAKE_BYTES).hexdigest(), True, "LAST_VALUE", ("test",),
+-                            "test fixture: single fixed determination instant")
++                            "test fixture: single fixed determination instant", template="FAKE",
++                            controlling_filing=FAKE_FILING,
++                            controlling_filing_sha256=hashlib.sha256(FAKE_FILING_BYTES).hexdigest(),
++                            known_filings=FAKE_KNOWN, reviewed="test fixture")
+     monkeypatch.setattr(TERMS, "REGISTRY", {FAKE_TERMS: t})
++    monkeypatch.setattr(sys.modules[__name__], "BUCKET", list(FAKE_KNOWN))
+     monkeypatch.setattr(config, "PERSISTENCE_REFETCH_DELAY_S", 0.05)
+     monkeypatch.setattr(config, "AUDIT_FAMILIES_PER_CYCLE", 1)
+     monkeypatch.setattr(config, "EVENTS_PAGE_MIN_INTERVAL_S", 0)
+@@ -95,7 +114,7 @@
+ 
+ def run_cycle(tmp_path, session):
+     c = Collector(PublicClient(session=session, per_second=1000, burst=100), str(tmp_path), seed=1,
+-                  terms_fetch=lambda url: FAKE_BYTES)
++                  terms_fetch=lambda url: FAKE_BYTES, filings_list=fake_list, filings_fetch=fake_fetch)
+     return c.run_cycle()
+ 
+ 
+@@ -161,7 +180,7 @@
+ 
+ def test_statscreen_deduplicated_across_cycles(tmp_path, fake_registry):
+     c = Collector(PublicClient(session=Session(), per_second=1000, burst=100), str(tmp_path), seed=1,
+-                  terms_fetch=lambda url: FAKE_BYTES)
++                  terms_fetch=lambda url: FAKE_BYTES, filings_list=fake_list, filings_fetch=fake_fetch)
+     c.run_cycle(); c.run_cycle()
+     n = sum(1 for r in read(tmp_path, "statscreen") if r["relationship"] == "R1_LONG")
+     counts = [r["counts"] for r in read(tmp_path, "counts")]
+@@ -239,3 +258,79 @@
+     assert st.relationship_class == "GUARANTEED" and E._terms_ok(st) is False
+     st2 = U.categorical_pair("EV", "A", "B", terms_verified=True)
+     assert E._terms_ok(st2) is True
++
++
++# ---------------------------------------------------------------- amendment-aware terms (TERMS_AUDIT.md)
++def _statuses(tmp_path):
++    return {r["status"] for r in read(tmp_path, "candidates") if r["extra"]["phase"] in ("P2", "P3")}
++
++
++def test_baseline_fixture_still_reaches_rule_defined_lock(tmp_path, fake_registry):
++    run_cycle(tmp_path, Session())
++    assert "RULE_DEFINED_LOCK" in _statuses(tmp_path)
++    uni = read(tmp_path, "universe")[0]
++    assert uni["terms_filing_status"] == {FAKE_TERMS: "OK"}
++
++
++def test_new_amendment_demotes_even_though_served_pdf_is_unchanged(tmp_path, fake_registry, monkeypatch):
++    """GLOBALTEMPERATURE regression: served PDF bytes unchanged, a new amendment is posted."""
++    monkeypatch.setattr(sys.modules[__name__], "BUCKET",
++                        list(FAKE_KNOWN) + [FL.Filing("regulatory/notices/FAKE Amendment (for posting).pdf",
++                                                      "2021-01-01T00:00:00.000Z", 123)])
++    run_cycle(tmp_path, Session())
++    st = _statuses(tmp_path)
++    assert "RULE_DEFINED_LOCK" not in st and "GUARANTEED_STRUCTURAL_NOT_EXECUTABLE" not in st
++    assert "CANDIDATE_TERMS_UNVERIFIED" in st
++    assert read(tmp_path, "universe")[0]["terms_filing_status"] == {FAKE_TERMS: "TERMS_SUPERSEDED"}
++
++
++def test_bucket_listing_failure_fails_closed(tmp_path, fake_registry):
++    def broken(prefix):
++        raise ConnectionError("reset")
++    c = Collector(PublicClient(session=Session(), per_second=1000, burst=100), str(tmp_path), seed=1,
++                  terms_fetch=lambda url: FAKE_BYTES, filings_list=broken, filings_fetch=fake_fetch)
++    c.run_cycle()
++    assert "RULE_DEFINED_LOCK" not in _statuses(tmp_path)
++    assert read(tmp_path, "universe")[0]["terms_filing_status"] == {FAKE_TERMS: "TERMS_FILINGS_UNAVAILABLE"}
++
++
++def test_controlling_filing_fetch_failure_fails_closed(tmp_path, fake_registry):
++    def broken(key):
++        raise TimeoutError()
++    c = Collector(PublicClient(session=Session(), per_second=1000, burst=100), str(tmp_path), seed=1,
++                  terms_fetch=lambda url: FAKE_BYTES, filings_list=fake_list, filings_fetch=broken)
++    c.run_cycle()
++    assert "RULE_DEFINED_LOCK" not in _statuses(tmp_path)
++    assert read(tmp_path, "universe")[0]["terms_filing_status"] == {FAKE_TERMS: "TERMS_CONTROLLING_FILING_UNCONFIRMED"}
++
++
++def test_filing_record_changing_before_p3_blocks_lock(tmp_path, fake_registry, monkeypatch):
++    calls = []
++    real = Collector._filing_status
++
++    def flip(self, now_utc_ns=None):
++        calls.append(1)
++        s = real(self, now_utc_ns)
++        return s if len(calls) == 1 else {u: "TERMS_SUPERSEDED" for u in s}
++    monkeypatch.setattr(Collector, "_filing_status", flip)
++    run_cycle(tmp_path, Session())
++    p3 = [r for r in read(tmp_path, "candidates") if r["extra"]["phase"] == "P3"]
++    assert p3 and all(r["status"] != "RULE_DEFINED_LOCK" for r in p3)
++    assert any("TERMS_FILINGS_NOT_OK:TERMS_SUPERSEDED" in why
++               for r in p3 for why in sum(r["extra"]["metadata_consistency"].values(), []))
++
++
++def test_stale_listing_verifies_nothing(tmp_path, fake_registry, monkeypatch):
++    monkeypatch.setattr(config, "MAX_FILINGS_LISTING_AGE_S", -1)
++    run_cycle(tmp_path, Session())
++    assert "RULE_DEFINED_LOCK" not in _statuses(tmp_path)
++    assert read(tmp_path, "universe")[0]["terms_filing_status"] == {FAKE_TERMS: "TERMS_FILINGS_STALE"}
++
++
++def test_provenance_records_the_filing_basis(tmp_path, fake_registry):
++    run_cycle(tmp_path, Session())
++    lock = [r for r in read(tmp_path, "candidates") if r["status"] == "RULE_DEFINED_LOCK"][0]
++    for leg in lock["extra"]["provenance"]["legs"].values():
++        assert leg["terms_filing_status"] == "OK" and leg["terms_controlling_filing"] == FAKE_FILING
++        assert [k[0] for k in leg["terms_known_filings"]] == [f.key for f in FAKE_KNOWN]
++        assert leg["filings_listed_utc_ns"] and leg["terms_rules_conflicts"] == []
+diff -ruN a/research/structural_arb/tests/test_filings.py b/research/structural_arb/tests/test_filings.py
+--- a/research/structural_arb/tests/test_filings.py	1970-01-01 00:00:00.000000000 +0000
++++ b/research/structural_arb/tests/test_filings.py	2026-09-29 04:28:45.981045829 +0000
+@@ -0,0 +1,189 @@
++"""Amendment-aware terms verification (sarb/filings.py, sarb/terms.py, sarb/terms_retro.py).
++
++Fixtures use the REAL bucket objects for the three registered templates as listed on 2026-09-29
++(edge_search/evidence/terms_audit/outputs/terms_audit.json). No network access.
++"""
++import dataclasses
++import hashlib
++
++import pytest
++
++from sarb import config, filings as FL, terms as T, terms_retro as TR
++
++F = FL.Filing
++NOW = FL.iso_to_ns("2026-09-29T04:00:00Z")
++GT_URL = "https://assets.kalshi.com/contract_terms/GLOBALTEMPERATURE.pdf"
++BTC_URL = "https://assets.kalshi.com/contract_terms/BTC.pdf"
++GT_AMENDMENTS = (F("regulatory/notices/GLOBALTEMPERATURE Amendment (for posting).pdf", "2026-08-18T17:55:55.000Z", 308464),
++                 F("regulatory/notices/GLOBALTEMPERATURE Amendment 2 (for posting).pdf", "2026-09-02T12:00:55.000Z", 249342))
++NEIGHBOURS = (F("regulatory/notices/BTCMINMAX Amendment for posting.pdf", "2024-11-12T07:34:12.000Z", 255989),
++              F("regulatory/product-certifications/GLOBALTEMPERATURESUSTAINED.pdf", "2025-12-12T18:08:00.000Z", 1),
++              F("contract_terms/KXBTC.pdf", "2025-01-01T00:00:00.000Z", 1))
++BUCKET_2026_09_29 = (T.REGISTRY[BTC_URL].known_filings + T.REGISTRY["https://assets.kalshi.com/contract_terms/ETH.pdf"].known_filings
++                     + T.REGISTRY[GT_URL].known_filings + GT_AMENDMENTS + NEIGHBOURS)
++
++
++def listing(t, objs=BUCKET_2026_09_29, sha="ctrl", at=NOW - 60 * 10**9):
++    return FL.Listing(t.template, at, None if objs is None else tuple(o for o in objs if FL.belongs(t.template, o.key)),
++                      t.controlling_filing_sha256 if sha == "ctrl" else sha)
++
++
++# ---------------------------------------------------------------- the live registry, as of 2026-09-29
++def test_globaltemperature_is_superseded_by_its_amendments():
++    t = T.REGISTRY[GT_URL]
++    assert FL.status(t, listing(t), NOW) == "TERMS_SUPERSEDED"
++    assert T.lookup(GT_URL, t.sha256, FL.status(t, listing(t), NOW)) == (None, "TERMS_SUPERSEDED")
++
++
++@pytest.mark.parametrize("url", [BTC_URL, "https://assets.kalshi.com/contract_terms/ETH.pdf"])
++def test_crypto_entries_keyed_to_amendment_2_verify(url):
++    t = T.REGISTRY[url]
++    assert t.controlling_filing.endswith("Amendment 2 for posting.pdf")
++    assert FL.status(t, listing(t), NOW) == FL.OK
++    assert T.lookup(url, t.sha256, FL.OK)[1] == "TERMS_VERIFIED"
++
++
++# ---------------------------------------------------------------- every non-OK outcome
++BTC = T.REGISTRY[BTC_URL]
++
++
++@pytest.mark.parametrize("lst,expected", [
++    (None, "TERMS_FILINGS_NOT_CHECKED"),
++    (listing(BTC, objs=None), "TERMS_FILINGS_UNAVAILABLE"),
++    (listing(BTC, at=NOW - int(config.MAX_FILINGS_LISTING_AGE_S * 1e9) - 1), "TERMS_FILINGS_STALE"),
++    (listing(BTC, at=NOW + 10**9), "TERMS_FILINGS_STALE"),                        # listing from the future
++    (listing(BTC, objs=BUCKET_2026_09_29 + (F("regulatory/notices/BTC Amendment 3 for posting.pdf", "2026-09-28T00:00:00.000Z", 9),)),
++     "TERMS_SUPERSEDED"),
++    (listing(BTC, objs=BUCKET_2026_09_29 + (F("regulatory/notices/processed-BTC modification (3).pdf", "2026-09-28T00:00:00.000Z", 9),)),
++     "TERMS_SUPERSEDED"),                                                           # name not starting with the template
++    (listing(BTC, objs=BUCKET_2026_09_29 + (F("regulatory/notices/btc amendment 3.pdf", "2026-09-28T00:00:00.000Z", 9),)),
++     "TERMS_SUPERSEDED"),                                                           # case-insensitive
++    (listing(BTC, objs=BUCKET_2026_09_29 + (F("contract_terms/BTC (1).pdf", "2026-09-28T00:00:00.000Z", 9),)),
++     "TERMS_FILINGS_UNRECOGNISED"),
++    (listing(BTC, objs=tuple(o for o in BUCKET_2026_09_29 if o.key != "regulatory/notices/BTC Amendment for posting.pdf")),
++     "TERMS_FILINGS_INCOMPLETE"),
++    (listing(BTC, objs=tuple(dataclasses.replace(o, last_modified="2026-09-28T00:00:00.000Z") if o.key == BTC.controlling_filing
++                             else o for o in BUCKET_2026_09_29)), "TERMS_FILING_CHANGED"),
++    (listing(BTC, sha=None), "TERMS_CONTROLLING_FILING_UNCONFIRMED"),
++    (listing(BTC, sha="0" * 64), "TERMS_CONTROLLING_FILING_UNCONFIRMED"),
++])
++def test_status_fails_closed(lst, expected):
++    assert FL.status(BTC, lst, NOW) == expected
++    assert T.lookup(BTC_URL, BTC.sha256, FL.status(BTC, lst, NOW))[0] is None
++
++
++def test_neighbouring_templates_do_not_count():
++    assert not FL.belongs("BTC", "regulatory/notices/BTCMINMAX Amendment for posting.pdf")
++    assert not FL.belongs("BTC", "contract_terms/KXBTC.pdf")
++    assert not FL.belongs("GLOBALTEMPERATURE", "regulatory/product-certifications/GLOBALTEMPERATURESUSTAINED.pdf")
++    assert FL.belongs("BTC", "regulatory/notices/BTC-amendment.pdf")
++    assert not FL.belongs("BTC", "some/other/prefix/BTC.pdf")
++
++
++def test_recent_controlling_filing_is_pending():
++    t = dataclasses.replace(BTC)
++    posted = FL.iso_to_ns("2025-04-28T14:27:29.000Z")
++    assert FL.status(t, listing(t, at=posted + 3 * 86400 * 10**9), posted + 3 * 86400 * 10**9 + 1) == "TERMS_AMENDMENT_PENDING"
++    after = posted + int(config.AMENDMENT_PENDING_S * 1e9) + 10**9
++    assert FL.status(t, listing(t, at=after - 10**9), after) == FL.OK
++
++
++def test_lookup_never_verifies_without_ok_filing_status():
++    for fs in (None, "", "ok", "TERMS_VERIFIED", *FL.NON_OK_STATUSES):
++        assert T.lookup(BTC_URL, BTC.sha256, fs)[1] != "TERMS_VERIFIED"
++    assert T.lookup(BTC_URL, "0" * 64, FL.OK)[1] == "TERMS_HASH_CHANGED"
++
++
++# ---------------------------------------------------------------- registry guards
++def test_registry_entries_must_name_their_filing_basis():
++    base = dict(url="u", sha256="s", between_inclusive=True, no_data="ALL_NO", citations=("c",), common_determination="c")
++    with pytest.raises(ValueError):
++        T.VerifiedTerms(**base)                                            # no filing basis at all
++    ok = dict(base, template="BTC", controlling_filing=BTC.controlling_filing,
++              controlling_filing_sha256=BTC.controlling_filing_sha256, known_filings=BTC.known_filings, reviewed="r")
++    T.VerifiedTerms(**ok)
++    with pytest.raises(ValueError):                                         # controlling filing not listed
++        T.VerifiedTerms(**dict(ok, known_filings=BTC.known_filings[:2]))
++    with pytest.raises(ValueError):                                         # reviewed an older filing than the newest
++        T.VerifiedTerms(**dict(ok, controlling_filing="regulatory/notices/BTC Amendment for posting.pdf"))
++    with pytest.raises(ValueError):                                         # another template's object
++        T.VerifiedTerms(**dict(ok, known_filings=BTC.known_filings + NEIGHBOURS[:1]))
++
++
++def test_rules_markers():
++    assert T.rules_conflicts(BTC, {"rules_primary": "CF Benchmarks' Bitcoin Real-Time Index (BRTI)"}) == []
++    gt = T.REGISTRY[GT_URL]
++    live = {"rules_primary": "is between 71-72° fahrenheit according to The Weather Company"}
++    assert T.rules_conflicts(gt, live) == ["MISSING:National Weather Service"]
++
++
++# ---------------------------------------------------------------- refresh (I/O wrapper)
++def test_refresh_fails_closed_and_skips_network_for_empty_registry():
++    def boom(prefix):
++        raise ConnectionError()
++    out = FL.refresh({BTC_URL: BTC}, boom, lambda k: b"", now_ns=lambda: NOW)
++    assert out[BTC_URL].objects is None and FL.status(BTC, out[BTC_URL], NOW) == "TERMS_FILINGS_UNAVAILABLE"
++    assert FL.refresh({}, boom, boom) == {}
++    ok = FL.refresh({BTC_URL: BTC}, lambda p: [o for o in BUCKET_2026_09_29 if o.key.startswith(p)],
++                    lambda k: (_ for _ in ()).throw(TimeoutError()), now_ns=lambda: NOW)
++    assert FL.status(BTC, ok[BTC_URL], NOW) == "TERMS_CONTROLLING_FILING_UNCONFIRMED"
++
++
++class _R:
++    def __init__(self, status, content):
++        self.status_code, self.content = status, content
++
++
++def _page(keys, truncated, token=None):
++    body = "".join(f"<Contents><Key>{k}</Key><LastModified>2020-01-01T00:00:00.000Z</LastModified><Size>1</Size></Contents>"
++                   for k in keys)
++    t = f"<NextContinuationToken>{token}</NextContinuationToken>" if token else ""
++    return ('<?xml version="1.0"?><ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
++            f"{body}<IsTruncated>{'true' if truncated else 'false'}</IsTruncated>{t}</ListBucketResult>").encode()
++
++
++def test_http_list_paginates_and_refuses_partial_listings():
++    pages = iter([_R(200, _page(["a"], True, "tok")), _R(200, _page(["b"], False))])
++    assert [f.key for f in FL.http_list("p/", get=lambda url: next(pages))] == ["a", "b"]
++    with pytest.raises(RuntimeError):
++        FL.http_list("p/", get=lambda url: _R(403, b""))
++    with pytest.raises(RuntimeError):
++        FL.http_list("p/", get=lambda url: _R(200, _page(["a"], True, None)))
++
++
++# ---------------------------------------------------------------- retroactive, demote-only relabel
++SERIES = {"KXHIGHLAX": GT_URL, "KXBTCD": BTC_URL, "KXATTYGENMN": None}
++
++
++def rec(status, events, utc="2026-09-27T18:00:00Z", legs=None):
++    return {"status": status, "event_tickers": events, "logged_utc_ns": FL.iso_to_ns(utc),
++            "extra": {"provenance": {"legs": legs}} if legs else {}}
++
++
++def test_legacy_weather_record_is_demoted_as_superseded():
++    r = rec("GUARANTEED_STRUCTURAL_NOT_EXECUTABLE", ["KXHIGHLAX-26SEP28"])
++    assert TR.retro_status(r, list(BUCKET_2026_09_29), SERIES) == ("CANDIDATE_TERMS_UNVERIFIED", "TERMS_SUPERSEDED_AT_SNAPSHOT")
++    before = rec("GUARANTEED_STRUCTURAL_NOT_EXECUTABLE", ["KXHIGHLAX-26AUG01"], utc="2026-08-01T00:00:00Z")
++    assert TR.retro_status(before, list(BUCKET_2026_09_29), SERIES)[1] == "TERMS_FILINGS_NOT_CHECKED_AT_SNAPSHOT"
++
++
++def test_legacy_mecnet_exemption_record_is_demoted():
++    r = rec("GUARANTEED_STRUCTURAL_NOT_EXECUTABLE", ["KXATTYGENMN-26"])
++    assert TR.retro_status(r, list(BUCKET_2026_09_29), SERIES) == ("CANDIDATE_TERMS_UNVERIFIED", "TERMS_NOT_VERIFIED_AT_SNAPSHOT")
++
++
++def test_checked_record_stands_unless_a_filing_it_did_not_know_was_already_posted():
++    legs = {"L": {"terms_url": BTC_URL, "terms_status": "TERMS_VERIFIED", "terms_filing_status": "OK",
++                  "terms_known_filings": [[f.key, f.last_modified, f.size] for f in BTC.known_filings]}}
++    r = rec("RULE_DEFINED_LOCK", ["KXBTCD-26SEP27"], legs=legs)
++    assert TR.retro_status(r, list(BUCKET_2026_09_29), SERIES) == ("RULE_DEFINED_LOCK", None)
++    late = F("regulatory/notices/BTC Amendment 3 for posting.pdf", "2026-09-27T12:00:00.000Z", 9)
++    assert TR.retro_status(r, list(BUCKET_2026_09_29) + [late], SERIES)[1] == "TERMS_SUPERSEDED_AT_SNAPSHOT"
++    later = dataclasses.replace(late, last_modified="2026-09-28T12:00:00.000Z")
++    assert TR.retro_status(r, list(BUCKET_2026_09_29) + [later], SERIES) == ("RULE_DEFINED_LOCK", None)
++    assert TR.retro_status(r, list(BUCKET_2026_09_29) + [later], SERIES, grace_s=2 * 86400)[1] == "TERMS_SUPERSEDED_AT_SNAPSHOT"
++
++
++def test_retro_never_promotes():
++    for s in ("CANDIDATE_TERMS_UNVERIFIED", "STATISTICAL", "REJECTED", "FEE_UNRESOLVED"):
++        assert TR.retro_status(rec(s, ["KXBTCD-26SEP27"]), [], SERIES) == (s, None)
+diff -ruN a/research/structural_arb/tests/test_semantics.py b/research/structural_arb/tests/test_semantics.py
+--- a/research/structural_arb/tests/test_semantics.py	2026-09-27 20:03:58.000000000 +0000
++++ b/research/structural_arb/tests/test_semantics.py	2026-09-29 04:26:20.183729907 +0000
+@@ -7,14 +7,15 @@
+ from sarb.payoff import Interval
+ 
+ 
+-def mk(text, st, floor=None, cap=None, series_terms=None, sha=None, **kw):
++def mk(text, st, floor=None, cap=None, series_terms=None, sha=None, filing="OK", **kw):
+     ev = {"event_ticker": kw.pop("event", "E"), "series_ticker": kw.pop("series", "S"), "settlement_sources": []}
+     m = {"ticker": kw.pop("ticker", "T"), "strike_type": st, "floor_strike": floor, "cap_strike": cap,
+          "rules_primary": text, "rules_secondary": kw.pop("secondary", ""), "market_type": "binary",
+          "notional_value_dollars": "1.0000", "latest_expiration_time": kw.pop("exp", "2026-10-02T21:00:00Z"),
+          "custom_strike": kw.pop("custom", None)}
+     series = {"contract_terms_url": series_terms} if series_terms else {}
+-    return S.build_market_spec(ev, m, series, {series_terms: sha} if series_terms else {})
++    return S.build_market_spec(ev, m, series, {series_terms: sha} if series_terms else {},
++                               {series_terms: filing} if series_terms and filing else {})
+ 
+ 
+ BTC = "https://assets.kalshi.com/contract_terms/BTC.pdf"
+@@ -43,6 +44,21 @@
+     assert sp.terms_status == "TERMS_HASH_CHANGED" and sp.terms is None
+ 
+ 
++@pytest.mark.parametrize("filing", [None, "TERMS_SUPERSEDED", "TERMS_FILINGS_UNAVAILABLE", "TERMS_FILINGS_STALE",
++                                    "TERMS_AMENDMENT_PENDING", "SOMETHING_UNKNOWN"])
++def test_filing_record_must_be_ok_even_when_served_hash_matches(filing):
++    """The GLOBALTEMPERATURE regression: an unchanged served PDF is not evidence that nothing changed."""
++    sp = mk(BTC_B, "between", 72000, 72499.99, series_terms=BTC, sha=BTC_SHA, filing=filing)
++    assert sp.terms is None and sp.terms_status != "TERMS_VERIFIED" and sp.no_data_all_no
++
++
++def test_live_rules_contradicting_reviewed_terms_block_verification():
++    other = BTC_B.replace("CF Benchmarks' Bitcoin Real-Time Index (BRTI)", "Coinbase BTC-USD spot price")
++    sp = mk(other, "between", 72000, 72499.99, series_terms=BTC, sha=BTC_SHA)
++    assert sp.terms is None and sp.terms_status == "TERMS_RULES_CONFLICT"
++    assert sp.terms_rules_conflicts == ["MISSING:CF Benchmarks", "MISSING:BRTI"]
++
++
+ def test_btc_and_btcd_share_a_family_template():
+     a = mk(BTC_B, "between", 72000, 72499.99, series="KXBTC", event="KXBTC-26OCT0217")
+     b = mk(BTC_T, "greater", 71999.99, series="KXBTCD", event="KXBTCD-26OCT0217")

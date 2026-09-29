@@ -144,7 +144,7 @@ Each check below is evaluated in order, and the first that fails determines the 
 | 2 | **Unknown documents.** A key for `<T>` that is neither in `known_filings` nor matches a known filing pattern (certification, "Amendment n", "for posting") fails. | `TERMS_FILINGS_UNRECOGNISED` |
 | 3 | **Superseded.** Any filing newer than `controlling_filing_key`, or a controlling-filing sha different from the registry's, fails. This is what would have caught GLOBALTEMPERATURE on 2026-08-18. | `TERMS_SUPERSEDED` |
 | 4 | **Pending.** If the controlling filing is less than 10 business days old and states no effective date, either version may be in force. | `TERMS_AMENDMENT_PENDING` |
-| 5 | **Served copy.** Fetch the served PDF; if its sha equals `served_sha256_at_review`, accept. Otherwise extract its normalised text and require that every sentence also appears in the controlling Appendix A (the BTC/ETH case passes). Any substantive divergence fails. | `TERMS_SOURCE_CONFLICT` |
+| 5 | **Served copy.** Fetch the served PDF; its sha must equal `served_sha256_at_review`. Any change fails and needs a human re-review; the text-containment comparison (`evidence/terms_audit/terms_audit.py`) is the reviewer's tool, not an automatic promotion. *(Tightened in the prepared patch; an earlier draft accepted text containment automatically, which would be a promotion path.)* | `TERMS_HASH_CHANGED` |
 | 6 | **Live rules.** For every market in the family, the fresh `rules_primary`/`rules_secondary` must contain every required marker and no forbidden marker. For example, a registry claiming NWS while rules say "The Weather Company" fails. | `TERMS_RULES_CONFLICT` |
 | 7 | Otherwise. | `TERMS_VERIFIED` |
 
@@ -185,3 +185,9 @@ Before any further `structural_arb` run is interpreted:
 - re-verify BTC and ETH against their Amendment 2 filings. Their text is contained in the filings, so a re-review should only re-key them.
 
 Implementing section 6 in `structural_arb` awaits explicit approval, as instructed.
+
+**Prepared, not applied (2026-09-29):**
+- `proposals/structural_terms_v2.patch`, described in `proposals/STRUCTURAL_TERMS_V2.md`.
+- 945/945 tests pass on a patched copy.
+- Live check: BTC OK, ETH OK, GLOBALTEMPERATURE `TERMS_SUPERSEDED`.
+- A demote-only retro relabel of the validation data: 47 weather records superseded at their snapshots; 362 pre-audit MECNET records not verified.

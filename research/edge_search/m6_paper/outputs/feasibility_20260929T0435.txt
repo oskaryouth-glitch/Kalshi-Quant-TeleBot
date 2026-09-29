@@ -1,0 +1,43 @@
+[entry_rule_remaining_ge_24h] snapshot 2026-09-29T04:35:27Z: live programs 4942, evaluated 4937, distinct markets 4210, skipped {'no_x_up_to_20000': 5}
+K=$30: affordable individually 1291; greedy selects 4 programs, committed $27.90, static reward $2.51/day ($0.0901/day per $), worst-case one-side-fill loss $11.11, selected markets closing > 30 d out: 2
+     KXTRUMPAIMEET-26OCT01-JHUA               x=   5 quotes 0.9000/0.0600 C*=$9.30 L*=$4.50 $0.903/day, 2.0 d left, vol24h 25722.26, close 2026-10-01
+     KXMLBOPENINGDAY-27-27APR30               x=   4 quotes 0.3700/0.5200 C*=$5.64 L*=$2.08 $0.540/day, 3.0 d left, vol24h 0.00, close 2027-04-30
+     KXGABBARDRETURN-27JAN01-TGAB-27JAN01     x=   3 quotes 0.3600/0.5500 C*=$4.38 L*=$1.65 $0.413/day, 5.0 d left, vol24h 10.42, close 2027-01-01
+     KXTRUMPSAYCOMPANY-26OCT01-META           x=   6 quotes 0.4800/0.4700 C*=$8.58 L*=$2.88 $0.657/day, 2.4 d left, vol24h 834.54, close 2026-10-01
+K=$100: affordable individually 2798; greedy selects 9 programs, committed $99.97, static reward $8.12/day ($0.0812/day per $), worst-case one-side-fill loss $39.57, selected markets closing > 30 d out: 3
+     KXTRUMPAIMEET-26OCT01-JHUA               x=   5 quotes 0.9000/0.0600 C*=$9.30 L*=$4.50 $0.903/day, 2.0 d left, vol24h 25722.26, close 2026-10-01
+     KXMLBOPENINGDAY-27-27APR30               x=   4 quotes 0.3700/0.5200 C*=$5.64 L*=$2.08 $0.540/day, 3.0 d left, vol24h 0.00, close 2027-04-30
+     KXGABBARDRETURN-27JAN01-TGAB-27JAN01     x=   3 quotes 0.3600/0.5500 C*=$4.38 L*=$1.65 $0.413/day, 5.0 d left, vol24h 10.42, close 2027-01-01
+     KXRAIN-26SEP29-OKC                       x=  10 quotes 0.3300/0.6500 C*=$16.30 L*=$6.50 $1.467/day, 1.1 d left, vol24h 7487.63, close 2026-09-30
+     KXRAIN-26SEP29-LV                        x=  10 quotes 0.6100/0.3600 C*=$15.80 L*=$6.10 $1.384/day, 1.1 d left, vol24h 9243.11, close 2026-09-30
+     KXTRUMPSAYCOMPANY-26OCT01-META           x=   6 quotes 0.4800/0.4700 C*=$8.58 L*=$2.88 $0.657/day, 2.4 d left, vol24h 834.54, close 2026-10-01
+     KXRAIN-26SEP29-DEN                       x=  12 quotes 0.2900/0.6700 C*=$19.56 L*=$8.04 $1.446/day, 1.1 d left, vol24h 11499.56, close 2026-09-30
+     KXTRUMPSAYCOMPANY-26OCT01-TSLA           x=   6 quotes 0.2700/0.7200 C*=$10.26 L*=$4.32 $0.672/day, 2.4 d left, vol24h 348.62, close 2026-10-01
+     KXGPT-ASTRA61-26NOV06                    x=   7 quotes 0.4500/0.5000 C*=$10.15 L*=$3.50 $0.636/day, 2.4 d left, vol24h 3261.01, close 2026-11-06
+K=$200: affordable individually 3350; greedy selects 16 programs, committed $199.55, static reward $14.43/day ($0.0723/day per $), worst-case one-side-fill loss $83.51, selected markets closing > 30 d out: 5
+     KXTRUMPAIMEET-26OCT01-JHUA               x=   5 quotes 0.9000/0.0600 C*=$9.30 L*=$4.50 $0.903/day, 2.0 d left, vol24h 25722.26, close 2026-10-01
+     KXMLBOPENINGDAY-27-27APR30               x=   4 quotes 0.3700/0.5200 C*=$5.64 L*=$2.08 $0.540/day, 3.0 d left, vol24h 0.00, close 2027-04-30
+     KXGABBARDRETURN-27JAN01-TGAB-27JAN01     x=   3 quotes 0.3600/0.5500 C*=$4.38 L*=$1.65 $0.413/day, 5.0 d left, vol24h 10.42, close 2027-01-01
+     KXRAIN-26SEP29-OKC                       x=  10 quotes 0.3300/0.6500 C*=$16.30 L*=$6.50 $1.467/day, 1.1 d left, vol24h 7487.63, close 2026-09-30
+     KXRAIN-26SEP29-LV                        x=  10 quotes 0.6100/0.3600 C*=$15.80 L*=$6.10 $1.384/day, 1.1 d left, vol24h 9243.11, close 2026-09-30
+     KXTRUMPSAYCOMPANY-26OCT01-META           x=   6 quotes 0.4800/0.4700 C*=$8.58 L*=$2.88 $0.657/day, 2.4 d left, vol24h 834.54, close 2026-10-01
+     KXRAIN-26SEP29-DEN                       x=  12 quotes 0.2900/0.6700 C*=$19.56 L*=$8.04 $1.446/day, 1.1 d left, vol24h 11499.56, close 2026-09-30
+     KXRAIN-26SEP29-HOU                       x=  13 quotes 0.3200/0.6500 C*=$21.06 L*=$8.45 $1.502/day, 1.1 d left, vol24h 8729.62, close 2026-09-30
+     KXRAIN-26SEP29-AUS                       x=  12 quotes 0.1900/0.8000 C*=$21.48 L*=$9.60 $1.508/day, 1.1 d left, vol24h 1377.34, close 2026-09-30
+     KXTRUMPSAYCOMPANY-26OCT01-TSLA           x=   6 quotes 0.2700/0.7200 C*=$10.26 L*=$4.32 $0.672/day, 2.4 d left, vol24h 348.62, close 2026-10-01
+     KXGPT-ASTRA61-26NOV06                    x=   7 quotes 0.4500/0.5000 C*=$10.15 L*=$3.50 $0.636/day, 2.4 d left, vol24h 3261.01, close 2026-11-06
+     KXRAIN-26SEP29-SATX                      x=  13 quotes 0.2000/0.7800 C*=$22.88 L*=$10.14 $1.424/day, 1.1 d left, vol24h 4563.40, close 2026-09-30
+C*(x15) across markets: p10 $14.16, p50 $55.80, p90 $623.39; <= $30: 1291, <= $100: 2798, <= $200: 3350 of 4210
+
+[any_remaining_ge_1h] snapshot 2026-09-29T04:35:27Z: live programs 4942, evaluated 4937, distinct markets 4937, skipped {'no_x_up_to_20000': 5}
+K=$30: affordable individually 1338; greedy selects 1 programs, committed $29.82, static reward $24.84/day ($0.8330/day per $), worst-case one-side-fill loss $10.92, selected markets closing > 30 d out: 0
+     KXTTELITEMATCH-26SEP290105MADKAD-KAD     x=  21 quotes 0.5200/0.3800 C*=$29.82 L*=$10.92 $24.839/day, 0.1 d left, vol24h 0.00, close 2026-10-06
+K=$100: affordable individually 2979; greedy selects 3 programs, committed $99.54, static reward $324.42/day ($3.2592/day per $), worst-case one-side-fill loss $36.64, selected markets closing > 30 d out: 1
+     KXTTELITEMATCH-26SEP290055MMIBCZ-BCZ     x=  60 quotes 0.5200/0.3700 C*=$84.60 L*=$31.20 $320.000/day, 0.1 d left, vol24h 0.00, close 2026-10-06
+     KXTRUMPAPPROVE-26SEP29-E38.7             x=   6 quotes 0.4300/0.5600 C*=$9.30 L*=$3.36 $3.880/day, 0.4 d left, vol24h 24339.97, close 2026-09-29
+     KXMLBOPENINGDAY-27-27APR30               x=   4 quotes 0.3700/0.5200 C*=$5.64 L*=$2.08 $0.540/day, 3.0 d left, vol24h 0.00, close 2027-04-30
+K=$200: affordable individually 3611; greedy selects 3 programs, committed $199.62, static reward $664.83/day ($3.3305/day per $), worst-case one-side-fill loss $73.92, selected markets closing > 30 d out: 0
+     KXTTELITEMATCH-26SEP290055MMIBCZ-BCZ     x=  60 quotes 0.5200/0.3700 C*=$84.60 L*=$31.20 $320.000/day, 0.1 d left, vol24h 0.00, close 2026-10-06
+     KXTTELITEMATCH-26SEP290050GPOMSK-GPO     x=  60 quotes 0.3600/0.5300 C*=$85.20 L*=$31.80 $319.992/day, 0.1 d left, vol24h 0.00, close 2026-10-06
+     KXTTELITEMATCH-26SEP290105MADKAD-KAD     x=  21 quotes 0.5200/0.3800 C*=$29.82 L*=$10.92 $24.839/day, 0.1 d left, vol24h 0.00, close 2026-10-06
+C*(x15) across markets: p10 $15.39, p50 $66.88, p90 $1664.65; <= $30: 1338, <= $100: 2979, <= $200: 3611 of 4937
