@@ -11,7 +11,7 @@
 |---|---|---|
 | **M8-T20** | **KILLED before price testing** | The 50¢ state adds no constraint beyond R1/R4 complementarity (PREREG §M8). No price data was retrieved. |
 | **M2-NO** | **KILL** (K2) | After NO became certain, the typical market offered only the price-grid floor. The median over markets of the time-median YES bid was $0.00. Executed value existed: $17.36k net 5.11-safe. It was almost entirely 1¢ floor fills: 99¢ NO bids filled by holders exiting over about 11 days, plus stale YES bids in three NFL markets on one evening. |
-| **M5-GOLF** | *see §M5* | |
+| **M5-GOLF** | **KILL** | The whole-field price already contains the expected tie payouts within bid/ask and fees. Across 26 fully covered KXPGATOP10 events, buying the field never beat its payout (U > 0 in 0/26), and selling it beat the payout in only 3/26. Both one-sided 95% lower bounds are negative: U −23.57, O −3.69. |
 | **M6-REWARDS** | **SURVIVE (capital-compatible)**, weak by construction | 52/60 sampled programs (87%, kill threshold 10%) let a small participant earn ≥ $1 per Time Period with C\* ≤ $200 (median C\* $19). It works only because other providers already meet the Target on both sides. Where they don't, C\* ≈ $1,750–1,790, as derived. Profitability and adverse selection were **not** tested. |
 
 ## Changes after the freeze (all disclosed)
@@ -28,7 +28,7 @@
    - It was filled **before** any golf price was read.
    - Where two sources disagreed on the field size (TECHO26: 133 vs 135; WYC26: 144 vs 147), or no source was found (THCCBN26), the size was left blank. The event is therefore invalid.
    - This strict convention is the literal PREREG rule ("a missing or unsourced value … invalidates the observation"). It was written down before prices were seen.
-5. **Data-access bug in candlestick parsing** (found after the first M5 run completed; fixed; M2 and M5 rerun):
+5. **Data-access bug in candlestick parsing** (found after the first M5 run completed; fixed). M5 was rerun. M2 was re-measured over its frozen universe (`m2_remeasure.py`), because rebuilding would have added a market that settled later.
    - **Cause.**
      - The live candlestick endpoint returns `yes_bid.close_dollars`, `yes_ask.close_dollars` and `volume_fp`.
      - The historical endpoint returns `close` and `volume`.
@@ -116,6 +116,8 @@ All markets combined: **$17,362.77 direct** ($17,362.23 non-direct).
 - 99.7% of post-certainty gross ($17,543.97 of $17,602.66) traded at YES ≤ $0.20. That is inside the no-cancellation band around fair value 0, so it is not reviewable.
 - The remaining $58.69 was reviewable on the counterparty's request within 15 minutes.
 
+**After the data-access fix.** Re-measuring the frozen 173-market universe changed **0 rows**. The NFL candles now parse, and they genuinely show no YES bid after certainty. The universe was not rebuilt: KXNFLWINS-27PHI-17, which settled after the original run, would have entered it. See `m2_remeasure.py`.
+
 **Settle-time variant** (reported only). Identical totals: no post-certainty trade fell between a deciding game's close and its settlement.
 
 **Frozen decision:**
@@ -137,10 +139,49 @@ All markets combined: **$17,362.77 direct** ($17,362.23 non-direct).
 
 ## M5-GOLF: top-N "including ties"
 
-*(pending: filled in from `outputs/m5_summary.txt`)*
+**Frozen statistic.** S = realised whole-field payout. At t_s (16:00 UTC on the eve of round 1):
+- A = Σ asks, B = Σ bids, M = Σ mids;
+- U = S − A − F_buy;
+- O = B − F_sell − S.
 
----
+A missing bid counts as 0; a missing ask counts as 1.
 
+**Valid events.** 26 tournaments whose Kalshi teed-off count equals the sourced official field size. The same 26 for each of TOP10, TOP5 and TOP20.
+- 36 observations are invalid: 12 tournaments × 3 series.
+  - 27 are coverage mismatches: FAIO26, WMPO26, COCITPB26, ARPIPBM26, PURO26, THPC26, VAC26, VATO26, BICA26.
+  - 9 have no single sourced field size: TECHO26, WYC26, THCCBN26.
+- Fee state is exact for every event (quadratic, M = 1).
+
+**Primary series KXPGATOP10 (N = 10), corrected run:**
+
+| statistic | mean | sd | one-sided 95% LB | 95% CI | median | events > 0 |
+|---|---|---|---|---|---|---|
+| U = S − A − F_buy | −13.69 | 29.49 | **−23.57** | (−25.60, −1.78) | −3.88 | 0/26 |
+| O = B − F_sell − S | −2.80 | 2.66 | **−3.69** | (−3.87, −1.72) | −2.08 | 3/26 |
+| S − M (tie reflection at the mid) | −5.37 | 13.90 | — | (−10.98, 0.25) | | |
+
+- Mean S − N = 1.77: ties add about 1.8 payouts per tournament. Mean M − N = 7.14, which is inflated by illiquid fields (see below).
+
+**Frozen decision:** both lower bounds ≤ 0 → **KILL**. The whole-field price reflects the expected number of payouts, ties included, within bid/ask plus fees. This is the rerun after the data-access fix; the as-run decision (`outputs/asrun_bug_m5_summary.txt`) was also KILL.
+
+**Secondary series** (reported only, same 26 events):
+
+| series | mean U (LB) | mean O (LB) | mean S − N |
+|---|---|---|---|
+| TOP5 | −13.57 (−23.79) | −1.83 (−2.27) | 1.07 |
+| TOP20 | −11.98 (−20.99) | −4.55 (−6.22) | 3.22 |
+
+Both have negative lower bounds for U and O.
+
+**Liquidity and interpretation** (reported only):
+- **Illiquid fields.** Early-2026 fields were very wide. For example, SOOIH26 was quoted about 1¢ bid / 37–99¢ ask on most golfers, with no volume. Buying such a field cost $112 for a $10 payout. These events drive the large negative mean U and the M − N inflation.
+- **Tight books.** Restrict to the 15 events where A − B ≤ 5 (e.g. MAST26, PGC26, the playoffs):
+  - the field mid-sum exceeds N by 2.04;
+  - the realised tie excess S − N is 1.24;
+  - S − M = −0.80 (sd 1.20), not distinguishable from 0 given the per-event variability of ties;
+  - realised S sits 0.56 above B and 2.17 below A, before whole-field fees of about $0.58 to sell and $0.70 to buy.
+- **Depth.** Historical depth is not published. Any executable whole-field position would also need depth on 70–165 markets at once.
+- **Conclusion.** No evidence that the market ignores or misprices "including ties" payouts.
 ## M6-REWARDS: capital compatibility for a very small account
 
 **Filed formula and units confirmed.**
