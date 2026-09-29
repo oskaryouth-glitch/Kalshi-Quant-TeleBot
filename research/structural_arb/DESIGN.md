@@ -28,9 +28,9 @@ Every item below is backed by a file in `sources/`, with hashes in `sources/SOUR
 | A4 | Trades may be cancelled or adjusted if executed outside ±$0.20 of fair value (the No Cancellation Range) | Rulebook 5.11(c) |
 | A5 | `result ∈ {yes, no, scalar}`. **Scalar results really occur**: 4 live golf markets settled at $0.05, $0.11, $0.22 and $0.45 (a withdrawal before tee-off) | API get-market schema; live data |
 | A6 | `mutually_exclusive = true` ⇔ MECNET ⇔ "at most one market in this event can resolve to 'yes'" | API get-event schema |
-| A7 | Crypto terms (BTC and ETH, identical): "between" is **inclusive**; **"If no data is available … the market resolves to No"** (an ALL_NO state); the underlying is the average of 60 index prints, with no rounding stated | contract_terms/BTC.pdf, ETH.pdf |
+| A7 | Crypto terms (BTC and ETH, identical): "between" is **inclusive**; **"If no data is available … the market resolves to No"** (an ALL_NO state); the underlying is the average of 60 index prints, with no rounding stated | contract_terms/BTC.pdf, ETH.pdf (text contained in the controlling filings "BTC/ETH Amendment 2 for posting.pdf", 2025-04-28) |
 | A8 | INX terms: "between" inclusive; no data → most recent value; "before" variants are path-dependent | contract_terms/INX.pdf |
-| A9 | Temperature terms: above `>`, below `<`, at least `≥`, between inclusive; "full precision reported"; no data → **Exchange-determined "last fair price"** | contract_terms/GLOBALTEMPERATURE.pdf |
+| A9 | Temperature terms: above `>`, below `<`, at least `≥`, between inclusive; "full precision reported"; no data → **Exchange-determined "last fair price"**. **SUPERSEDED (2026-09-29):** amendments filed 2026-08-17 (The Weather Company first Source Agency) and 2026-09-02 (Exchange-specified reports; material-error expiration delay) were never reflected in the served PDF. Not verified until re-reviewed | contract_terms/GLOBALTEMPERATURE.pdf (= 2025-12-12 certification); edge_search/TERMS_AUDIT.md |
 | A10 | Combos: YES pays the **product of component payouts, floored to the cent**; NO pays 1 − YES | contract_terms/FOOTBALLSTATS.pdf |
 | A11 | `floor_strike` / `cap_strike` are the "minimum/maximum expiration value that leads to YES", but live data shows they are an *encoding* that can disagree with the rules text (§B.2) | API schema; live data |
 | A12 | Order book: bids only; YES ask = 1 − best NO bid; levels sorted ascending; dollar strings (≤ 4 dp) and fixed-point counts (≥ 0.01) | docs Orderbook Responses; Fixed-Point |
@@ -172,7 +172,7 @@ is logged. Consistent observations and missing-ask observations are counted in a
 
 | Status | Meaning |
 |---|---|
-| `RULE_DEFINED_LOCK` | L ≥ 1 in every settlement state the verified contract rules require the model to enumerate; verified terms (or MECNET for categorical R1-short/pairs); all gates pass; edge > 0 under **every** fee scenario at some integer size; persistence confirmed on an independent re-fetch |
+| `RULE_DEFINED_LOCK` | L ≥ 1 in every settlement state the verified contract rules require the model to enumerate; verified terms (for every family, categorical MECNET included); all gates pass; edge > 0 under **every** fee scenario at some integer size; persistence confirmed on an independent re-fetch |
 | `GUARANTEED_STRUCTURAL_NOT_EXECUTABLE` | lock holds, some execution gate fails (fees/depth/5.11/persistence) |
 | `CANDIDATE_TERMS_UNVERIFIED` | lock holds under the conservative model; series terms not yet reviewed |
 | `STATISTICAL` | displayed prices violate the naive relationship but L < nominal (gap, ALL_NO, uncertainty) |
@@ -364,7 +364,7 @@ Both were removed. No maximum, floor or historical substitution remains.
 
 | Requirement | Enforced by |
 |---|---|
-| Verified binding settlement semantics | `_terms_ok`: `terms_verified` for **every** family, including categorical MECNET (the former MECNET exemption was removed in this audit); combos never qualify; registry entries need a hash match at build, a documented `common_determination`, and a supported `no_data` |
+| Verified binding settlement semantics | `_terms_ok`: `terms_verified` for **every** family, including categorical MECNET (the former MECNET exemption was removed in this audit); combos never qualify; since 2026-09-29 `terms_verified` also requires an OK **filing-record** check (`sarb/filings.py`: complete fresh bucket listing equal to the reviewed filing set, controlling filing re-hashed, not inside the Reg. 40.6 waiting period) and no contradiction between the live market rules and the entry's `rules_required`/`rules_forbidden`; registry entries need a hash match at build, a documented `common_determination`, and a supported `no_data` |
 | Independent checker agreement over every modelled permitted state | gate `no_checker_bug` (checker must have run, and `fast == checker`); gate `locked_guaranteed` (relationship class GUARANTEED, L ≥ 1) |
 | Fresh executable order books | book integrity (HTTP 200, parsed, no CDN hit, not crossed or locked); gates `skew_ok` (≤ 2 s) and `age_ok` (≤ 5 s) |
 | Depth for the modelled quantity | every leg walked to size C, and C must fill completely |
@@ -405,8 +405,17 @@ recorded outcome is used.
 
 ### I.4 Terms registry after the audit
 
-* Verified: **BTC.pdf, ETH.pdf, GLOBALTEMPERATURE.pdf**, each with its documented
-  common-determination basis.
+* Verified: **BTC.pdf, ETH.pdf** (re-keyed on 2026-09-29 to their controlling "Amendment 2" filings;
+  pending independent sign-off), each with its documented common-determination basis.
+* **GLOBALTEMPERATURE.pdf: SUPERSEDED (2026-09-29).** The served PDF was never updated for the
+  2026-08-17 and 2026-09-02 amendments, which the live markets already follow. The entry stays pinned
+  to what was reviewed, so `sarb/filings.py` reports `TERMS_SUPERSEDED` and every weather family is
+  capped at `CANDIDATE_TERMS_UNVERIFIED` until a human re-review against Amendment 2 decides whether
+  the material-error expiration delay still permits a common determination (edge_search/TERMS_AUDIT.md §4).
+* Amendment-aware verification (`sarb/filings.py`, `scripts/terms_retro_report.py`): code can only demote.
+  Recorded lock-like candidates are re-evaluated demote-only by `sarb/terms_retro.py`; on the 2026-09-27
+  validation data it demotes the 47 weather R1_SHORT records (TERMS_SUPERSEDED_AT_SNAPSHOT) and the 362
+  pre-audit MECNET R1_EXCLUSIVE_PAIR records (TERMS_NOT_VERIFIED_AT_SNAPSHOT).
 * **INX.pdf removed.** Its expiration time "at least one minute after `<time>`", with revisions
   after expiration ignored and Kalshi as Source Agency, does not force a common determination
   instant: the same divergence channel as AAA gas.

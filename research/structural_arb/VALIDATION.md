@@ -83,3 +83,35 @@ The verified-terms markets dropped from 2,533 to 1,256 after INX was removed fro
 
 **Protocol status: READY_TO_FREEZE.** The long collection has NOT been started and no
 infrastructure has been provisioned.
+
+## Addendum 2026-09-29: amendment-aware terms verification (applied after independent review)
+
+**What was applied.** `edge_search/proposals/structural_terms_v2.patch`, approved by the independent reviewer (see `edge_search/TERMS_AUDIT.md` and `edge_search/proposals/STRUCTURAL_TERMS_V2.md`).
+
+**Verification now follows the filing record.** Terms verify only when:
+- the latest controlling filing governs, and the complete filing record matches the reviewed filing set;
+- live market rules carry no contradicting marker.
+
+A matching served-PDF hash alone is no longer sufficient.
+
+**Registry changes:**
+- BTC and ETH are re-keyed to their controlling "Amendment 2 for posting" filings (2025-04-28).
+- GLOBALTEMPERATURE stays pinned to its superseded review. It fails closed with `TERMS_SUPERSEDED`, and is not re-registered.
+
+**Test suite.**
+
+| | result |
+|---|---|
+| before, at `24c42df` | 905 passed |
+| after | 945 passed (40 new) |
+
+**Historical relabel.** This is a demote-only overlay. Raw data and its provenance are unchanged; sha256 values of every `sarb_candidates_*.jsonl.gz` file were verified identical before and after.
+- `relabels/2026-09-29_terms_v2_relabel.jsonl` holds one line per recorded lock-like candidate, bound to its raw line's sha256. Counts are in `relabels/2026-09-29_terms_v2_relabel_summary.json`.
+
+| records | relabel | reason |
+|---|---|---|
+| 47 weather `R1_SHORT` | `GUARANTEED_STRUCTURAL_NOT_EXECUTABLE → CANDIDATE_TERMS_UNVERIFIED` | `TERMS_SUPERSEDED_AT_SNAPSHOT` |
+| 362 MECNET `R1_EXCLUSIVE_PAIR` (pre-audit configs) | `→ CANDIDATE_TERMS_UNVERIFIED` | `TERMS_NOT_VERIFIED_AT_SNAPSHOT` |
+
+- No record stands, and nothing is promoted.
+- No `RULE_DEFINED_LOCK` ever existed, so no top-level conclusion changes.

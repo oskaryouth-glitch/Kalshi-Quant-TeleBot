@@ -217,6 +217,8 @@ class MarketSpec:
     market_fp: str | None = None        # fingerprint of the market fields the spec was built from
     terms_url: str | None = None
     terms_sha: str | None = None        # hash observed when the spec was built (None if not checked)
+    terms_filing_status: str | None = None   # filings.status() for terms_url when built (None: not checked)
+    terms_rules_conflicts: list[str] = field(default_factory=list)
 
 
 MARKET_FP_FIELDS = ("ticker", "rules_primary", "rules_secondary", "strike_type", "floor_strike", "cap_strike",
@@ -230,18 +232,25 @@ def market_fingerprint(market: dict) -> str:
                                      default=str).encode()).hexdigest()
 
 
-def build_market_spec(event: dict, market: dict, series: dict | None, terms_sha: dict[str, str]) -> MarketSpec:
+def build_market_spec(event: dict, market: dict, series: dict | None, terms_sha: dict[str, str],
+                      filing_status: dict[str, str] | None = None) -> MarketSpec:
     """event: /events item (event-level fields); market: nested market; series: /series body.
-    terms_sha: contract_terms_url -> sha256 fetched in this run."""
+    terms_sha: contract_terms_url -> sha256 fetched in this run.
+    filing_status: contract_terms_url -> filings.status() in this run (missing -> not verified)."""
     st = market.get("strike_type")
     s = (series or {}).get("series", series or {})
     url = s.get("contract_terms_url")
-    vt, tstatus = terms_mod.lookup(url, terms_sha.get(url) if url else None)
+    fstatus = (filing_status or {}).get(url) if url else None
+    vt, tstatus = terms_mod.lookup(url, terms_sha.get(url) if url else None, fstatus)
+    conflicts = terms_mod.rules_conflicts(vt, market) if vt is not None else []
+    if conflicts:                                     # live market rules contradict the reviewed terms
+        vt, tstatus = None, "TERMS_RULES_CONFLICT"
     spec = MarketSpec(market["ticker"], event["event_ticker"], event.get("series_ticker", ""), st,
                       terms=vt, terms_status=tstatus,
                       no_data_all_no=(vt is None or vt.no_data == "ALL_NO"),
                       market_fp=market_fingerprint(market), terms_url=url,
-                      terms_sha=terms_sha.get(url) if url else None)
+                      terms_sha=terms_sha.get(url) if url else None,
+                      terms_filing_status=fstatus, terms_rules_conflicts=conflicts)
     try:
         if market.get("market_type") != "binary":
             raise SemanticsError("NOT_BINARY", str(market.get("market_type")))

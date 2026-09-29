@@ -73,19 +73,20 @@ class TemplateCache:
         self._c: dict[str, tuple] = {}
         self._spec: dict[str, tuple[str, SEM.MarketSpec]] = {}
 
-    def spec(self, ev: dict, m: dict, series: dict | None, terms_sha: dict[str, str]) -> SEM.MarketSpec:
+    def spec(self, ev: dict, m: dict, series: dict | None, terms_sha: dict[str, str],
+             filing_status: dict[str, str] | None = None) -> SEM.MarketSpec:
         s = (series or {}).get("series", series or {})
         fp_src = [m.get(k) for k in ("rules_primary", "rules_secondary", "strike_type", "floor_strike", "cap_strike",
                                      "custom_strike", "latest_expiration_time", "market_type",
                                      "notional_value_dollars")]
         url = s.get("contract_terms_url")
         fp_src += [ev.get("event_ticker"), ev.get("series_ticker"), ev.get("settlement_sources"), url,
-                   terms_sha.get(url) if url else None]
+                   terms_sha.get(url) if url else None, (filing_status or {}).get(url) if url else None]
         fp = hashlib.sha256(json.dumps(fp_src, sort_keys=True, default=str).encode()).hexdigest()
         hit = self._spec.get(m["ticker"])
         if hit and hit[0] == fp:
             return hit[1]
-        sp = SEM.build_market_spec(ev, m, series, terms_sha)
+        sp = SEM.build_market_spec(ev, m, series, terms_sha, filing_status)
         self._spec[m["ticker"]] = (fp, sp)
         return sp
 
@@ -110,7 +111,7 @@ def _family_signature(specs: list[SEM.MarketSpec]) -> str:
 
 
 def build_universe(events: list[dict], series_by_ticker: dict[str, dict], terms_sha: dict[str, str],
-                   cache: TemplateCache) -> Universe:
+                   cache: TemplateCache, filing_status: dict[str, str] | None = None) -> Universe:
     t0 = time.monotonic()
     u = Universe(built_utc_ns=time.time_ns())
     for ev in events:
@@ -118,7 +119,7 @@ def build_universe(events: list[dict], series_by_ticker: dict[str, dict], terms_
             if m.get("status") != "active":
                 continue
             u.raw[m["ticker"]] = (ev, m)
-            sp = cache.spec(ev, m, series_by_ticker.get(ev.get("series_ticker")), terms_sha)
+            sp = cache.spec(ev, m, series_by_ticker.get(ev.get("series_ticker")), terms_sha, filing_status)
             u.specs[m["ticker"]] = sp
             u.reject_counts[sp.reject or "OK"] = u.reject_counts.get(sp.reject or "OK", 0) + 1
     live = set()

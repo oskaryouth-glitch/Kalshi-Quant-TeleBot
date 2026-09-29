@@ -39,6 +39,7 @@ import requests
 from . import config
 from .fee_ledger import FeeLedger, FeeUnresolved
 from . import relationships as R
+from . import filings as FL
 from . import terms as TERMS
 from . import universe as U
 from .client import PublicClient
@@ -84,7 +85,7 @@ def _code_version() -> dict:
 
 class Collector:
     def __init__(self, client: PublicClient, data_dir: str = DATA_DIR, seed: int | None = None,
-                 terms_fetch=None):
+                 terms_fetch=None, filings_list=None, filings_fetch=None):
         self.c = client
         self.out = Streams(data_dir)
         self.cache = U.TemplateCache()
@@ -95,6 +96,10 @@ class Collector:
         self._last = {"series": float("-inf"), "terms": float("-inf"), "fees": float("-inf")}
         self.rng = random.Random(seed)
         self.terms_fetch = terms_fetch or (lambda url: requests.get(url, timeout=30).content)
+        # filing record of every registered template (sarb/filings.py); empty -> nothing verifies
+        self.filings: dict[str, FL.Listing] = {}
+        self.filings_list = filings_list or FL.http_list
+        self.filings_fetch = filings_fetch or FL.http_fetch
         self._stat_last: dict = {}
         self._exchange = (False, None, None)      # (trading_active, fetched_mono_ns, fetched_utc_ns)
         self._event_obj: dict = {}                # event_ticker -> (recv_mono_ns, event body)
@@ -129,8 +134,13 @@ class Collector:
                 except Exception as e:
                     self.terms_sha.pop(url, None)
                     info.setdefault("terms_errors", []).append(f"{url}:{e!r}"[:200])
+            self.filings = FL.refresh(TERMS.REGISTRY, self.filings_list, self.filings_fetch)
             self._last["terms"] = now
             info["terms_sha"] = dict(self.terms_sha)
+            info["filings"] = {url: {"template": l.template, "listed_utc_ns": l.listed_utc_ns,
+                                     "objects": None if l.objects is None else [list(vars(f).values()) for f in l.objects],
+                                     "controlling_sha256": l.controlling_sha256, "error": l.error}
+                               for url, l in self.filings.items()}
         if now - self._last["fees"] >= config.FEE_CHANGES_REFRESH_S:
             r = self.c.get_retry("/series/fee_changes", {"show_historical": "true"})
             if r.status == 200:
@@ -182,6 +192,11 @@ class Collector:
     def _exchange_active(self) -> bool:
         return self._exchange[0]
 
+    def _filing_status(self, now_utc_ns: int | None = None) -> dict[str, str]:
+        """filings.status() of every registered template for the current listing, evaluated now."""
+        now = time.time_ns() if now_utc_ns is None else now_utc_ns
+        return {url: FL.status(t, self.filings.get(url), now) for url, t in TERMS.REGISTRY.items()}
+
     def _terms_hash_now(self, url: str) -> str | None:
         try:
             return hashlib.sha256(self.terms_fetch(url)).hexdigest()
@@ -214,6 +229,9 @@ class Collector:
                 h = self._terms_hash_now(sp.terms_url)
                 if h is None or h != sp.terms_sha:
                     reasons.append("TERMS_HASH_CHANGED_OR_UNAVAILABLE")
+                fs = self._filing_status().get(sp.terms_url)
+                if fs != FL.OK:                  # listing aged out, or the filing record changed
+                    reasons.append(f"TERMS_FILINGS_NOT_OK:{fs}")
             ok[t], why[t] = not reasons, reasons
         return ok, why
 
@@ -227,6 +245,13 @@ class Collector:
                               "template_sha256": hashlib.sha256((sp.template or "").encode()).hexdigest(),
                               "template": sp.template, "path_dependent": sp.path_dependent,
                               "terms_url": sp.terms_url, "terms_sha_at_build": sp.terms_sha,
+                              "terms_filing_status": sp.terms_filing_status,
+                              "terms_rules_conflicts": sp.terms_rules_conflicts,
+                              "terms_controlling_filing": sp.terms.controlling_filing if sp.terms else None,
+                              "terms_controlling_filing_sha256": sp.terms.controlling_filing_sha256 if sp.terms else None,
+                              "terms_known_filings": [list(vars(f).values()) for f in sp.terms.known_filings] if sp.terms else None,
+                              "filings_listed_utc_ns": (self.filings.get(sp.terms_url).listed_utc_ns
+                                                        if sp.terms_url in self.filings else None),
                               "terms_status": sp.terms_status, "no_data_all_no": sp.no_data_all_no,
                               "market_fp_at_build": sp.market_fp, "family_key": sp.family_key}
         return {"code": self.code_version, "positions": [(p.ticker, p.side, str(p.qty)) for p in st.positions],
@@ -412,13 +437,15 @@ class Collector:
         refresh = self._refresh(time.monotonic())
         evs, fetched_mono = self._events()
         t_ev = time.monotonic()
-        u = U.build_universe(evs, self.series, self.terms_sha, self.cache)
+        fstat = self._filing_status()
+        u = U.build_universe(evs, self.series, self.terms_sha, self.cache, fstat)
         self.out.write("universe", {"cycle": cycle, "utc": _now_iso(), "events": len(evs), "markets": len(u.raw),
                                     "families": len(u.families), "templates_r1_r3": len(u.structs),
                                     "categorical_events": len(u.categorical), "reject_counts": u.reject_counts,
                                     "build_s": round(u.build_seconds, 2), "refresh": refresh,
                                     "fee_ledger_changes": sum(len(v) for v in self.ledger.changes.values()),
-                                    "terms_verified_markets": sum(1 for s in u.specs.values() if s.terms_status == "TERMS_VERIFIED")})
+                                    "terms_verified_markets": sum(1 for s in u.specs.values() if s.terms_status == "TERMS_VERIFIED"),
+                                    "terms_filing_status": fstat})
         # ---- SCREEN
         queue, screen = [], {}
         for st in u.structs:

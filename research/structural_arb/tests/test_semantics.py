@@ -7,14 +7,15 @@ from sarb import semantics as S
 from sarb.payoff import Interval
 
 
-def mk(text, st, floor=None, cap=None, series_terms=None, sha=None, **kw):
+def mk(text, st, floor=None, cap=None, series_terms=None, sha=None, filing="OK", **kw):
     ev = {"event_ticker": kw.pop("event", "E"), "series_ticker": kw.pop("series", "S"), "settlement_sources": []}
     m = {"ticker": kw.pop("ticker", "T"), "strike_type": st, "floor_strike": floor, "cap_strike": cap,
          "rules_primary": text, "rules_secondary": kw.pop("secondary", ""), "market_type": "binary",
          "notional_value_dollars": "1.0000", "latest_expiration_time": kw.pop("exp", "2026-10-02T21:00:00Z"),
          "custom_strike": kw.pop("custom", None)}
     series = {"contract_terms_url": series_terms} if series_terms else {}
-    return S.build_market_spec(ev, m, series, {series_terms: sha} if series_terms else {})
+    return S.build_market_spec(ev, m, series, {series_terms: sha} if series_terms else {},
+                               {series_terms: filing} if series_terms and filing else {})
 
 
 BTC = "https://assets.kalshi.com/contract_terms/BTC.pdf"
@@ -41,6 +42,21 @@ def test_between_verified_terms_inclusive_and_all_no():
 def test_terms_hash_change_lapses_verification():
     sp = mk(BTC_B, "between", 72000, 72499.99, series_terms=BTC, sha="0" * 64)
     assert sp.terms_status == "TERMS_HASH_CHANGED" and sp.terms is None
+
+
+@pytest.mark.parametrize("filing", [None, "TERMS_SUPERSEDED", "TERMS_FILINGS_UNAVAILABLE", "TERMS_FILINGS_STALE",
+                                    "TERMS_AMENDMENT_PENDING", "SOMETHING_UNKNOWN"])
+def test_filing_record_must_be_ok_even_when_served_hash_matches(filing):
+    """The GLOBALTEMPERATURE regression: an unchanged served PDF is not evidence that nothing changed."""
+    sp = mk(BTC_B, "between", 72000, 72499.99, series_terms=BTC, sha=BTC_SHA, filing=filing)
+    assert sp.terms is None and sp.terms_status != "TERMS_VERIFIED" and sp.no_data_all_no
+
+
+def test_live_rules_contradicting_reviewed_terms_block_verification():
+    other = BTC_B.replace("CF Benchmarks' Bitcoin Real-Time Index (BRTI)", "Coinbase BTC-USD spot price")
+    sp = mk(other, "between", 72000, 72499.99, series_terms=BTC, sha=BTC_SHA)
+    assert sp.terms is None and sp.terms_status == "TERMS_RULES_CONFLICT"
+    assert sp.terms_rules_conflicts == ["MISSING:CF Benchmarks", "MISSING:BRTI"]
 
 
 def test_btc_and_btcd_share_a_family_template():

@@ -3,17 +3,32 @@ import gzip
 import hashlib
 import json
 import os
+import sys
 import time
 import urllib.parse
 
 import pytest
 
-from sarb import config, terms as TERMS
+from sarb import config, filings as FL, terms as TERMS
 from sarb.client import PublicClient
 from sarb.collector import Collector
 
 FAKE_TERMS = "https://assets.kalshi.com/contract_terms/FAKE.pdf"
 FAKE_BYTES = b"fake terms for tests"
+FAKE_FILING = "regulatory/product-certifications/FAKE.pdf"
+FAKE_FILING_BYTES = b"fake filed terms for tests"
+FAKE_KNOWN = (FL.Filing(FAKE_FILING, "2020-01-01T00:00:00.000Z", len(FAKE_FILING_BYTES)),
+              FL.Filing("contract_terms/FAKE.pdf", "2020-01-01T00:00:01.000Z", len(FAKE_BYTES)))
+BUCKET = list(FAKE_KNOWN)       # the fake regulatory bucket; tests append/replace objects
+
+
+def fake_list(prefix):
+    return [f for f in BUCKET if f.key.startswith(prefix)]
+
+
+def fake_fetch(key):
+    assert key == FAKE_FILING
+    return FAKE_FILING_BYTES
 FUTURE = "2099-01-01T00:00:00Z"
 TXT = "If the Fake Index on Jan 1, 2099 is above {k}, then the market resolves to Yes."
 
@@ -77,8 +92,12 @@ class Session:
 @pytest.fixture
 def fake_registry(monkeypatch):
     t = TERMS.VerifiedTerms(FAKE_TERMS, hashlib.sha256(FAKE_BYTES).hexdigest(), True, "LAST_VALUE", ("test",),
-                            "test fixture: single fixed determination instant")
+                            "test fixture: single fixed determination instant", template="FAKE",
+                            controlling_filing=FAKE_FILING,
+                            controlling_filing_sha256=hashlib.sha256(FAKE_FILING_BYTES).hexdigest(),
+                            known_filings=FAKE_KNOWN, reviewed="test fixture")
     monkeypatch.setattr(TERMS, "REGISTRY", {FAKE_TERMS: t})
+    monkeypatch.setattr(sys.modules[__name__], "BUCKET", list(FAKE_KNOWN))
     monkeypatch.setattr(config, "PERSISTENCE_REFETCH_DELAY_S", 0.05)
     monkeypatch.setattr(config, "AUDIT_FAMILIES_PER_CYCLE", 1)
     monkeypatch.setattr(config, "EVENTS_PAGE_MIN_INTERVAL_S", 0)
@@ -95,7 +114,7 @@ def read(d, kind):
 
 def run_cycle(tmp_path, session):
     c = Collector(PublicClient(session=session, per_second=1000, burst=100), str(tmp_path), seed=1,
-                  terms_fetch=lambda url: FAKE_BYTES)
+                  terms_fetch=lambda url: FAKE_BYTES, filings_list=fake_list, filings_fetch=fake_fetch)
     return c.run_cycle()
 
 
@@ -161,7 +180,7 @@ def test_report_integrity_and_ops(tmp_path, fake_registry):
 
 def test_statscreen_deduplicated_across_cycles(tmp_path, fake_registry):
     c = Collector(PublicClient(session=Session(), per_second=1000, burst=100), str(tmp_path), seed=1,
-                  terms_fetch=lambda url: FAKE_BYTES)
+                  terms_fetch=lambda url: FAKE_BYTES, filings_list=fake_list, filings_fetch=fake_fetch)
     c.run_cycle(); c.run_cycle()
     n = sum(1 for r in read(tmp_path, "statscreen") if r["relationship"] == "R1_LONG")
     counts = [r["counts"] for r in read(tmp_path, "counts")]
@@ -239,3 +258,79 @@ def test_mecnet_pair_requires_verified_terms(tmp_path, monkeypatch):
     assert st.relationship_class == "GUARANTEED" and E._terms_ok(st) is False
     st2 = U.categorical_pair("EV", "A", "B", terms_verified=True)
     assert E._terms_ok(st2) is True
+
+
+# ---------------------------------------------------------------- amendment-aware terms (TERMS_AUDIT.md)
+def _statuses(tmp_path):
+    return {r["status"] for r in read(tmp_path, "candidates") if r["extra"]["phase"] in ("P2", "P3")}
+
+
+def test_baseline_fixture_still_reaches_rule_defined_lock(tmp_path, fake_registry):
+    run_cycle(tmp_path, Session())
+    assert "RULE_DEFINED_LOCK" in _statuses(tmp_path)
+    uni = read(tmp_path, "universe")[0]
+    assert uni["terms_filing_status"] == {FAKE_TERMS: "OK"}
+
+
+def test_new_amendment_demotes_even_though_served_pdf_is_unchanged(tmp_path, fake_registry, monkeypatch):
+    """GLOBALTEMPERATURE regression: served PDF bytes unchanged, a new amendment is posted."""
+    monkeypatch.setattr(sys.modules[__name__], "BUCKET",
+                        list(FAKE_KNOWN) + [FL.Filing("regulatory/notices/FAKE Amendment (for posting).pdf",
+                                                      "2021-01-01T00:00:00.000Z", 123)])
+    run_cycle(tmp_path, Session())
+    st = _statuses(tmp_path)
+    assert "RULE_DEFINED_LOCK" not in st and "GUARANTEED_STRUCTURAL_NOT_EXECUTABLE" not in st
+    assert "CANDIDATE_TERMS_UNVERIFIED" in st
+    assert read(tmp_path, "universe")[0]["terms_filing_status"] == {FAKE_TERMS: "TERMS_SUPERSEDED"}
+
+
+def test_bucket_listing_failure_fails_closed(tmp_path, fake_registry):
+    def broken(prefix):
+        raise ConnectionError("reset")
+    c = Collector(PublicClient(session=Session(), per_second=1000, burst=100), str(tmp_path), seed=1,
+                  terms_fetch=lambda url: FAKE_BYTES, filings_list=broken, filings_fetch=fake_fetch)
+    c.run_cycle()
+    assert "RULE_DEFINED_LOCK" not in _statuses(tmp_path)
+    assert read(tmp_path, "universe")[0]["terms_filing_status"] == {FAKE_TERMS: "TERMS_FILINGS_UNAVAILABLE"}
+
+
+def test_controlling_filing_fetch_failure_fails_closed(tmp_path, fake_registry):
+    def broken(key):
+        raise TimeoutError()
+    c = Collector(PublicClient(session=Session(), per_second=1000, burst=100), str(tmp_path), seed=1,
+                  terms_fetch=lambda url: FAKE_BYTES, filings_list=fake_list, filings_fetch=broken)
+    c.run_cycle()
+    assert "RULE_DEFINED_LOCK" not in _statuses(tmp_path)
+    assert read(tmp_path, "universe")[0]["terms_filing_status"] == {FAKE_TERMS: "TERMS_CONTROLLING_FILING_UNCONFIRMED"}
+
+
+def test_filing_record_changing_before_p3_blocks_lock(tmp_path, fake_registry, monkeypatch):
+    calls = []
+    real = Collector._filing_status
+
+    def flip(self, now_utc_ns=None):
+        calls.append(1)
+        s = real(self, now_utc_ns)
+        return s if len(calls) == 1 else {u: "TERMS_SUPERSEDED" for u in s}
+    monkeypatch.setattr(Collector, "_filing_status", flip)
+    run_cycle(tmp_path, Session())
+    p3 = [r for r in read(tmp_path, "candidates") if r["extra"]["phase"] == "P3"]
+    assert p3 and all(r["status"] != "RULE_DEFINED_LOCK" for r in p3)
+    assert any("TERMS_FILINGS_NOT_OK:TERMS_SUPERSEDED" in why
+               for r in p3 for why in sum(r["extra"]["metadata_consistency"].values(), []))
+
+
+def test_stale_listing_verifies_nothing(tmp_path, fake_registry, monkeypatch):
+    monkeypatch.setattr(config, "MAX_FILINGS_LISTING_AGE_S", -1)
+    run_cycle(tmp_path, Session())
+    assert "RULE_DEFINED_LOCK" not in _statuses(tmp_path)
+    assert read(tmp_path, "universe")[0]["terms_filing_status"] == {FAKE_TERMS: "TERMS_FILINGS_STALE"}
+
+
+def test_provenance_records_the_filing_basis(tmp_path, fake_registry):
+    run_cycle(tmp_path, Session())
+    lock = [r for r in read(tmp_path, "candidates") if r["status"] == "RULE_DEFINED_LOCK"][0]
+    for leg in lock["extra"]["provenance"]["legs"].values():
+        assert leg["terms_filing_status"] == "OK" and leg["terms_controlling_filing"] == FAKE_FILING
+        assert [k[0] for k in leg["terms_known_filings"]] == [f.key for f in FAKE_KNOWN]
+        assert leg["filings_listed_utc_ns"] and leg["terms_rules_conflicts"] == []

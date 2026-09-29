@@ -6,7 +6,7 @@ and noting the reason in the research log.
 """
 from decimal import Decimal
 
-CONFIG_VERSION = "2026-09-27.5-ready-to-freeze"
+CONFIG_VERSION = "2026-09-29.6-amendment-aware-terms"
 
 PUBLIC_BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
 
@@ -38,6 +38,9 @@ AUDIT_FAMILIES_PER_CYCLE = 2             # random families fetched from books re
 AUDIT_MAX_MARKETS_PER_FAMILY = 30
 SERIES_REFRESH_S = 6 * 3600          # universe metadata only; fees use fresh per-leg series objects
 TERMS_REFRESH_S = 3600
+# Amendment-aware terms verification (sarb/filings.py; edge_search/TERMS_AUDIT.md). Fail closed.
+MAX_FILINGS_LISTING_AGE_S = 2 * TERMS_REFRESH_S   # a filing listing older than this verifies nothing
+AMENDMENT_PENDING_S = 16 * 86400                  # >= 10 business days (Reg. 40.6(a)) incl. up to 2 holidays
 FEE_CHANGES_REFRESH_S = 300
 EVENTS_PAGE_MIN_INTERVAL_S = 0.25        # summary pages paced <= 4/s (run1 saw 429s only on /events pages)
 STATSCREEN_REWRITE_S = 1800              # a given summary-only statistical hit is re-logged at most every 30 min

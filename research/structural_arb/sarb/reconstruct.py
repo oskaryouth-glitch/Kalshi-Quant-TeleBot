@@ -10,7 +10,8 @@ scratch:
   -> every evaluator gate (sarb.evaluator.evaluate)
 and compares everything with the logged record. Nothing is fetched from the network. The one
 exception is the fresh terms re-hash at P3, which cannot be redone later: its recorded outcome
-(metadata_consistency) is used, alongside the stored terms hashes.
+(metadata_consistency) is used, alongside the stored terms hashes. The filing-record status (sarb/filings.py)
+is likewise taken as recorded; a record without one cannot re-verify its terms.
 
     python -m sarb.reconstruct <data_dir> [--status RULE_DEFINED_LOCK]
 """
@@ -77,7 +78,10 @@ def reconstruct(data_dir: str, rec: dict, books_index: dict | None = None) -> di
         ledger.observe_series(ser, sb["recv_utc_ns"])
         pl = prov["legs"][t]
         terms_sha = {pl["terms_url"]: pl["terms_sha_at_build"]} if pl["terms_url"] and pl["terms_sha_at_build"] else {}
-        sp = SEM.build_market_spec(ev, m, ser, terms_sha)
+        # The filing check is a live network observation, taken as recorded (like the P3 re-hash). Records
+        # written before amendment-aware verification carry none, so their terms cannot re-verify.
+        fstat = {pl["terms_url"]: pl["terms_filing_status"]} if pl["terms_url"] and pl.get("terms_filing_status") else {}
+        sp = SEM.build_market_spec(ev, m, ser, terms_sha, fstat)
         specs[t] = sp
         for k_rec, v_now in (("readings", sp.readings), ("terms_status", sp.terms_status),
                              ("strike_type", sp.strike_type),
@@ -134,7 +138,8 @@ def reconstruct(data_dir: str, rec: dict, books_index: dict | None = None) -> di
         mecnet_ok = (not rec["settlement_evidence"]["family_key"].startswith("MECNET:")
                      or bool(events[t].get("mutually_exclusive")))
         cons[t] = (SEM.market_fingerprint(markets[t]) == pl["market_fp_at_build"] and sp.terms_url == pl["terms_url"]
-                   and "TERMS_HASH_CHANGED_OR_UNAVAILABLE" not in recorded and mecnet_ok)
+                   and "TERMS_HASH_CHANGED_OR_UNAVAILABLE" not in recorded
+                   and not any(x.startswith("TERMS_FILINGS_NOT_OK") for x in recorded) and mecnet_ok)
     active, ex_mono, _ = ev_info["exchange"]
     out, rec2 = evaluate(st, books, metas, fees, active, ev_info["mono_ns"], ev_info["utc_ns"], ev_info["persistence_in"],
                          exchange_fetched_mono_ns=ex_mono, metadata_consistent=cons)
