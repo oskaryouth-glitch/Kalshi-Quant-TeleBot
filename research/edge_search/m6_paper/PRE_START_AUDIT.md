@@ -1,4 +1,69 @@
-# M6 paper experiment: PRE-START AUDIT (for the independent reviewer)
+# M6 paper experiment: PRE-START AUDIT, v3 (for the independent reviewer)
+
+- **Date:** 2026-09-29.
+- **Status:** **NOT STARTED and NOT DEPLOYED.**
+- **Frozen manifest v3:** `d8a1aa0a237a1adbca22480ec4eced19b6c040813abc46ba55801f575ea9cd02` (`PREREG_M6_PAPER.md`). It supersedes v2 `b8c18ef3…`.
+- **Tests:** 53 passed (M6); structural_arb 945 passed, unchanged.
+- The v2 audit is kept below, unedited, for the record.
+
+## v3: reviewer items of 2026-09-29
+
+| # | item | status |
+|---|---|---|
+| 1 | Deploy to the Hetzner `kalshi-collector` host, isolated | **BLOCKED from this session**: see "Host" below. A complete isolated deployment package is ready in `deploy/`. Headroom has **not** been measured on the host yet. |
+| 2 | 2 requests/s; keep and record the ~2-min selection pause; no compensation; re-freeze | **Done.** `spec.MAX_REQUESTS_PER_S = 2.0`. Every epoch writes a `collection_gap` record, as does any loop pass over 30 s. Reward coverage counts inter-poll intervals > 60 s as **zero** (v2 credited up to 60 s of them: fixed). Re-frozen. |
+| 3 | Sample requirement needs all three fill assumptions at ≥ 20, never pooled | **Done** (already implemented; now in DESIGN v3 and INTERPRETATIONS A2). |
+| 4 | Selection: series-level state only; fills: event overrides; raw provenance; no retrospective use | **Done.** The epoch records raw series fee fields and events→series, with receive times. Every fee object for tracked markets is recorded raw with its own receive time, and the fee-change history every 6 h. Each fill records the **known** fee (causal) and the **applicable** fee (by the cutoff), both with provenance. P&L uses the applicable fee and conservative maker fees if undetermined. Selection never sees later data. |
+| 5 | The ten interpretations in complete detail | **Done:** `INTERPRETATIONS.md` (hashed). Each has: what the design said, the implementation, why, and materiality. It adds B1–B5 for choices made since. |
+| 6 | Deployment validation on the host | **Pending the host.** The validation script `deploy/validate.sh` is ready. The same logic was exercised locally (below), and that data was deleted. |
+
+### Host
+- **Cannot reach it.** This cloud session has no SSH client or keys, its network policy does not allow the host, and nothing in the repo describes the H038/H039 deployment.
+- **Why no remote access was sought.** Giving a cloud session SSH into the production collector host would itself be a risk to H038/H039.
+- **The package instead.** `deploy/README.md` runbook; `preflight.sh` (read-only headroom and H038/H039 baseline, with GO/NO-GO criteria); `install.sh` (isolated user, code, data and logs; verifies the manifest; installs **disabled**); `m6-paper-collector.service` (own user; CPU 50%, RAM 1.5 GB, IO weight 20, nice 10; no credentials; start gated on `/srv/m6_paper/APPROVED` = manifest); `validate.sh` (20-min validation with restart, all item-6 checks, H038/H039 before and after, then deletion).
+- **An operator with host access must run** `preflight.sh`, `install.sh` and `validate.sh`, and return the two reports. **Do not deploy if preflight fails any criterion.**
+- **Shared-IP risk.** M6 and H038/H039 would share the host's public IP. If H038/H039 use the public API unauthenticated, M6's 2 requests/s draws on the same rate limit. `validate.sh` counts H038/H039 429 lines before and during validation. Any increase is NO-GO.
+
+### Storage growth estimate
+Measured by `size_probe.py`: real collector code at 2 requests/s, one epoch plus 5 min of polling, data deleted.
+- About **208 KB per tracked market-day** of books and 12 KB of trades.
+- About 830 KB per epoch record, 4 per day.
+
+| tracked markets | MB/day |
+|---|---|
+| 100 | ~30 |
+| 300 | ~74 |
+| 600 | ~140 |
+
+The upper bound is **≈ 12.6 GB over 90 days** at 600 tracked markets. It is an overestimate, because the first full book snapshot dominates a 5-minute sample. RAM is under 300 MB; the unit caps it at 1.5 GB.
+
+### Rate limits at 2 requests/s
+- Sizing probe: **22 × 429 of 733 requests (3.0%)**, all retried, 0 errors.
+- Local validations: 0 of 189 and 0 of 138.
+- At 3 requests/s it was 6%.
+
+### Local exercise of the validation path (NOT the host validation; data deleted)
+Two runs with a restart:
+- all meta records `validation`; restart restored all 100 tracked markets;
+- manifest matched in both the meta records and on disk; gzip integrity OK;
+- 0 × 429, 0 errors, 0 loop exceptions;
+- the simulator **refused** the validation directory, and a prospective start **refused** to write into it;
+- clock: trades received 2.2–8.9 s after exchange time, never negative.
+
+The first local run exposed a ~40 s blocking fee-state refresh at start and every 6 h, an unplanned uncompensated gap. It is now fetched incrementally (INTERPRETATIONS B2). The re-run showed only the planned 104 s epoch gap, with a mean book-poll interval of 11.1 s.
+
+### Proposed exact UTC start
+- **Proposal:** start the service at **23:30:00 UTC on the first day after final approval** (host validation accepted and interpretations approved). Day 0 is then the following 00:00 UTC, and the first epoch (with the first Arm U draw) falls at day 0 00:00 UTC.
+- If final approval arrives by 2026-10-01 20:00 UTC: **start 2026-10-01T23:30:00Z**, day 0 = 2026-10-02T00:00Z, day-35 checkpoint 2026-11-06T00:00Z, day-60 cap 2026-12-01T00:00Z. Otherwise the same time on the next day.
+
+### Decisions requested
+1. Approve `INTERPRETATIONS.md` A1–A10 and B1–B5, or amend them.
+2. Arrange host execution of `deploy/preflight.sh`, `install.sh` and `validate.sh` by someone with access, and review the two reports. Alternatively, explicitly authorise and provision access for this agent. That is not recommended.
+3. Final start approval for manifest `d8a1aa0a…` at the proposed time.
+
+---
+
+# (v2 audit, kept for the record) M6 paper experiment: PRE-START AUDIT (for the independent reviewer)
 
 - **Date:** 2026-09-29.
 - **Status:** **implemented, tested and hash-frozen. NOT STARTED.**

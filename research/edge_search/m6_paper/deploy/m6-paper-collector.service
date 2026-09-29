@@ -1,0 +1,43 @@
+# M6 paper experiment collector: ISOLATED from H038/H039 (own user, code dir, data dir, logs, resource caps).
+# Installed DISABLED. It cannot start until /srv/m6_paper/APPROVED contains the frozen manifest hash, which is
+# written only after final reviewer approval. Public GETs only; no credentials in its environment.
+[Unit]
+Description=M6 paper experiment collector (research; public data only; no orders)
+After=network-online.target time-sync.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=m6paper
+Group=m6paper
+WorkingDirectory=/opt/m6_paper/current
+Environment=PYTHONDONTWRITEBYTECODE=1
+UnsetEnvironment=KALSHI_API_KEY KALSHI_KEY_ID KALSHI_PRIVATE_KEY KALSHI_API_KEY_ID
+ExecStartPre=/bin/sh -c 'test "$(cat /srv/m6_paper/APPROVED 2>/dev/null)" = "$(cat /opt/m6_paper/current/MANIFEST)"'
+ExecStartPre=/usr/bin/python3 -m m6_paper.prereg --verify ${M6_MANIFEST}
+EnvironmentFile=/opt/m6_paper/current/manifest.env
+ExecStart=/usr/bin/python3 -m m6_paper.collector --data-dir /srv/m6_paper/data --mode full --i-have-reviewer-approval-to-start
+Restart=on-failure
+RestartSec=30
+StandardOutput=append:/srv/m6_paper/logs/collector.log
+StandardError=append:/srv/m6_paper/logs/collector.log
+SyslogIdentifier=m6-paper
+# isolation and resource caps (protect H038/H039)
+Nice=10
+CPUQuota=50%
+MemoryMax=1500M
+IOWeight=20
+TasksMax=64
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/m6_paper
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

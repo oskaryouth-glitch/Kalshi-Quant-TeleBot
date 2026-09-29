@@ -50,6 +50,13 @@ class Fake:
             body = {"series": [{"ticker": f"S{i:03d}", "fee_type": "quadratic", "fee_multiplier": 1} for i in range(self.n)]}
         elif path == "/events":
             body = {"events": [{"event_ticker": f"EM{i:03d}", "series_ticker": f"S{i:03d}"} for i in range(self.n)]}
+        elif path.startswith("/events/"):
+            e = path.split("/")[2]
+            body = {"event": {"event_ticker": e, "series_ticker": "S" + e[2:]}}
+        elif path.startswith("/series/") and path != "/series/fee_changes":
+            body = {"series": {"ticker": path.split("/")[2], "fee_type": "quadratic", "fee_multiplier": 1}}
+        elif path == "/series/fee_changes":
+            body = {"series_fee_change_arr": []}
         elif path == "/markets/trades":
             body = {"trades": [t for t in self.trades if "ticker" not in q or t["ticker"] == q["ticker"][0]]}
         else:

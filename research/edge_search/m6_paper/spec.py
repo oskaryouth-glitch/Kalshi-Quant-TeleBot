@@ -6,12 +6,12 @@ from __future__ import annotations
 
 from decimal import Decimal as D
 
-SPEC_VERSION = "m6-paper-v2"
+SPEC_VERSION = "m6-paper-v3"
 
 # ---------------------------------------------------------------- data sources (public GETs only)
 API = "https://api.elections.kalshi.com/trade-api/v2"
 BUCKET_URL = "https://kalshi-public-docs.s3.amazonaws.com/"
-MAX_REQUESTS_PER_S = 3.0
+MAX_REQUESTS_PER_S = 2.0              # reviewer decision 2026-09-29 (was 3.0)
 BOOKS_PER_CALL = 100            # GET /markets/orderbooks?tickers=... (API maximum)
 MARKETS_PER_CALL = 100          # GET /markets?tickers=...
 
@@ -27,6 +27,8 @@ FEESTATE_POLL_S = 6 * 3600
 COMPLETENESS_S = 600
 COMPLETENESS_GAP = D("0.01")                 # > 1% volume unexplained by recorded trades -> backfill + flag
 RULES_WATCH_S = 3600
+FEES_NEW_PER_LOOP = 2                        # newly tracked markets' event/series fee objects fetched per loop pass
+LOOP_STALL_GAP_S = 30                        # a main-loop pass longer than this is recorded as a collection gap
 POST_SETTLEMENT_POLL_S = 6 * 3600            # market state + book for ever-tracked markets after they stop quoting
 
 # ---------------------------------------------------------------- selection (DESIGN §4)

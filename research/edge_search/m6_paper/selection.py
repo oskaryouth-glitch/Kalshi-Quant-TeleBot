@@ -49,6 +49,7 @@ class Candidate:
     fee_type: str
     fee_mult: D
     price_ranges: list
+    fee_provenance: dict | None = None   # what fee state selection used, and when it was observed
 
 
 def epoch_day(epoch_ns: int) -> int:
@@ -118,8 +119,14 @@ def candidates(epoch: dict) -> list[Candidate]:
         b = epoch["books"].get(g.get("market_ticker"))
         if b is None or not eligible(g, m, now):
             continue
-        c = evaluate(g, m, b, fee_state(m, epoch["series_fee"], epoch["event_series"]), now)
+        fs = fee_state(m, epoch["series_fee"], epoch["event_series"])
+        c = evaluate(g, m, b, fs, now)
         if c is not None:
+            prov = epoch.get("fee_provenance") or {}
+            c.fee_provenance = {"basis": "selection_series_level", "series": epoch["event_series"].get(m.get("event_ticker")),
+                                "fee_type": fs[0], "fee_multiplier": str(fs[1]), "known": fs != S.UNKNOWN_FEE_STATE
+                                or epoch["event_series"].get(m.get("event_ticker")) in epoch["series_fee"],
+                                "series_fee_t_ns": prov.get("series_fee_t_ns"), "epoch_t_ns": epoch.get("t_ns")}
             out.append(c)
     return out
 

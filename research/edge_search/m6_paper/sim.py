@@ -34,6 +34,12 @@ MARKOUT_H = (10, 60, 300, 1800, 7200)
 TRACK_GRACE_NS = 600 * NS        # the tracked record follows its epoch record by the epoch's collection time
 
 
+def covered(interval_ns: int) -> int:
+    """Reward coverage of one inter-poll interval: counted in full if <= GAP_S, otherwise NOT AT ALL. A longer
+    silence (e.g. the ~2-minute selection pause) is a gap and is never compensated (reviewer, 2026-09-29)."""
+    return max(0, interval_ns) if interval_ns <= S.GAP_S * NS else 0
+
+
 def day0_of(start_ns: int) -> int:
     """Day 0 = the first 00:00 UTC after collection starts."""
     return (start_ns // DAY + 1) * DAY
@@ -53,9 +59,9 @@ class World:
         self.settled_at: dict[str, tuple[int, D]] = {}     # ticker -> (first observed ns, YES settlement value)
         self.inactive_at: dict[str, int] = {}
         self.tracked_since: dict[str, int] = {}
-        self.fee_series: dict[str, tuple[int, dict]] = {}
-        self.fee_events: dict[str, dict] = {}
-        self.fee_changes: list = []
+        self.fee_series_hist: dict[str, list] = defaultdict(list)   # series -> [(observed ns, raw fee fields)]
+        self.fee_event_hist: dict[str, list] = defaultdict(list)    # event  -> [(observed ns, raw fields)]
+        self.fee_changes_hist: list = []                            # [(observed ns, fee-change list)]
         self.breaches: list = []
         self.trade_gaps: list = []
 
@@ -77,27 +83,61 @@ class World:
 
     def on_feestate(self, t: int, rec: dict) -> None:
         for s, v in rec.get("series", {}).items():
-            self.fee_series[s] = (t, v)
-        self.fee_events.update(rec.get("events", {}))
-        self.fee_changes = rec.get("fee_changes", self.fee_changes)
+            self.fee_series_hist[s].append((v.get("t_ns", t), v))
+        for e, v in rec.get("events", {}).items():
+            self.fee_event_hist[e].append((v.get("t_ns", t), v))
+        if "fee_changes" in rec:
+            self.fee_changes_hist.append((rec.get("fee_changes_t_ns", t), rec["fee_changes"]))
 
-    def fee_state(self, ticker: str, t: int) -> tuple[str, D]:
+    @staticmethod
+    def _latest(hist: list, t: int):
+        best = None
+        for obs, v in hist:
+            if obs <= t:
+                best = (obs, v)
+        return best
+
+    def fee_state(self, ticker: str, t: int, cutoff: int | None = None) -> tuple[str, D, dict]:
+        """Fee state for a fill in `ticker` at time t, with provenance.
+
+        cutoff=None -> KNOWN: only observations made at or before t (what a participant knew at the fill).
+        cutoff=X    -> APPLICABLE: the fee in force at t as reconstructable from everything observed by X:
+                       the series state observed at/before t (else the first observation by X), adjusted by the
+                       fee-change history known at X for changes scheduled up to t; the event override observed
+                       at/before t (else the first observation by X). If a change is scheduled between t and a
+                       later-only series observation, the state at t is undetermined -> conservative default.
+        Unknown -> maker fees at M = 1 (conservative). Selection never calls this (it uses its epoch's series state)."""
+        horizon = t if cutoff is None else cutoff
+        prov = {"basis": "known" if cutoff is None else "applicable", "t_ns": t}
         m = self.market.get(ticker) or {}
-        ev = self.fee_events.get(m.get("event_ticker")) or {}
-        s = ev.get("series_ticker")
-        if not s or s not in self.fee_series:
-            return S.UNKNOWN_FEE_STATE
-        t_s, st = self.fee_series[s]
-        ftype, mult = st.get("fee_type"), st.get("fee_multiplier")
-        for ch in sorted(self.fee_changes, key=lambda c: c.get("scheduled_ts", "")):
-            if ch.get("series_ticker") == s and t_s < SEL.ts_ns(ch["scheduled_ts"]) <= t:
-                ftype, mult = ch.get("fee_type", ftype), ch.get("fee_multiplier", mult)
-        if ev.get("fee_type_override"):
-            ftype = ev["fee_type_override"]
-            mult = ev.get("fee_multiplier_override") if ev.get("fee_multiplier_override") is not None else mult
+        ev_hist = self.fee_event_hist.get(m.get("event_ticker"), [])
+        ev = self._latest(ev_hist, t) or (next(((o, v) for o, v in ev_hist if o <= horizon), None) if cutoff else None)
+        s = ev[1].get("series_ticker") if ev else None
+        s_hist = self.fee_series_hist.get(s, []) if s else []
+        st = self._latest(s_hist, t) or (next(((o, v) for o, v in s_hist if o <= horizon), None) if cutoff else None)
+        if not st:
+            return (*S.UNKNOWN_FEE_STATE, {**prov, "status": "unknown_series_state"})
+        ftype, mult = st[1].get("fee_type"), st[1].get("fee_multiplier")
+        prov.update(series=s, series_obs_ns=st[0], event_obs_ns=ev[0] if ev else None)
+        ch = self._latest(self.fee_changes_hist, horizon)
+        applied = []
+        if ch:
+            prov["fee_changes_obs_ns"] = ch[0]
+            for c in sorted((c for c in ch[1] if c.get("series_ticker") == s), key=lambda c: c.get("scheduled_ts", "")):
+                sched = SEL.ts_ns(c["scheduled_ts"])
+                if st[0] < sched <= t:
+                    ftype, mult = c.get("fee_type", ftype), c.get("fee_multiplier", mult)
+                    applied.append(c["scheduled_ts"])
+                elif t < sched <= st[0]:           # series observed only after a change that postdates t
+                    return (*S.UNKNOWN_FEE_STATE, {**prov, "status": "undetermined_change_between_fill_and_observation"})
+        prov["changes_applied"] = applied
+        if ev and ev[1].get("fee_type_override"):
+            ftype = ev[1]["fee_type_override"]
+            mult = ev[1].get("fee_multiplier_override") if ev[1].get("fee_multiplier_override") is not None else mult
+            prov["event_override"] = True
         if not ftype:
-            return S.UNKNOWN_FEE_STATE
-        return ftype, D(str(mult if mult is not None else 1))
+            return (*S.UNKNOWN_FEE_STATE, {**prov, "status": "no_fee_type"})
+        return ftype, D(str(mult if mult is not None else 1)), {**prov, "status": "ok", "fee_type": ftype, "fee_multiplier": str(mult)}
 
     def ended(self, ticker: str, t: int) -> bool:
         m = self.market.get(ticker) or {}
@@ -207,7 +247,7 @@ class VariantState:
                 if end is None:
                     continue
                 if e.last_poll_ns is not None:
-                    e.cover_ns += min(max(0, end - e.last_poll_ns), S.GAP_S * NS)
+                    e.cover_ns += covered(end - e.last_poll_ns)
                 e.ended_ns, e.end_reason = end, why
                 acct.tick_capital(end)
                 acct.orders[ticker] = []
@@ -226,11 +266,12 @@ class VariantState:
             if not res:
                 continue
             acct.tick_capital(t)
-            ftype, mult = self.w.fee_state(ticker, t)
+            ftype, mult, prov = self.w.fee_state(ticker, t)              # causally KNOWN at the fill
             for o, n, kind in res:
                 f = A.Fill(t, o.side, o.price, n, A.maker_fee(ftype, mult, o.price, n, S.DIRECT_G),
                            A.maker_fee(ftype, mult, o.price, n, S.NONDIRECT_G), o.episode, kind)
                 f.markouts = {}
+                f.fee_known_direct, f.fee_known_prov = f.fee_direct, prov
                 acct.pos(ticker).apply(f)
                 e = acct.active.get(ticker)
                 if e is not None and e.eid == o.episode:
@@ -259,7 +300,7 @@ class VariantState:
             score = lip.snapshot_score(book, [(o.price, o.size) for o in live if o.side == "yes"],
                                        [(o.price, o.size) for o in live if o.side == "no"], c.target, c.discount, c.price_ranges)
             prev = e.last_poll_ns if e.last_poll_ns is not None else e.entry_ns
-            e.cover_ns += min(max(0, t - prev), S.GAP_S * NS)
+            e.cover_ns += covered(t - prev)
             e.last_poll_ns = t
             e.samples.append((t, score))
             self._quote(acct, e, book, levels_now, t)
@@ -318,7 +359,10 @@ class VariantState:
 class Replay:
     def __init__(self, root: str):
         self.root = root
-        meta = next(r for r in ST.read(root, "meta") if r.get("kind") == "start")
+        metas = list(ST.read(root, "meta"))
+        if any(r.get("kind") == "validation" for r in metas):
+            raise RuntimeError("validation data can never enter the prospective experiment")
+        meta = next(r for r in metas if r.get("kind") == "start")
         self.start_ns = meta["t_ns"]
         self.day0 = day0_of(self.start_ns)
         self.world = World()
@@ -479,10 +523,17 @@ def episode_ledger(rp: Replay, cutoff_ns: int) -> list[dict]:
                 s = w.settled_at.get(ticker)
                 settled = s[1] if s and s[0] <= cutoff_ns else None
                 yb, nb = w.best(ticker)
-                ftype, mult = w.fee_state(ticker, cutoff_ns)
+                _, mult, _ = w.fee_state(ticker, cutoff_ns, cutoff_ns)        # taker fee for liquidation marks
                 vy, vn, how = A.contract_values(settled, yb, nb, pos.q, mult)
                 for f in pos.fills:
+                    # P&L uses the fee ultimately APPLICABLE at the fill (reconstructed by the cutoff); the
+                    # causally known fee is kept for provenance and reported as a sensitivity
+                    ftype, fm, prov = w.fee_state(ticker, f.t_ns, cutoff_ns)
+                    f.fee_direct = A.maker_fee(ftype, fm, f.price, f.count, S.DIRECT_G)
+                    f.fee_nondirect = A.maker_fee(ftype, fm, f.price, f.count, S.NONDIRECT_G)
+                    f.fee_applicable_prov = prov
                     f.value_basis, f.pnl_direct, f.pnl_nondirect = how, A.fill_pnl(f, vy, vn, True), A.fill_pnl(f, vy, vn, False)
+                    f.pnl_known_fee = (vy if f.side == "yes" else vn) * f.count - f.price * f.count - f.fee_known_direct
         for e in st.episodes:
             p = payout(e)
             trading = sum((f.pnl_direct for f in e.fills), D(0))
@@ -492,7 +543,11 @@ def episode_ledger(rp: Replay, cutoff_ns: int) -> list[dict]:
                          "reward_primary": p["primary"], "reward_conservative": p["conservative"], "p_hat": p["p_hat"],
                          "p_se": p["se"], "trading_pnl": trading,
                          "trading_pnl_nondirect": sum((f.pnl_nondirect for f in e.fills), D(0)),
-                         "fees": sum((f.fee_direct for f in e.fills), D(0)), "n_fills": len(e.fills),
+                         "fees": sum((f.fee_direct for f in e.fills), D(0)),
+                         "fees_known_at_fill": sum((f.fee_known_direct for f in e.fills), D(0)),
+                         "trading_pnl_known_fee": sum((f.pnl_known_fee for f in e.fills), D(0)),
+                         "fee_status_applicable": sorted({f.fee_applicable_prov.get("status") for f in e.fills}),
+                         "selection_fee": e.cand.fee_provenance, "n_fills": len(e.fills),
                          "contracts": sum((f.count for f in e.fills), D(0)), "n_samples": len(e.samples),
                          "cover_s": e.cover_ns / NS, "repricings": e.repricings,
                          "tracked_ok": w.tracked_since.get(e.cand.ticker, 1 << 62) <= e.entry_ns + TRACK_GRACE_NS,

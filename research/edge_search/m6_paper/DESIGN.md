@@ -1,10 +1,16 @@
-# M6-REWARDS: prospective paper experiment (frozen design v2, NOT STARTED)
+# M6-REWARDS: prospective paper experiment (frozen design v3, NOT STARTED)
 
 - **Status (2026-09-29):** IMPLEMENTED AND TESTED. **NOT STARTED.**
   - The collector, simulator and analysis exist and are hash-frozen in `PREREG_M6_PAPER.md`. See also `PRE_START_AUDIT.md`.
   - No collection has started. The collector refuses to run without an explicit approval flag. No order has been or will be placed. No credentials are used.
   - H038/H039 are not touched.
   - v2 incorporates the reviewer amendments of 2026-09-29 (§10).
+  - v3 incorporates the second reviewer decision of 2026-09-29:
+    - 2 requests/s;
+    - collection gaps recorded explicitly and never compensated;
+    - the fee provenance rule of §4.2;
+    - the fill-assumption completion rule of §10;
+    - deployment to an isolated service on the persistent collector host.
 - **Why:** PRICE TEST 1 found M6 **capital-compatible** (`../price_test_1/RESULTS.md` §M6). It measured *no* fills, adverse selection, competitor response or payout-floor risk. This experiment measures those.
 - **Freeze procedure.** Implementation starts only after this design is approved. The collector, the simulator and their tests are then written to this specification. They are committed with sha256 hashes in `PREREG_M6_PAPER.md` **before the first collection request**. Any later change is a recorded deviation.
 - **Smoke test.** A ≤ 2-hour technical smoke test of the collector is allowed before the freeze. Its data is deleted unread.
@@ -22,7 +28,7 @@ The experiment asks this for a small participant who quotes both sides of LIP ma
 | stream | endpoint | cadence |
 |---|---|---|
 | programs | `GET /incentive_programs?type=liquidity&status=active` and `status=upcoming` | every 10 min |
-| epoch universe | all live programs' books via `GET /markets/orderbooks?tickers=…` (≤ 100 per call); `GET /markets?tickers=…`; `GET /series` and `/series/fee_changes`. The per-program ex-ante metrics of §4.2 are recorded. | every 6 h (00, 06, 12, 18 UTC) |
+| epoch universe | all live programs' books via `GET /markets/orderbooks?tickers=…` (≤ 100 per call); `GET /markets?tickers=…`; `GET /series` (raw fee fields and receive time); `GET /events` (event → series, receive time). The per-program ex-ante metrics of §4.2 are recomputable from the record. | every 6 h (00, 06, 12, 18 UTC) |
 | tracked books | `GET /markets/orderbooks` for every tracked market (full depth) | Poisson times, **mean 10 s**, independent of book state |
 | trades | `GET /markets/trades` (all markets), `min_ts` overlapping by 30 s, deduplicated by `trade_id` | every 5 s |
 | trade completeness | tracked market `volume_fp` vs summed trades; a gap > 1% triggers a per-ticker backfill and marks the interval | every 10 min |
@@ -30,7 +36,12 @@ The experiment asks this for a small participant who quotes both sides of LIP ma
 | rules watch | the regulatory bucket listing (as in `proposals/structural_terms_v2.patch`) for new LIP filings | hourly |
 
 **Rate and clock.**
-- Sustained rate ≤ 3 requests/s, with exponential backoff on 429.
+- Sustained rate ≤ **2 requests/s** (reviewer decision), with exponential backoff on 429.
+- **Collection gaps are recorded, not compensated.**
+  - The ~2-minute selection pause every 6 h (no book polls during an epoch) is written to the `ops` stream as a `collection_gap` (`reason = epoch`), with its start and end.
+  - Any main-loop pass over 30 s is recorded the same way (`reason = loop_stall`).
+  - Reward time lost in a gap is never compensated. An inter-poll interval counts toward T_cov in full if it is ≤ 60 s and **not at all** if longer (§7).
+- **Fee objects** for tracked markets (each event object with any fee override, and each series object) are fetched incrementally, 2 markets per loop pass, interleaved with book polls. That happens when a market is first tracked and again every 6 h. Each object carries its own receive time. The series fee-change history is fetched every 6 h in one call.
 - Every record carries the local receive time (UTC and monotonic ns). Trades carry exchange timestamps.
 - A tracked market with no book for > 60 s is in a **gap**.
 
@@ -64,8 +75,12 @@ The 24-hour rule is fixed ex ante. Payout-floor risk and snapshot-estimation noi
 | L\*(x15) | max(x·p_y, x·p_n) + maker fee |
 | score | projected reward per day ÷ C\* |
 
-- Fee state comes from the series fee history at the epoch, plus any event override.
-- An unknown fee state is treated as maker fees at M = 1.
+- **Fee state at selection (reviewer-approved, provisional).** Selection uses only the **series-level** fee state available at the epoch: `GET /series`, receive time recorded, with the market's series from `GET /events`. The events list carries no fee overrides, so event overrides are **not** used for selection, and a later-observed fee state is **never** used retrospectively for selection. An unknown series state is treated as maker fees at M = 1.
+- **Fees on fills.**
+  - The fee **known** at the fill (only observations made at or before it) is recorded with its provenance.
+  - P&L uses the fee ultimately **applicable** at the fill: the series state and event override in force at the fill, reconstructed from everything observed by the settlement cutoff, including the fee-change history. That too is recorded with its provenance.
+  - If the fee in force at the fill cannot be determined, maker fees at M = 1 are used (conservative).
+  - Known-fee P&L is reported as a sensitivity.
 
 ### 4.3 Arm P (portfolio accounts P30, P100, P200; independent of each other)
 
@@ -136,7 +151,7 @@ Our order has side s, price p, remaining size n, queue ahead Q (the level size a
   - an excluded snapshot scores 0;
   - **all other resting size is assumed eligible**, which is conservative for our share.
 - **Payout estimate.** P̂ = R × (T_cov / T_period) × mean_k[(s_y,k + s_n,k)/2].
-  - T_cov is our time in the period, excluding gaps. Gaps earn 0.
+  - T_cov is the sum of our inter-poll intervals in the period that are ≤ 60 s. A longer interval is a gap: it earns 0, and none of it counts (v3).
   - Because polls are independent of book state, the sample mean estimates the time average. Its SE uses hourly batch means.
 - **Payment.**
   - Primary: floor-to-cent of P̂, paid only if P̂ ≥ $1.00.

@@ -128,9 +128,11 @@ class Collector:
         self.lip_keys: set[str] | None = None
         self.last_epoch_ns = None
         self.trades_polls = 0
+        self.pending_fee_markets: list[tuple[str, str]] = []   # (ticker, scope) fee objects still to record
 
     # ------------------------------------------------------------------ epoch: selection + tracking
     def epoch(self, epoch_ns: int) -> dict:
+        start = self.now()
         programs = paged(self.h, "/incentive_programs", "incentive_programs", {"status": "active", "type": "liquidity", "limit": 1000})
         upcoming = paged(self.h, "/incentive_programs", "incentive_programs", {"status": "upcoming", "type": "liquidity", "limit": 1000})
         tickers = sorted({g["market_ticker"] for g in programs if g.get("market_ticker")})
@@ -139,13 +141,18 @@ class Collector:
             for m in self.h.api("/markets", {"tickers": ",".join(tickers[i:i + S.MARKETS_PER_CALL]), "limit": 1000}).get("markets", []):
                 markets[m["ticker"]] = {k: m.get(k) for k in MARKET_FIELDS}
         books = self._books(tickers)
-        series = {s["ticker"]: {"fee_type": s.get("fee_type"), "fee_multiplier": s.get("fee_multiplier")}
-                  for s in self.h.api("/series").get("series", [])}
+        series_raw = self.h.api("/series").get("series", [])
+        series_t = self.now()
+        series = {s["ticker"]: {k: v for k, v in s.items() if "fee" in k} for s in series_raw}   # raw fee fields
         events = paged(self.h, "/events", "events", {"status": "open", "limit": 200})
+        events_t = self.now()
         event_series = {e["event_ticker"]: e.get("series_ticker") for e in events}
-        rec = {"t_ns": self.now(), "epoch_ns": epoch_ns, "programs": programs, "upcoming": upcoming, "markets": markets,
-               "books": {t: b for t, (b, _) in books.items()}, "missing_books": sorted(set(tickers) - set(books)),
-               "series_fee": {s: series[s] for s in set(event_series.values()) if s in series}, "event_series": event_series}
+        rec = {"t_ns": self.now(), "epoch_ns": epoch_ns, "epoch_started_ns": start, "programs": programs, "upcoming": upcoming,
+               "markets": markets, "books": {t: b for t, (b, _) in books.items()}, "missing_books": sorted(set(tickers) - set(books)),
+               "series_fee": {s: series[s] for s in set(event_series.values()) if s in series}, "event_series": event_series,
+               "fee_provenance": {"series_fee": "GET /series (series-level fee fields, raw)", "series_fee_t_ns": series_t,
+                                  "event_series": "GET /events?status=open (series_ticker; no fee overrides in list)",
+                                  "event_series_t_ns": events_t}}
         self.w.write("epoch", rec)
         cands = SEL.candidates(rec)
         rank = SEL.ranked(cands)
@@ -154,6 +161,8 @@ class Collector:
             adds += [(c, "arm_u") for c in SEL.u_draw(cands, epoch_ns, SEL.epoch_day(epoch_ns))]
         self._track(adds)
         self.last_epoch_ns = epoch_ns
+        self.w.write("ops", {"t_ns": self.now(), "kind": "collection_gap", "reason": "epoch", "start_ns": start,
+                             "end_ns": self.now(), "note": "planned selection pause; no book polls; not compensated"})
         return rec
 
     def _track(self, adds) -> None:
@@ -166,6 +175,7 @@ class Collector:
             if c.ticker not in self.ever:
                 self.ever[c.ticker] = now
                 new.append(c.ticker)
+                self.pending_fee_markets.append((c.ticker, "new_markets"))
             self.vol_base.setdefault(c.ticker, (None, D(0), now))
         self.w.write("tracked", {"t_ns": now, "add": [{"ticker": c.ticker, "program_id": c.program_id, "until_ns": c.end_ns,
                                                        "reason": why} for c, why in adds],
@@ -243,19 +253,40 @@ class Collector:
             self.w.write("markets", {"t_ns": self.now(), "markets": out})
         return out
 
-    def poll_feestate(self) -> None:
-        ms = self.poll_markets(sorted(self.tracked)) if self.tracked else {}
+    def poll_feestate(self, tickers: list[str] | None = None, scope: str = "full") -> None:
+        """Fee provenance for tracked markets: each event object (series + any fee override) and each series
+        object, with its own receive time, plus the series fee-change history. Raw fee fields are kept."""
+        ms = self.poll_markets(sorted(self.tracked) if tickers is None else tickers) if (self.tracked or tickers) else {}
         events = {}
         for e in sorted({m["event_ticker"] for m in ms.values()}):
             ev = self.h.api(f"/events/{e}").get("event") or {}
-            events[e] = {k: ev.get(k) for k in ("series_ticker", "fee_type_override", "fee_multiplier_override")}
+            events[e] = {"t_ns": self.now(), "series_ticker": ev.get("series_ticker"),
+                         **{k: v for k, v in ev.items() if "fee" in k}}
         series = {}
         for s in sorted({v["series_ticker"] for v in events.values() if v.get("series_ticker")}):
             so = self.h.api(f"/series/{s}").get("series") or {}
-            series[s] = {"fee_type": so.get("fee_type"), "fee_multiplier": so.get("fee_multiplier")}
+            series[s] = {"t_ns": self.now(), **{k: v for k, v in so.items() if "fee" in k}}
+        self.w.write("feestate", {"t_ns": self.now(), "scope": scope, "events": events, "series": series})
+
+    def poll_fee_changes(self) -> None:
         ch = self.h.api("/series/fee_changes", {"show_historical": "true"})
-        self.w.write("feestate", {"t_ns": self.now(), "events": events, "series": series,
+        self.w.write("feestate", {"t_ns": self.now(), "scope": "fee_changes", "events": {}, "series": {},
+                                  "fee_changes_t_ns": self.now(),
                                   "fee_changes": ch.get("series_fee_change_arr") or ch.get("series_fee_changes") or []})
+
+    def schedule_full_fees(self) -> None:
+        """6-hourly refresh: the fee-change history now (one call), and every tracked market's event/series fee
+        objects queued for incremental fetching, so no single loop pass blocks book polling."""
+        self.poll_fee_changes()
+        queued = {t for t, _ in self.pending_fee_markets}
+        self.pending_fee_markets += [(t, "full") for t in sorted(self.tracked) if t not in queued]
+
+    def poll_new_fees(self) -> int:
+        """Fee objects for up to FEES_NEW_PER_LOOP queued markets (interleaved with book polls)."""
+        batch, self.pending_fee_markets = self.pending_fee_markets[:S.FEES_NEW_PER_LOOP], self.pending_fee_markets[S.FEES_NEW_PER_LOOP:]
+        for scope in sorted({s for _, s in batch}):
+            self.poll_feestate([t for t, s in batch if s == scope], scope=scope)
+        return len(batch)
 
     def completeness(self) -> None:
         """Volume of each tracked market vs trades recorded since the last check; a gap > 1% triggers a
@@ -300,20 +331,33 @@ def epoch_due(last_epoch_ns: int | None, now_ns: int) -> int | None:
     return b_ns if last_epoch_ns is None or b_ns > last_epoch_ns else None
 
 
-def run(data_dir: str, mode: str, code_hashes: dict, until_ns: int | None = None) -> None:     # pragma: no cover
+def check_dir(kinds: set, validation: bool, data_dir: str) -> None:
+    """Validation data and prospective data can never share a directory."""
+    if validation and ("validation" not in data_dir or kinds - {"validation"}):
+        raise SystemExit("validation runs need a fresh directory whose path contains 'validation'")
+    if not validation and ("validation" in kinds or "validation" in data_dir):
+        raise SystemExit("refusing to mix validation and prospective data in one directory")
+
+
+def run(data_dir: str, mode: str, code_hashes: dict, until_ns: int | None = None, validation: bool = False) -> None:  # pragma: no cover
     w = ST.Writer(data_dir)
     http = Http()
     c = Collector(http, w, rng=random.Random())
     now = time.time_ns()
-    first = not any(r.get("kind") == "start" for r in ST.read(data_dir, "meta"))
+    kinds = {r.get("kind") for r in ST.read(data_dir, "meta")}
+    check_dir(kinds, validation, data_dir)
+    first = "start" not in kinds
     restored = c.restore()
-    w.write("meta", {"t_ns": now, "kind": "start" if first else "restart", "mode": mode, "spec_version": S.SPEC_VERSION,
-                     "code_sha256": code_hashes, "restored_tracked": restored})
-    if first:
+    w.write("meta", {"t_ns": now, "kind": "validation" if validation else ("start" if first else "restart"), "mode": mode,
+                     "spec_version": S.SPEC_VERSION, "code_sha256": code_hashes, "restored_tracked": restored})
+    if validation and not c.last_epoch_ns:
+        c.epoch(epoch_due(None, now))             # validation only: exercise one epoch immediately
+    elif first:
         c.last_epoch_ns = epoch_due(None, now)    # the first epoch is the NEXT 00/06/12/18 UTC boundary
     nxt = {"programs": 0, "trades": 0, "books": 0, "markets": 0, "fees": 0, "complete": 0, "rules": 0, "ops": 0}
     while until_ns is None or time.time_ns() < until_ns:
         t = time.monotonic()
+        t_wall = time.time_ns()
         try:
             if mode == "full":
                 e = epoch_due(c.last_epoch_ns, time.time_ns())
@@ -321,6 +365,7 @@ def run(data_dir: str, mode: str, code_hashes: dict, until_ns: int | None = None
                     c.epoch(e)
             c.expire()
             if mode in ("full", "tail"):
+                c.poll_new_fees()
                 if t >= nxt["books"]:
                     c.poll_books()
                     nxt["books"] = t + c.rng.expovariate(1.0 / S.BOOK_POLL_MEAN_S)
@@ -329,7 +374,7 @@ def run(data_dir: str, mode: str, code_hashes: dict, until_ns: int | None = None
                 if t >= nxt["markets"]:
                     c.poll_markets(sorted(set(c.tracked) | set(c.ever))); nxt["markets"] = t + S.MARKETS_POLL_S
                 if t >= nxt["fees"]:
-                    c.poll_feestate(); nxt["fees"] = t + S.FEESTATE_POLL_S
+                    c.schedule_full_fees(); nxt["fees"] = t + S.FEESTATE_POLL_S
                 if t >= nxt["complete"]:
                     c.completeness(); nxt["complete"] = t + S.COMPLETENESS_S
             if mode == "full" and t >= nxt["programs"]:
@@ -346,9 +391,13 @@ def run(data_dir: str, mode: str, code_hashes: dict, until_ns: int | None = None
                 nxt["markets"] = t + S.POST_SETTLEMENT_POLL_S
         except Exception as ex:                                  # noqa: BLE001  keep running; everything is logged
             w.write("ops", {"t_ns": time.time_ns(), "error": repr(ex)[:500]})
+        took = time.monotonic() - t
+        if took > S.LOOP_STALL_GAP_S:
+            w.write("ops", {"t_ns": time.time_ns(), "kind": "collection_gap", "reason": "loop_stall", "start_ns": t_wall,
+                            "end_ns": time.time_ns(), "note": "not compensated"})
         if t >= nxt["ops"]:
             w.write("ops", {"t_ns": time.time_ns(), **http.stats, "tracked": len(c.tracked), "ever": len(c.ever),
-                            "trades_polls": c.trades_polls})
+                            "trades_polls": c.trades_polls, "pending_fee_markets": len(c.pending_fee_markets)})
             nxt["ops"] = t + 60
         time.sleep(0.2)
 
@@ -358,13 +407,18 @@ def main():                                                      # pragma: no co
     ap.add_argument("--data-dir", required=True)
     ap.add_argument("--mode", choices=("full", "tail", "settlement"), required=True)
     ap.add_argument("--i-have-reviewer-approval-to-start", action="store_true")
+    ap.add_argument("--validation", action="store_true",
+                    help="short operational validation into a quarantined directory (path must contain 'validation')")
     ap.add_argument("--until-utc", default=None)
     a = ap.parse_args()
-    if not a.i_have_reviewer_approval_to_start:
+    if a.validation:
+        if "validation" not in a.data_dir or not a.until_utc:
+            raise SystemExit("validation runs need --until-utc and a data dir whose path contains 'validation'")
+    elif not a.i_have_reviewer_approval_to_start:
         raise SystemExit("M6 collection is NOT approved to start (PREREG_M6_PAPER.md). Refusing.")
     from .prereg import code_hashes
     until = int(dt.datetime.fromisoformat(a.until_utc.replace("Z", "+00:00")).timestamp()) * NS if a.until_utc else None
-    run(a.data_dir, a.mode, code_hashes(), until)
+    run(a.data_dir, a.mode, code_hashes(), until, validation=a.validation)
 
 
 if __name__ == "__main__":                                       # pragma: no cover
