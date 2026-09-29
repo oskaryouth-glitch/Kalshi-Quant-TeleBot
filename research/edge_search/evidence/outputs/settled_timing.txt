@@ -1,0 +1,6 @@
+n 12000 result: Counter({'no': 8797, 'yes': 3198, 'scalar': 5})
+can_close_early: Counter({True: 12000})
+settlement_timer_seconds: [(60, 9366), (1800, 1250), (3600, 690), (1, 367), (180, 146), (30, 53)]
+top series: [('KXSOLE', 1200), ('KXSOLD', 1200), ('KXHYPED', 1200), ('KXHYPE', 1200), ('KXETHD', 1200), ('KXETH', 1200), ('KXBTCD', 752), ('KXBTC', 752), ('KXXRPD', 300), ('KXXRP', 300), ('KXBNBD', 264), ('KXBNB', 225)]
+scalar settlements: [('KXUSLGAME-26OCT04SPOLFC-TIE', '0.3400'), ('KXUSLGAME-26OCT04SPOLFC-SPO', '0.3300'), ('KXUSLGAME-26OCT04SPOLFC-LFC', '0.3300'), ('KXT20MATCH-26SEP282000NEPSRI-SRI', '0.5000'), ('KXT20MATCH-26SEP282000NEPSRI-NEP', '0.5000')]
+settlement_ts - close_time (s) p10/p50/p90/p99: [127, 157, 1877, 3806]

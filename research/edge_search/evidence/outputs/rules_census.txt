@@ -1,0 +1,62 @@
+active markets 115126
+
+== M2_average: 7654 markets in 229 series; top: [('KXSOLE', 425), ('KXSOLD', 425), ('KXDDR5MS', 420), ('KXDDR5EMS', 400), ('KXHYPED', 390), ('KXHYPE', 390), ('KXETHD', 390), ('KXETH', 390), ('KXBTCD', 318), ('KXBTC', 318), ('KXXRPD', 175), ('KXB200MS', 169)]
+
+== M2_total_cumulative: 6688 markets in 80 series; top: [('KXMIDTERMMOV', 4569), ('KXNFLFFLEADERTOP', 695), ('KXNFLFFWEEKLEAD', 255), ('KXNFLFFWEEKTOP', 170), ('KXMLBWSMVP', 98), ('KXMLBNLCSMVP', 49), ('KXMLBALCSMVP', 49), ('KXPAYROLLS', 39), ('KXLEADERNFLPINT', 30), ('KXLEADERNFLAPYDS', 30), ('KXNBACUPQUAL', 30), ('KXLEADERNFLPYDS', 28)]
+
+== M2_high_low_of_day: 3308 markets in 168 series; top: [('KXNFLWEEKHIGHSCORE', 480), ('KXNFLFFWEEKLEAD', 255), ('KXNFLFFWEEKTOP', 170), ('KXU3EOY', 165), ('KXHURCAT', 160), ('KXBALLONDORRANK', 90), ('KXUCLLEADER', 66), ('KXEPLLEADER', 64), ('KXNFLWEEKMOSTRECYDS', 61), ('KXWTIMAX', 50), ('KXNFLTEAMPTS', 32), ('KXWTIMIN', 32)]
+
+== M2_ever_at_any_point: 1159 markets in 64 series; top: [('KXYTVIEWSW', 344), ('KXYTVIEWSHIGH', 336), ('KXSONGRELEASE', 31), ('KXBNBMINMON', 28), ('KXZECMINMON', 21), ('KXSTARSHIPSPACE', 20), ('KXUSACOMPANYSTAKE', 18), ('KXBTCMINMON', 18), ('KXTRUMPMEETING', 14), ('KXDIESELMAXY', 13), ('KXAAAGASMAX', 13), ('KXSP500WHEN', 12)]
+
+== M5_ties: 15348 markets in 354 series; top: [('KXMIDTERMMOV', 4569), ('KXNFLFFLEADERTOP', 695), ('KXNCAAFWINS', 564), ('KXNFLWEEKHIGHSCORE', 480), ('KXNCAAFLEADER', 415), ('KXNFLFFWEEKLEAD', 255), ('KXCHESSFIDERATINGTOP', 240), ('KXNCAAFSECLEADER', 198), ('KXNFLDIVISIONORDER', 192), ('KXNCAAFBIGTENLEADER', 192), ('KXUEFANLGAME', 186), ('KXNFLFFWEEKTOP', 170)]
+
+== M5_dnp: 6927 markets in 177 series; top: [('KXNCAAFAWARD', 897), ('KXNCAAFLEADER', 415), ('KXNFLFFWEEKLEAD', 255), ('KXITFMATCH', 222), ('KXITFWMATCH', 218), ('KXNCAAFSECLEADER', 198), ('KXNCAAFBIGTENLEADER', 192), ('KXNFLFFWEEKTOP', 170), ('KXPGATOUR', 165), ('KXMLBHRR', 159), ('KXDPWORLDTOUR', 154), ('KXNCAAFBIG12LEADER', 147)]
+
+== M8_postpone_cancel: 18836 markets in 396 series; top: [('KXMIDTERMVOTETURN', 2852), ('KXNCAAFSPREAD', 1594), ('KXNCAAFTEAMTOTAL', 1256), ('KXNCAAF1HSPREAD', 1101), ('KXNCAAFTOTAL', 1045), ('KXNCAAF1HTOTAL', 718), ('KXNCAAF1H', 654), ('KXNCAAFGAME', 436), ('KXNFLWINSWEEK', 412), ('KXITFMATCH', 222), ('KXITFWMATCH', 218), ('KXUEFANLGAME', 186)]
+
+== M8_not_released: 3841 markets in 208 series; top: [('KXLFPRATEEOY', 187), ('KXXRPD', 175), ('KXXRP', 165), ('KXDDR5WS', 120), ('KXDDR5EWS', 120), ('KXPLATINUMH', 85), ('KXWTIH', 80), ('KXSILVERH', 80), ('KXPALLADIUMH', 80), ('KXGOLDH', 80), ('KXDJI', 74), ('KXNATGASD', 70)]
+
+== M8_fair_value: 14179 markets in 294 series; top: [('KXNCAAFSPREAD', 1594), ('KXNCAAFTEAMTOTAL', 1256), ('KXNCAAF1HSPREAD', 1101), ('KXNCAAFTOTAL', 1045), ('KXNCAAF1HTOTAL', 718), ('KXNFLFFLEADERTOP', 695), ('KXNCAAF1H', 654), ('KXNCAAFGAME', 436), ('KXUEFANLGAME', 186), ('KXNFLFFWEEKTOP', 170), ('KXPGATOUR', 165), ('KXDPWORLDTOUR', 154)]
+
+== M3_first_release: 22294 markets in 478 series; top: [('KXVOTEGENERAL', 9086), ('KXMIDTERMVOTETURN', 2852), ('KXNASDAQ100U', 2800), ('KXINXU', 430), ('KXVOTECOUNTY', 422), ('KXDDR5MS', 420), ('KXDDR5EMS', 400), ('KXLFPRATEEOY', 187), ('KXB200MS', 169), ('KXU3EOY', 165), ('KXGDPNOM', 159), ('KXGDPYEAR', 154)]
+
+== M3_lst: 15 markets in 1 series; top: [('KXLIVCOMPETE', 15)]
+
+== M3_rounded: 28591 markets in 400 series; top: [('KXVOTEGENERAL', 9086), ('KXMIDTERMMOV', 4569), ('KXNCAAFAWARD', 1048), ('KXMARMADROUND', 587), ('KXNFLWEEKHIGHSCORE', 480), ('KXVOTECOUNTY', 422), ('KXDDR5MS', 420), ('KXNCAAFLEADER', 415), ('KXDDR5EMS', 400), ('KXWMARMADROUND', 398), ('KXITFMATCH', 222), ('KXITFWMATCH', 218)]
+
+M4 tail quotes (summary fields):
+('center_centi_edge_centi_cent', 'n') 32
+('center_centi_edge_centi_cent', 'yes_ask 0.01-0.03') 8
+('center_centi_edge_centi_cent', 'yes_ask<0.01') 1
+('center_centi_edge_centi_cent', 'yes_ask<=0.01') 1
+('center_centi_edge_centi_cent', 'yes_bid=0.01 (longshot bid)') 5
+('center_centi_edge_centi_cent', 'yes_bid>0.99') 0
+('center_centi_edge_centi_cent', 'yes_bid>=0.99') 0
+('center_half_edge_half_cent', 'n') 66
+('center_half_edge_half_cent', 'yes_ask 0.01-0.03') 0
+('center_half_edge_half_cent', 'yes_ask<0.01') 0
+('center_half_edge_half_cent', 'yes_ask<=0.01') 0
+('center_half_edge_half_cent', 'yes_bid=0.01 (longshot bid)') 0
+('center_half_edge_half_cent', 'yes_bid>0.99') 0
+('center_half_edge_half_cent', 'yes_bid>=0.99') 0
+('deci_cent', 'n') 383
+('deci_cent', 'yes_ask 0.01-0.03') 71
+('deci_cent', 'yes_ask<0.01') 137
+('deci_cent', 'yes_ask<=0.01') 148
+('deci_cent', 'yes_bid=0.01 (longshot bid)') 5
+('deci_cent', 'yes_bid>0.99') 0
+('deci_cent', 'yes_bid>=0.99') 0
+('linear_cent', 'n') 105419
+('linear_cent', 'yes_ask 0.01-0.03') 13308
+('linear_cent', 'yes_ask<0.01') 0
+('linear_cent', 'yes_ask<=0.01') 8493
+('linear_cent', 'yes_bid=0.01 (longshot bid)') 8166
+('linear_cent', 'yes_bid>0.99') 0
+('linear_cent', 'yes_bid>=0.99') 1329
+('tapered_deci_cent', 'n') 9226
+('tapered_deci_cent', 'yes_ask 0.01-0.03') 525
+('tapered_deci_cent', 'yes_ask<0.01') 503
+('tapered_deci_cent', 'yes_ask<=0.01') 572
+('tapered_deci_cent', 'yes_bid=0.01 (longshot bid)') 298
+('tapered_deci_cent', 'yes_bid>0.99') 2
+('tapered_deci_cent', 'yes_bid>=0.99') 2

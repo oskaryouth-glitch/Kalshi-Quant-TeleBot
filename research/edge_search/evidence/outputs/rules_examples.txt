@@ -1,0 +1,174 @@
+===== KXFEDDECISION | Fed decision in Jan 2028? | cat: Economics | n_mkts: 5 | mutually_exclusive: True
+  sources: ['Federal Reserve https://www.federalreserve.gov'] | terms: https://assets.kalshi.com/contract_terms/FEDDECISION.pdf | fee: quadratic_with_maker_fees 1
+  ticker: KXFEDDECISION-28JAN-H0 | strike: custom None None | close: 2028-01-26T18:59:00Z | exp_exp: 2028-01-26T19:05:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.1900 0.8800 vol24: 0.00 oi: 401.00
+  PRIMARY: If the Federal Reserve does a Hike of 0bps on January 26, 2028, then the market resolves to Yes.
+  SECONDARY: This market is mutually exclusive. Therefore, if the Federal Reserve hikes by 50bps, the 50bps market will resolve to Yes and the 25bps market will resolve to No. Only one bucket, at maximum, can resolve to Yes. Note 4/28/25: For the markets beginning after the May meeting, if a scheduled FOMC meeting is canceled and does not occur on its scheduled date, then the strike for "Fed maintains rate" will resolve to Yes and all others will resolve to No.
+===== KXFED | Fed funds rate after Jan 2028 meeting? | cat: Economics | n_mkts: 25 | mutually_exclusive: False
+  sources: ['Federal Reserve Board of Governors https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm'] | terms: https://assets.kalshi.com/contract_terms/FED.pdf | fee: quadratic_with_maker_fees 1
+  ticker: KXFED-28JAN-T3.00 | strike: greater 3 None | close: 2028-01-26T18:55:00Z | exp_exp: 2028-01-26T19:05:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.6000 1.0000 vol24: 0.00 oi: 15.00
+  PRIMARY: If the upper bound of the target federal funds rate published on the Federal Reserve's official website is greater than 3.00% following the Federal Reserve's Jan 26, 2028 meeting, then the market resolves to Yes.
+  SECONDARY: This market will expire the first 2:05 PM ET following the release of a Federal Reserve statement for their Jan 26, 2028 meeting or one week following the last day of that meeting.
+===== KXDDR5MS | DDR5 16Gb (2Gx8) 4800/5600 · Average price in September 2027 | cat: Financials | n_mkts: 30 | mutually_exclusive: False
+  sources: ['Ornn https://dashboard.ornnai.com/compute'] | terms: https://assets.kalshi.com/contract_terms/INDEXVALUE.pdf | fee: quadratic 1
+  ticker: KXDDR5MS-27SEP-55.250 | strike: greater 55.25 None | close: 2027-10-01T03:59:59Z | exp_exp: 2027-10-01T03:59:59Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.5300 0.6200 vol24: 0.00 oi: 0.00
+  PRIMARY: If the average value of DDR5 16Gb (2Gx8) 4800/5600 spot price is above $55.25 in September 2027, then the market resolves to Yes.
+  SECONDARY: The market resolves based on the average value of DDR5 16Gb (2Gx8) 4800/5600 spot price in September 2027, calculated as the arithmetic mean of daily values reported by Ornn.
+
+Revisions to the underlying made after expiration will not be accounted for. The "USD" iteration of the index will be used unless explicitly stated otherwise. Values are rounded to two decimal places unless otherwise specified.
+===== KXPGATOUR | 2027 The Masters Champion | cat: Sports | n_mkts: 51 | mutually_exclusive: True
+  sources: ['Fox Sports https://www.foxsports.com', 'ESPN https://www.espn.com/', 'the Governing League https://www.pgatour.com/'] | terms: https://assets.kalshi.com/contract_terms/ACHIEVEMENTS.pdf | fee: quadratic_with_maker_fees 1
+  ticker: KXPGATOUR-MAST27-KKIT | strike: structured None None | close: 2027-04-25T23:00:00Z | exp_exp: 2027-04-11T23:00:00Z | pls: tapered_deci_cent
+  quotes y_bid/y_ask: 0.0100 0.0200 vol24: 69.00 oi: 1118.79
+  PRIMARY: If Kurt Kitayama wins the Masters Tournament, then the market resolves to Yes.
+  SECONDARY: If a golfer forfeits, withdraws, or does not participate prior to teeing off, their contracts will resolve as follows:
+Tournament Winner and End of Round Leader markets will resolve to No
+Finishing Position, Make the Cut, Head-to-Head, and 3-Ball markets will resolve to Fair Market Value
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the PGA or Augusta National, Inc. All trademarks, logos, and brand names are the property of their respective owners.
+===== KXNCAAFSECREGTOP | SEC Regular Season: Top 5 Finishers | cat: Sports | n_mkts: 16 | mutually_exclusive: False
+  sources: ['Kalshi using information originating from the NCAA https://www.ncaa.com/sports/football/fbs', 'ESPN https://www.espn.com'] | terms: https://assets.kalshi.com/contract_terms/NCAAFREGULARSEASON.pdf | fee: quadratic 1
+  ticker: KXNCAAFSECREGTOP-27T5-FLA | strike: structured None None | close: 2027-02-07T15:00:00Z | exp_exp: 2027-01-31T15:00:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.6100 0.8100 vol24: 0.00 oi: 208.90
+  PRIMARY: If Florida finishes in the top 5 in the Southeastern Conference in the 2026 college football regular season, then the market resolves to Yes.
+  SECONDARY: Tie-Breaking Resolution: If two or more teams finish with identical win-loss records within their conference, all tied teams will resolve as having achieved that position (e.g., all teams tied for 5th place will be considered to have finished in the top 5).
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the NCAA. All trademarks, logos, and brand names are the property of their respective owners.
+===== KXNFLFFLEADERTOP | Top 5 Fantasy WR | cat: Sports | n_mkts: 57 | mutually_exclusive: False
+  sources: ['Sleeper https://sleeper.com/'] | terms: https://assets.kalshi.com/contract_terms/FFSTATLEADER.pdf | fee: quadratic 1
+  ticker: KXNFLFFLEADERTOP-27WRT5-RODUNZE15 | strike: structured None None | close: 2027-01-18T15:00:00Z | exp_exp: 2027-01-18T15:00:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.0000 0.9100 vol24: 0.00 oi: 0.00
+  PRIMARY: If Rome Odunze finishes top 5 in scoring among wide receivers for the 2026-27 Pro Football regular season, then the market resolves to Yes.
+  SECONDARY: Dead-heat rules apply in the event that two or more players are tied at the final qualifying position.
+
+If a tie occurs at the cutoff position, each tied player's contract shall settle at 1/N, where N is the total number of players tied for the remaining qualifying position(s).
+
+Example: In a market for the top 10 fantasy quarterbacks, if two quarterbacks are tied for 10th place, each tied player's contract will settle at $0.50.
+
+This market will be based on Sleeper's FFL Points Per Reception (PPR) scoring, and refers to the totals for the entirety of the Pro Football regular season.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.
+===== KXRATECUTCOUNT | Number of rate cuts in 2026? | cat: Economics | n_mkts: 21 | mutually_exclusive: True
+  sources: ['Federal Reserve https://www.federalreserve.gov/monetarypolicy/openmarket.htm'] | terms: https://assets.kalshi.com/contract_terms/RATECUTS.pdf | fee: quadratic_with_maker_fees 1
+  ticker: KXRATECUTCOUNT-26DEC31-T10 | strike: between 10 10 | close: 2027-01-01T04:59:00Z | exp_exp: 2026-12-31T15:00:00Z | pls: deci_cent
+  quotes y_bid/y_ask: 0.0000 0.0010 vol24: 0.00 oi: 258192.87
+  PRIMARY: If the Fed cuts 10 times starting Jan 1, 2026 and before 2027, then the market resolves to Yes.
+  SECONDARY: To be clear, 25bp of cuts is equal to one cut (so 25bp cut is 1, 50bp cut is 2, 75bp cut is 3, and so on).
+===== KXPAYROLLS | Jobs numbers in Nov 2026? | cat: Economics | n_mkts: 13 | mutually_exclusive: False
+  sources: ['BLS https://www.bls.gov/news.release/ppi.nr0.htm'] | terms: https://assets.kalshi.com/contract_terms/PAYROLLS.pdf | fee: quadratic_with_maker_fees 1
+  ticker: KXPAYROLLS-26NOV-T50000 | strike: greater 50000 None | close: 2026-12-04T13:29:00Z | exp_exp: 2026-12-04T15:00:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.5800 0.6800 vol24: 0.00 oi: 99.06
+  PRIMARY: If the increase in total non-farm payroll employment is above 50000 as reported by the Bureau of Labor Statistics Monthly Employment Situation Report for the month of November 2026, then the market resolves to Yes.
+  SECONDARY: The market closes at 8:29 AM ET on the expected date of the data release.
+===== KXPGATOP10 | Bank Of Utah Championship: Top 10 Finishers | cat: Sports | n_mkts: 114 | mutually_exclusive: False
+  sources: ['Fox Sports https://www.foxsports.com', 'ESPN https://www.espn.com', 'the Governing League https://www.pgatour.com/'] | terms: https://assets.kalshi.com/contract_terms/GOLFFINISH.pdf | fee: quadratic 1
+  ticker: KXPGATOP10-BAOUC26-JLOW | strike: structured None None | close: 2026-11-01T04:00:00Z | exp_exp: 2026-10-18T04:00:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.0500 0.0900 vol24: 0.00 oi: 0.00
+  PRIMARY: If Justin Lower finishes in the top 10 (including ties) in the 2026 Bank of Utah Championship, then the market resolves to Yes.
+  SECONDARY: If a golfer forfeits, withdraws, or doesn't participate:
+Prior to teeing off: Market resolves to Fair Market Price
+After teeing off: Market resolves to No
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the PGA. All trademarks, logos, and brand names are the property of their respective owners.
+===== KXPGAR1LEAD | Bank of Utah Championship End of Round 1 Leader | cat: Sports | n_mkts: 114 | mutually_exclusive: True
+  sources: ['the Governing League https://www.pgatour.com/'] | terms: https://assets.kalshi.com/contract_terms/ACHIEVEMENTS.pdf | fee: quadratic 1
+  ticker: KXPGAR1LEAD-BAOUC26-JLOW | strike: structured None None | close: 2026-10-18T04:00:00Z | exp_exp: 2026-10-18T04:00:00Z | pls: tapered_deci_cent
+  quotes y_bid/y_ask: 0.0000 0.0060 vol24: 0.00 oi: 0.00
+  PRIMARY: If Justin Lower is the leader at the end of Round 1 in the 2026 Bank of Utah Championship, then the market resolves to Yes.
+  SECONDARY: If multiple participants are tied for the lead at the end of the round, “Yes” positions will pay $1/N (rounded down to the nearest cent), where N is the number of tied participants, and “No” positions will pay 1 minus the "Yes" payout. Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the PGA. All trademarks, logos, and brand names are the property of their respective owners.
+===== KXEARNINGSMENTIONMU | What will Micron say during their post earnings analyst call? | cat: Mentions | n_mkts: 16 | mutually_exclusive: False
+  sources: ['Micron Technology, Inc. Investor Events https://investors.micron.com/events-and-presentations'] | terms: https://assets.kalshi.com/contract_terms/EARNINGSMENTION.pdf | fee: quadratic 1
+  ticker: KXEARNINGSMENTIONMU-26SEP30-TARI | strike: custom None None | close: 2026-10-14T14:00:00Z | exp_exp: 2026-10-14T14:00:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.0400 0.7800 vol24: 0.00 oi: 0.00
+  PRIMARY: If Tariff is said by any Micron Technology, Inc. representative (including the operator of the call) during the next Micron Technology, Inc. live post earnings analyst call, then the market resolves to Yes.
+  SECONDARY: How this is resolved
+Video of the Micron Technology, Inc. earnings call.
+If a consensus by Kalshi employees cannot be reached using video, transcripts of the Micron Technology, Inc. post analyst earnings call will be used according to the news publications listed in the contract. 
+
+Payout criteria
+The exact phrase/word, or a plural or possessive form of the phrase/word.
+
+Doesn't count for payout
+Grammatical/tense inflections.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the underlying company. All trademarks, logos, and brand names are the property of their respective owners.
+===== KXYTVIEWSW | NBA YoungBoy: Highest daily view count (September 28, 2026 - October 4, 2026) | cat: Entertainment | n_mkts: 8 | mutually_exclusive: False
+  sources: ['YouTube Charts https://charts.youtube.com/US'] | terms: https://assets.kalshi.com/contract_terms/PERIODMEDIACONSUMPTION.pdf | fee: quadratic 1
+  ticker: KXYTVIEWSW-YOU26OCT04-9.0M | strike: greater 9000000 None | close: 2026-10-06T14:00:00Z | exp_exp: 2026-10-08T14:00:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.0100 0.9700 vol24: 0.00 oi: 0.00
+  PRIMARY: If NBA YoungBoy has above 9M Global daily views on YouTube at any point during September 28, 2026 - October 4, 2026, then the market resolves to Yes.
+  SECONDARY: View counts may vary by location. This market will resolve using values displayed from a New York IP address.
+
+Global daily views can be accessed through YouTube Charts by searching for the artist and selecting “Global” as the location.
+
+This market and these products have not been endorsed by YouTube. Any references to YouTube charts or any associated marks are descriptive only and do not indicate an endorsement of this product or any affiliation between YouTube and Kalshi.
+===== KXUSLGAME | New Mexico United vs Phoenix Rising | cat: Sports | n_mkts: 3 | mutually_exclusive: True
+  sources: ['ESPN https://www.espn.com/', 'Fox Sports https://www.foxsports.com/'] | terms: https://assets.kalshi.com/contract_terms/SOCCERGAMEWIN.pdf | fee: quadratic 1
+  ticker: KXUSLGAME-26OCT04NEWPHO-PHO | strike: structured None None | close: 2026-10-06T22:00:00Z | exp_exp: 2026-10-05T01:00:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.2400 0.3200 vol24: 0.00 oi: 0.00
+  PRIMARY: If Phoenix Rising wins the New Mexico United vs Phoenix Rising professional USL Championship soccer game originally scheduled for Oct 4, 2026 after 90 minutes plus stoppage time (does not include extra time or penalties), then the market resolves to Yes.
+  SECONDARY: The following market refers to the New Mexico United vs Phoenix Rising professional USL Championship soccer game originally scheduled for Oct 4, 2026 after 90 minutes plus stoppage time (does not include extra time or penalties). If the game ends in a tie, the market called "Tie" resolves to Yes. If the game is cancelled or rescheduled to over 48 hours away, the market will resolve to a fair price in accordance with the rules.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.
+===== KXNCAAFSPREAD | San Jose St. vs Hawai'i: Spread | cat: Sports | n_mkts: 29 | mutually_exclusive: False
+  sources: ['ESPN https://www.espn.com', 'Kalshi using information originating from the NCAA https://www.ncaa.com/sports/football/fbs'] | terms: https://assets.kalshi.com/contract_terms/FOOTBALLSPREAD.pdf | fee: quadratic_with_maker_fees 1
+  ticker: KXNCAAFSPREAD-26OCT04SJSUHAW-HAW2 | strike: greater 1.5 None | close: 2026-10-06T04:00:00Z | exp_exp: 2026-10-04T07:00:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.5400 0.5500 vol24: 0.00 oi: 0.00
+  PRIMARY: If Hawai'i wins by more than 1.5 points in the San Jose St. vs Hawai'i college football game originally scheduled for Oct 4, 2026, then the market resolves to Yes.
+  SECONDARY: If the game is postponed but begins within 48 hours of its originally scheduled start time, the market will remain open and resolve based on the official final result. If the game is not started within 48 hours, the market will resolve to a fair price.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the NCAA. All trademarks, logos, and brand names are the property of their respective owners.
+===== KXBTCD | BTC price on Oct 2, 2026 at 5pm EDT? | cat: Crypto | n_mkts: 50 | mutually_exclusive: False
+  sources: ['CF Benchmarks https://www.cfbenchmarks.com/data/indices/BRTI?ref=blog.cfbenchmarks.com'] | terms: https://assets.kalshi.com/contract_terms/BTC.pdf | fee: quadratic 1
+  ticker: KXBTCD-26OCT0217-T83999.99 | strike: greater 83999.99 None | close: 2026-10-02T21:00:00Z | exp_exp: 2026-10-02T21:05:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.3600 0.3700 vol24: 13018.37 oi: 27503.37
+  PRIMARY: If the simple average of the sixty seconds of CF Benchmarks' Bitcoin Real-Time Index (BRTI) before 5 PM EDT is above 83999.99 at 5 PM EDT on Oct 2, 2026, then the market resolves to Yes.
+  SECONDARY: Not all cryptocurrency price data is the same. While checking a source like Google or Coinbase may help guide your decision, the price used to determine this market is based on CF Benchmarks' corresponding Real Time Index (RTI). At the last minute before expiration, 60 RTI prices are collected. The official and final value is the average of these prices.
+===== KXNFLREC | Pittsburgh vs Cleveland: Receptions | cat: Sports | n_mkts: 58 | mutually_exclusive: False
+  sources: ['the Governing League https://www.nfl.com/'] | terms: https://assets.kalshi.com/contract_terms/FOOTBALLENTITYSTAT.pdf | fee: quadratic 1
+  ticker: KXNFLREC-26OCT01PITCLE-PITDMETCALF4-3 | strike: greater 2.5 None | close: 2026-10-04T00:15:00Z | exp_exp: 2026-10-02T03:15:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.7100 0.7200 vol24: 3.00 oi: 3.00
+  PRIMARY: If DK Metcalf records 3+ receptions in the Pittsburgh vs Cleveland Pro Football game originally scheduled for Oct 1, 2026, then the market resolves to Yes.
+  SECONDARY: The following market refers to DK Metcalf in the Pittsburgh vs Cleveland Pro Football game originally scheduled for Oct 1, 2026. If DK Metcalf is active but never takes a snap, the market settles to the fair market price before game start. Once DK Metcalf takes at least one snap, even if nullified by penalty, the market settles based on receptions recorded.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.
+===== KXT20MATCH | Avengers XI vs Challenging Stars | cat: Sports | n_mkts: 2 | mutually_exclusive: True
+  sources: ['Cricbuzz https://www.cricbuzz.com/', 'ESPN cricinfo https://www.espncricinfo.com/', 'ICC https://www.icc-cricket.com/fixtures-results', 'ESPN https://www.espn.com'] | terms: https://assets.kalshi.com/contract_terms/CRICKETMATCHWIN.pdf | fee: quadratic 1
+  ticker: KXT20MATCH-26OCT011230CHLGSTRAVNGXI-CHLGSTR | strike: structured None None | close: 2026-10-03T20:30:00Z | exp_exp: 2026-10-01T20:30:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.0400 0.9500 vol24: 0.00 oi: 0.00
+  PRIMARY: If Challenging Stars wins the Avengers XI vs Challenging Stars men's professional KCC T20 Summer League cricket match originally scheduled for Oct 1, 2026 at 12:30 PM EDT, then the market resolves to Yes.
+  SECONDARY: If the Avengers XI vs Challenging Stars men's professional KCC T20 Summer League cricket match originally scheduled for Oct 1, 2026 at 12:30 PM EDT ends in a tie, draw, no result (NR), abandonment, or cancellation, and no official winner is declared, all markets will resolve to $0.50.
+In the event of a forfeit, disqualification, or concession:
+  If it occurs before the match begins, all markets will resolve to $0.50.
+  If it occurs after the match has begun, and the governing body declares an official winner, the market will resolve based on that result.
+If play begins but insufficient play occurs to determine an official result, all markets will resolve to $0.50.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.
+===== KXHIGHNY | Highest temperature in New York City on Sep 29, 2026? | cat: Climate and Weather | n_mkts: 6 | mutually_exclusive: True
+  sources: ['The Weather Company https://weather.com/kalshi'] | terms: https://assets.kalshi.com/contract_terms/GLOBALTEMPERATURE.pdf | fee: quadratic 1
+  ticker: KXHIGHNY-26SEP29-B73.5 | strike: between 73 74 | close: 2026-09-30T05:00:00Z | exp_exp: 2026-09-30T19:00:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.0500 0.0600 vol24: 1124.86 oi: 1105.90
+  PRIMARY: If the maximum temperature recorded at New York City (CLINYC) for Sep 29, 2026, is between 73-74° fahrenheit according to The Weather Company, then the market resolves to Yes.
+  SECONDARY: Not all weather data is the same. While checking a source like AccuWeather or Google Weather may help guide your decision, the official and final value used to determine this market is the maximum/minimum temperature as reported by the Weather Company.
+
+Reading weather data
+Preliminary Weather Company data may be subject to rounding and conversion differences from the final reported value.
+Use caution when interpreting preliminary Weather Company readings.
+
+If it is determined in the sole discretion of the Exchange that there is a material error in the initial non-preliminary publication, Expiration may be held until the publication of a non-materially-erroneous data revision or until the Expiration Date, whichever comes first. If no data is available at the end of this period, all markets will resolve to the last fair price determined by Kalshi. Please note, a status of "Final" on weather.com/kalshi is provided for convenience only, and does not guarantee data to be error-free and thus exempt from the above.
+===== KXAAAGASM | Gas prices in the US in Sep 2026? | cat: Economics | n_mkts: 34 | mutually_exclusive: False
+  sources: ['AAA https://gasprices.aaa.com/'] | terms: https://assets.kalshi.com/contract_terms/AAAGAS.pdf | fee: quadratic_with_maker_fees 1
+  ticker: KXAAAGASM-26SEP30-4.20 | strike: greater 4.2 None | close: 2026-09-30T03:59:00Z | exp_exp: 2026-09-30T14:00:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.9900 1.0000 vol24: 89.70 oi: 7429.33
+  PRIMARY: If average regular gas prices for 
+United States are strictly greater than $4.20 on Sep 30, 2026 according to AAA, then the market resolves to Yes.
+  SECONDARY: 
+===== KXEURUSD | EUR/USD price range on Sep 29, 2026 at 10am EDT? | cat: Financials | n_mkts: 15 | mutually_exclusive: True
+  sources: ['ICE  https://www.tradingview.com/symbols/EURUSD/?exchange=FX_IDC'] | terms: https://assets.kalshi.com/contract_terms/EURUSD.pdf | fee: quadratic 1
+  ticker: KXEURUSD-26SEP2910-B1.137 | strike: between 1.136 1.13799 | close: 2026-09-29T14:00:00Z | exp_exp: 2026-09-29T14:00:00Z | pls: linear_cent
+  quotes y_bid/y_ask: 0.3000 0.3100 vol24: 139.37 oi: 105.37
+  PRIMARY: If the open price of the Euro/Dollar for September 29, 2026 is between 1.13600-1.13799 at 10 AM EDT, then the market resolves to Yes.
+  SECONDARY: 
+not found: []

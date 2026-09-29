@@ -1,0 +1,7 @@
+margin (perps) markets 27 Counter({'Crypto': 23, 'Metals': 4})
+KXBTCPERP 24h notional $ 579181080.025700
+KXETHPERP 24h notional $ 499704059.013400
+KXGOLDPERP 24h notional $ 61810219.562800
+KXSILVERPERP 24h notional $ 24936668.633700
+KXSOLPERP 24h notional $ 20900081.434400
+KXXRPPERP 24h notional $ 19147275.338900

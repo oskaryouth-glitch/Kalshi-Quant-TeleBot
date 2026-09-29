@@ -1,0 +1,8 @@
+programs 21000 live 4139 Counter({'liquidity': 4139}) Counter({'series_lip': 3467, 'new_event': 629, '': 43})
+live pool total $ 494770 median per program $ 100
+reward per day p10/p50/p90 [Decimal('8.21'), Decimal('18.76'), Decimal('150.16')]
+target_size [('1000.00', 4003), ('2500.00', 60), ('500.00', 52), ('300.00', 24)]
+discount_factor_bps [(5000, 4139)]
+period days [(7, 1275), (1, 1078), (5, 515), (14, 333), (12, 264)]
+live on zero-24h-volume markets 2019 pool $ 224415 | nonzero 2116 | top-of-book size >= target on both sides 1180
+by category [('Economics', 1015), ('Entertainment', 1012), ('Financials', 798), ('Elections', 315), ('Science and Technology', 306), ('Politics', 260), ('Mentions', 181), ('Sports', 96), ('Climate and Weather', 87), ('Companies', 53)]

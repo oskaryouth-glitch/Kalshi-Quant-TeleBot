@@ -1,0 +1,15 @@
+active markets 115126 events 12320
+by category: [('Sports', 56187), ('Elections', 22224), ('Financials', 9846), ('Entertainment', 8808), ('Economics', 5365), ('Crypto', 4514), ('Politics', 2658), ('Climate and Weather', 1372), ('Commodities', 1320), ('Mentions', 1138), ('Science and Technology', 1063), ('Companies', 568), ('Social', 30), ('Health', 12), ('AI', 9), ('World', 8), (None, 2), ('Transportation', 1), ('Business', 1)]
+by series frequency: [('custom', 49553), ('one_off', 36696), ('annual', 13474), ('hourly', 7708), ('monthly', 3007), ('weekly', 2496), ('daily', 2129), ('quarterly', 39), ('fifteen_min', 24)]
+fee_type: [('quadratic', 107974), ('quadratic_with_maker_fees', 7152)]
+fee_multiplier: [('1', 114080), ('0.5', 834), ('0', 212)]
+price_level_structure: [('linear_cent', 105419), ('tapered_deci_cent', 9226), ('deci_cent', 383), ('center_half_edge_half_cent', 66), ('center_centi_edge_centi_cent', 32)]
+volume_24h==0: 96847  >0: 18279  >=100: 10562  >=10000: 1073
+open_interest==0: 62898
+two-sided markets (summary): 72724 spread p10/p50/p90: 0.0100 0.0900 0.5700
+24h volume share of top 1% markets: 0.906
+series with any 24h volume: 2401 of 4125
+can_close_early: Counter({True: 115017, False: 109})
+strike_type: [('structured', 33123), ('greater', 32590), ('greater_or_equal', 21041), ('custom', 19621), (None, 4862), ('between', 3333), ('less', 527), ('less_or_equal', 29)]
+settlement source names (series w/ open mkts): [('ESPN', 750), ('Reuters', 696), ('The Wall Street Journal', 667), ('CNN', 554), ('The Washington Post', 554), ('the Associated Press', 546), ('Fox News', 513), ('Politico', 499), ('ABC', 492), ('The New York Times', 471), ('MSNBC', 468), ('CBS', 443), ('Axios', 428), ('Fox Sports', 392), ('The Information', 388), ('Semafor', 382), ('Bloomberg News', 369), ('the Governing League', 347), ('NBC', 304), ('Fiscal.ai', 245), ('the New York Times', 201), ('Library of Congress', 163), ('BBC', 155), ('The Guardian', 129), ('The Source Agencies are', 122)]
+distinct contract terms PDFs: 1016
