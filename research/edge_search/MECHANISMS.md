@@ -1,6 +1,12 @@
 # Kalshi small-participant edge search — ten candidate mechanisms (research only)
 
 - **Status:** research document for independent review. Nothing has been implemented, collected, backtested or traded.
+- **Review pass 1 (2026-09-29) supersedes parts of this document; see `REVIEW_PASS_1.md`.**
+  - M7 is killed as a duplicate of structural-arb R2/R4/R5.
+  - M3's weather "discrepancy" was a stale served PDF. The filed amendments make The Weather Company the first-listed source.
+  - M2 is narrowed to determined-but-open NO states.
+  - M8 is narrowed to T20 cricket.
+  - The interest / lock-up statement is corrected below.
 - **Snapshot date:** 2026-09-29 (UTC). All counts come from the public API snapshots listed in `evidence/EVIDENCE.md`.
 
 ## Scope and discipline
@@ -61,7 +67,7 @@ The most common named settlement sources are news organisations (ESPN 750 series
   - median $100 per program, or $18.76 per market-day (p10 $8.21, p90 $150.16);
   - target size 1,000 contracts in 97% of programs, and a discount factor of 0.5 per tick in all of them;
   - **2,015 live programs ($224,335 of pool) sit on markets with zero 24-hour volume.**
-- **Interest.** Kalshi pays a variable APY, stated as 3.25%, on cash **and open positions** for balances of at least $250 (D8).
+- **Interest.** Kalshi pays a variable APY, stated as 3.25%, on cash **and open positions** for balances of at least $250 (D8). This is discretionary and applies only to eligible accounts. It does **not** free the collateral: see the correction in `REVIEW_PASS_1.md`.
 
 ### Grid-edge prevalence
 
@@ -227,7 +233,7 @@ Conventions used throughout:
 - **Economic reason.**
   - Attention cost and salience. The proxy is free and visible, while the settlement series can be delayed, gated or awkward to find.
   - Kalshi's own warnings in the rules show that users trade off proxies.
-  - **Source change.** The weather terms PDF names the National Weather Service as Source Agency, but the live market rules name The Weather Company (D10). A source change like this is exactly when proxy habits lag.
+  - **Source change.** The served weather terms PDF names the National Weather Service. *Resolved in review pass 1:* that PDF is stale. The filed amendments (2026-08-17 and 2026-09-02) list The Weather Company first, which agrees with the live market rules. The source change itself (in August 2026) is when proxy habits would lag.
 - **Expected manifestation.** Near close, on days when the proxy sits on one side of a bucket boundary and the settlement measurement predictably sits on the other, prices track the proxy.
 - **Required data.**
   - The historical settlement value (the `expiration_value` of settled markets).
@@ -238,7 +244,7 @@ Conventions used throughout:
   - So the signal may use only the proxy and preliminary values available before close.
   - Labelling days with the final value is legitimate for the outcome, but not for the signal.
 - **Settlement/rules risk.**
-  - Terms say NWS, market rules say TWC (D10), which is unresolved.
+  - *Resolved:* the controlling filed terms list TWC first, then NWS (see `REVIEW_PASS_1.md`, M3).
   - "Only the first official non-preliminary report" counts.
   - A material-error hold can delay expiry.
   - If data is missing, markets settle at "the last fair price determined by Kalshi".
@@ -275,7 +281,7 @@ Conventions used throughout:
   - Tapered and deci-cent markets (503 + 137 already quote below 1¢) show what happens without the floor.
 - **Economic reason.**
   - The binding tick floor is a hard mechanical constraint, and it meets steady lottery-style demand.
-  - The usual excuse for tail overpricing — sellers' capital lock-up — **mostly disappears on Kalshi**, because open positions earn the same variable APY as cash (D8).
+  - *Corrected in review pass 1.* For eligible accounts, open positions accrue the same variable, discretionary interest as cash, so holding a position is roughly carry-neutral. But the collateral stays locked until the position is sold or settles, and exiting tail contracts is illiquid. Lock-up is therefore **not** removed: the opportunity cost of immobilised capital and the exit risk still apply (D8; Klear Rules 7.5, 7.9(D)).
   - What remains is the floor plus per-order fee rounding. At P = 0.99, the taker fee is about 0.069¢ per contract under direct rounding. But under per-order cent rounding a single-contract order pays a full 1¢, which erases the edge.
   - If overpricing persists, it is a grid constraint, not a risk premium.
 - **Expected manifestation.**

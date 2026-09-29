@@ -1,0 +1,92 @@
+===== KXAAAGASMAX | How high will US gas prices get in 2026? | freq: annual | terms: https://assets.kalshi.com/contract_terms/AAAGASMINMAX.pdf
+  sources: [('AAA', 'https://gasprices.aaa.com/')]
+  event: KXAAAGASMAX-26DEC31 | n_active: 13 | strike_date: 2026-12-31T06:30:00Z | strike_period: 
+  market: KXAAAGASMAX-26DEC31-5.80 | strike: greater 5.8 None | open: 2026-03-24T00:00:00Z | close: 2026-12-31T06:25:00Z | exp_exp: 2027-01-01T06:45:00Z | latest_exp: 2027-01-07T06:30:00Z | can_close_early: True
+  PRIMARY: If AAA reports that the maximum price of national average regular gas for the US is greater than $5.80 at any time from Issuance through Dec 31, 2026, inclusive, then the market resolves to Yes.
+  SECONDARY: 
+===== KXAAAGASMAXM | How high will US gas prices get in September? | freq: monthly | terms: https://assets.kalshi.com/contract_terms/AAAGASMINMAX.pdf
+  sources: [('AAA', 'https://gasprices.aaa.com/')]
+  event: KXAAAGASMAXM-26SEP30 | n_active: 11 | strike_date: 2026-10-01T03:59:00Z | strike_period: 
+  market: KXAAAGASMAXM-26SEP30-4.75 | strike: greater 4.75 None | open: 2026-09-16T15:30:00Z | close: 2026-10-01T03:58:00Z | exp_exp: 2026-10-02T04:14:00Z | latest_exp: 2026-10-08T03:59:00Z | can_close_early: True
+  PRIMARY: If AAA reports that the maximum price of national average regular gas for the US is greater than $4.75 at any time from Issuance through Sep 30, 2026, inclusive, then the market resolves to Yes.
+  SECONDARY: 
+===== KXAAAGASMINM | How low will US gas prices get in September? | freq: monthly | terms: https://assets.kalshi.com/contract_terms/AAAGASMINMAX.pdf
+  sources: [('AAA', 'https://gasprices.aaa.com/')]
+  event: KXAAAGASMINM-26SEP30 | n_active: 9 | strike_date: 2026-10-01T03:59:00Z | strike_period: 
+  market: KXAAAGASMINM-26SEP30-3.80 | strike: less None 3.8 | open: 2026-09-01T04:00:00Z | close: 2026-10-01T03:58:00Z | exp_exp: 2026-10-02T04:14:00Z | latest_exp: 2026-10-08T03:59:00Z | can_close_early: True
+  PRIMARY: If AAA reports that the price of national average regular gas for the US is lower than $3.80 at any time from Issuance through Sep 30, 2026, inclusive, then the market resolves to Yes.
+  SECONDARY: 
+===== KXAVGTKIAH | Consecutive days of average temperature in Houston above 90°F - week of Sep 28, 2026 | freq: weekly | terms: https://assets.kalshi.com/contract_terms/GLOBALTEMPERATURESUSTAINED.pdf
+  sources: [('The Weather Company', 'https://weather.com/kalshi')]
+  event: KXAVGTKIAH-26OCT04 | n_active: 5 | strike_date: None | strike_period: 
+  market: KXAVGTKIAH-26OCT04-4 | strike: greater_or_equal 4 None | open: 2026-09-28T04:00:00Z | close: 2026-10-05T03:59:59Z | exp_exp: 2026-10-06T03:59:59Z | latest_exp: 2026-10-07T03:59:59Z | can_close_early: True
+  PRIMARY: If there is at least 4 or more consecutive days within September 28, 2026 through October 4, 2026 on which the daily average temperature at KIAH in Houston is strictly greater than 90 degrees Fahrenheit, then the market resolves to Yes.
+  SECONDARY: How this is resolved
+A day's average temperature is the arithmetic mean of the hourly temperature values reported by The Weather Company for KIAH from 12:00 AM to 11:59 PM local time, rounded to the nearest whole degree.
+Only days within September 28, 2026 through October 4, 2026 may count toward a streak.
+Data as published at the Expiration Time will be used; later revisions are disregarded.
+
+Doesn't count for payout
+An average of exactly 90 degrees Fahrenheit does not satisfy the condition.
+A day with fewer than 18 reported hourly values does not satisfy the condition and breaks a streak.
+===== KXDDR5MS | DDR5 16Gb (2Gx8) 4800/5600 · Average price in December 2026 | freq: monthly | terms: https://assets.kalshi.com/contract_terms/INDEXVALUE.pdf
+  sources: [('Ornn', 'https://dashboard.ornnai.com/compute')]
+  event: KXDDR5MS-26DEC | n_active: 40 | strike_date: 2027-01-01T04:59:59Z | strike_period: 
+  market: KXDDR5MS-26DEC-53.500 | strike: greater 53.5 None | open: 2026-08-01T14:00:00Z | close: 2027-01-01T04:59:59Z | exp_exp: 2027-01-01T04:59:59Z | latest_exp: 2027-01-08T04:59:59Z | can_close_early: True
+  PRIMARY: If the average value of DDR5 16Gb (2Gx8) 4800/5600 spot price is above $53.5 in December 2026, then the market resolves to Yes.
+  SECONDARY: The market resolves based on the average value of DDR5 16Gb (2Gx8) 4800/5600 spot price in December 2026, calculated as the arithmetic mean of daily values reported by Ornn.
+
+Revisions to the underlying made after expiration will not be accounted for. The "USD" iteration of the index will be used unless explicitly stated otherwise. Values are rounded to two decimal places unless otherwise specified.
+===== KXHURCAT | Hurricane Fay category? | freq: custom | terms: https://assets.kalshi.com/contract_terms/HURCAT.pdf
+  sources: [('National Oceanic and Atmospheric Administration', 'https://www.nhc.noaa.gov/'), ('The Weather Company', 'https://www.weathercompany.com/')]
+  event: KXHURCAT-26FAY | n_active: 5 | strike_date: None | strike_period: 
+  market: KXHURCAT-26FAY-T3 | strike: greater_or_equal 3 None | open: 2026-08-21T17:00:00Z | close: 2026-12-02T04:59:00Z | exp_exp: 2026-12-01T15:00:00Z | latest_exp: 2026-12-02T15:00:00Z | can_close_early: True
+  PRIMARY: If Fay reaches maximum sustained winds of greater than or equal to 111 mph, then the market resolves to Yes.
+  SECONDARY: Should the event occur prior to December 01, 2026, the market will expire at the first 10:00 AM ET following the occurrence of the event.
+===== KXNBAWINS | Pro Basketball: Atlanta Total Wins | freq: custom | terms: https://assets.kalshi.com/contract_terms/ENTITYOUTCOME.pdf
+  sources: [('ESPN', 'https://www.espn.com'), ('the Governing League', 'https://www.nba.com')]
+  event: KXNBAWINS-27ATL | n_active: 10 | strike_date: None | strike_period: 
+  market: KXNBAWINS-27ATL-45 | strike: greater_or_equal 45 None | open: 2026-07-07T02:00:00Z | close: 2027-05-08T14:00:00Z | exp_exp: 2027-05-08T14:00:00Z | latest_exp: 2027-05-08T14:00:00Z | can_close_early: True
+  PRIMARY: If the Atlanta Pro Basketball team wins at least 45 games in the 2026-27 regular season, then the market resolves to Yes.
+  SECONDARY: Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.
+===== KXRAINCHIM | Rain in Chicago in Sep 2026? | freq: monthly | terms: https://assets.kalshi.com/contract_terms/RAINM.pdf
+  sources: [('The Weather Company', 'https://weather.com/kalshi')]
+  event: KXRAINCHIM-26SEP | n_active: 7 | strike_date: None | strike_period: 
+  market: KXRAINCHIM-26SEP-4 | strike: greater 4 None | open: 2026-09-01T19:12:00Z | close: 2026-10-01T03:59:59Z | exp_exp: 2026-10-02T03:59:59Z | latest_exp: 2026-10-16T03:59:59Z | can_close_early: True
+  PRIMARY: If the total precipitation at CLIORD in Chicago in Sep 2026 is strictly greater than 4 inches, then the market resolves to Yes.
+  SECONDARY: Not all weather data is the same. While checking a source like AccuWeather or Google Weather may help guide your decision, the official and final value used to determine this market as reported by the corresponding TWC Report (Daily).
+===== KXRAINNYCM | Rain in NYC in Oct 2026? | freq: monthly | terms: https://assets.kalshi.com/contract_terms/RAINNYCM.pdf
+  sources: [('NWS Climatological Report NY', 'https://forecast.weather.gov/product.php?site=OKX&product=CLI&issuedby=NYC')]
+  event: KXRAINNYCM-26OCT | n_active: 7 | strike_date: None | strike_period: 
+  market: KXRAINNYCM-26OCT-4 | strike: greater 4 None | open: 2026-09-27T14:00:00Z | close: 2026-11-01T03:59:00Z | exp_exp: 2026-11-01T14:00:00Z | latest_exp: 2026-11-07T14:00:00Z | can_close_early: True
+  PRIMARY: If the total precipitation at Central Park, New York City in Oct 2026 is strictly greater than 4 inches, then the market resolves to Yes.
+  SECONDARY: 
+===== KXTSAW | TSA avg check-ins from Sep 28 to Oct 4, 2026? | freq: weekly | terms: https://assets.kalshi.com/contract_terms/TSAW.pdf
+  sources: [('Transportation Security Administration', 'https://www.tsa.gov/travel/passenger-volumes')]
+  event: KXTSAW-26OCT04 | n_active: 21 | strike_date: None | strike_period: Sep 28 to Oct 4, 2026
+  market: KXTSAW-26OCT04-A2.30 | strike: greater 2300000 None | open: 2026-09-28T14:00:00Z | close: 2026-10-05T03:59:00Z | exp_exp: 2026-10-05T14:00:00Z | latest_exp: 2026-10-11T14:00:00Z | can_close_early: True
+  PRIMARY: If weekly average TSA airport screenings are above 2.3 million for the week ending October 04, 2026, according to the TSA, then the market resolves to Yes.
+  SECONDARY: The Contract will expire at the sooner of the first 9:00 AM following the release of the data for October 04, 2026, or one week after October 04, 2026. The Last Trading Date and Time will always be 11:59 PM on October 04, 2026.
+===== KXWTIMAX | How high will oil (WTI) get by Dec 31, 2026? | freq: annual | terms: https://assets.kalshi.com/contract_terms/WTIMINMAX.pdf
+  sources: [('ICE', 'https://www.ice.com/report/10')]
+  event: KXWTIMAX-26DEC31 | n_active: 10 | strike_date: 2026-12-31T19:30:00Z | strike_period: 
+  market: KXWTIMAX-26DEC31-T140 | strike: greater 140 None | open: 2026-03-04T15:00:00Z | close: 2026-12-31T19:30:00Z | exp_exp: 2027-01-01T15:00:00Z | latest_exp: 2027-01-07T15:00:00Z | can_close_early: True
+  PRIMARY: If ICE reports that the maximum price of oil (as defined exclusively by the set of WTI front-month settle prices) is above $140 between Issuance and Dec 31, 2026, then the market resolves to Yes.
+  SECONDARY: 
+===== KXWTIMIN | How low will oil (WTI) get by end of year? | freq: annual | terms: https://assets.kalshi.com/contract_terms/WTIMINMAX.pdf
+  sources: [('ICE', 'https://www.ice.com/report/10')]
+  event: KXWTIMIN-26DEC31 | n_active: 12 | strike_date: 2026-12-31T19:30:00Z | strike_period: 
+  market: KXWTIMIN-26DEC31-T59 | strike: less None 59 | open: 2026-07-06T22:00:00Z | close: 2026-12-31T19:30:00Z | exp_exp: 2027-01-01T15:00:00Z | latest_exp: 2027-01-07T15:00:00Z | can_close_early: True
+  PRIMARY: If ICE reports that the minimum price of oil (as defined exclusively by the set of WTI front-month settle prices) is below $59 between Issuance and Dec 31, 2026, then the market resolves to Yes.
+  SECONDARY: 
+===== KXYTVIEWSW | Ariana Grande: Highest daily view count (September 28, 2026 - October 4, 2026) | freq: weekly | terms: https://assets.kalshi.com/contract_terms/PERIODMEDIACONSUMPTION.pdf
+  sources: [('YouTube Charts', 'https://charts.youtube.com/US')]
+  event: KXYTVIEWSW-ARI26OCT04 | n_active: 15 | strike_date: None | strike_period: 
+  market: KXYTVIEWSW-ARI26OCT04-16.5M | strike: greater 16500000 None | open: 2026-09-28T16:00:00Z | close: 2026-10-06T14:00:00Z | exp_exp: 2026-10-08T14:00:00Z | latest_exp: 2026-10-11T14:00:00Z | can_close_early: True
+  PRIMARY: If Ariana Grande has above 16.5M Global daily views on YouTube at any point during September 28, 2026 - October 4, 2026, then the market resolves to Yes.
+  SECONDARY: View counts may vary by location. This market will resolve using values displayed from a New York IP address.
+
+Global daily views can be accessed through YouTube Charts by searching for the artist and selecting “Global” as the location.
+
+This market and these products have not been endorsed by YouTube. Any references to YouTube charts or any associated marks are descriptive only and do not indicate an endorsement of this product or any affiliation between YouTube and Kalshi.
+missing set()

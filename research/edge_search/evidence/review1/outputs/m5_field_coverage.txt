@@ -1,0 +1,8 @@
+Golf top-N (GOLFFINISH, 'including ties'): per-event sum of settlement values over LISTED markets. Settlement records only; no prices.
+KXPGATOP5     N= 5 events= 38 markets/event min..max=30..165 sum_settlement min=5.0000 median=6.0000 max=10.0000 mean-N=1.08 events_with_sum<N=0
+KXPGATOP10    N=10 events= 38 markets/event min..max=30..165 sum_settlement min=10.0000 median=11.9200 max=15.0000 mean-N=1.86 events_with_sum<N=0
+KXPGATOP20    N=20 events= 38 markets/event min..max=30..165 sum_settlement min=20.0000 median=22.9400 max=32.7700 mean-N=3.10 events_with_sum<N=0
+KXPGAR1TOP10  N=10 events= 28 markets/event min..max=30..165 sum_settlement min=10.8800 median=14.0000 max=20.3500 mean-N=4.33 events_with_sum<N=0
+KXPGAR2TOP10  N=10 events= 20 markets/event min..max=30..165 sum_settlement min=10.0000 median=12.3000 max=19.0800 mean-N=2.96 events_with_sum<N=0
+KXPGAR3TOP10  N=10 events= 20 markets/event min..max=30..165 sum_settlement min=10.0000 median=11.2800 max=13.0000 mean-N=1.31 events_with_sum<N=0
+KXPGAR1TOP5   N= 5 events= 28 markets/event min..max=30..165 sum_settlement min=5.0000 median=7.0000 max=12.3100 mean-N=2.06 events_with_sum<N=0

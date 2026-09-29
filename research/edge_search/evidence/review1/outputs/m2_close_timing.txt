@@ -1,0 +1,14 @@
+# Close-time pattern of settled markets (close_time/result fields only; no prices)
+KXRAINNYCM     events=  31 closed >1h before the event's final close=  23 times(ET)=[('10:50', 5), ('11:14', 4), ('13:17', 3), ('10:15', 2), ('10:14', 2)]
+KXAAAGASMAXM   events=   1 closed >1h before the event's final close=   5 times(ET)=[('10:42', 1), ('11:06', 1), ('16:37', 1), ('10:47', 1), ('09:06', 1)]
+KXWTIMAX       events=   7 closed >1h before the event's final close=  74 times(ET)=[('10:00', 9), ('10:01', 6), ('22:05', 5), ('23:00', 5), ('14:31', 3)]
+KXWTIMIN       events=   6 closed >1h before the event's final close=   8 times(ET)=[('10:59', 1), ('10:26', 1), ('23:37', 1), ('16:21', 1), ('12:48', 1)]
+KXTSAW         events= 272 closed >1h before the event's final close=   0 times(ET)=[]
+KXDDR5MS       events=   1 closed >1h before the event's final close=   0 times(ET)=[]
+KXYTVIEWSW     events=  94 closed >1h before the event's final close= 591 times(ET)=[('10:20', 97), ('01:20', 86), ('06:19', 65), ('09:19', 54), ('18:19', 38)]
+
+# Win totals / streaks: result x (closed >1 day before the event's final close?)
+KXNFLWINS    events= 32 {('no', 'early(>1d)'): 31, ('no', 'with_event'): 16, ('yes', 'early(>1d)'): 31, ('yes', 'with_event'): 16}
+KXNBAWINS    events= 30 {('no', 'with_event'): 126, ('yes', 'early(>1d)'): 2, ('yes', 'with_event'): 142}
+KXNCAAFWINS  events= 41 {('no', 'with_event'): 18, ('yes', 'early(>1d)'): 11, ('yes', 'with_event'): 25}
+KXAVGTKIAH   events=  6 {('no', 'with_event'): 30}
