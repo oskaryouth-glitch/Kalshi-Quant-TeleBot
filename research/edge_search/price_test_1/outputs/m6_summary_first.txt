@@ -1,0 +1,5 @@
+[first] sampled programs=60
+   zero_volume: n=30 compatible(C*<=$200 & payout>=$1)=26 (87%) median C* where finite=20.8350 x_min undefined=0
+   nonzero_volume: n=30 compatible(C*<=$200 & payout>=$1)=26 (87%) median C* where finite=22.05945 x_min undefined=0
+   ALL: n=60 compatible(C*<=$200 & payout>=$1)=52 (87%) median C* where finite=21.3900 x_min undefined=0
+   DECISION: SURVIVE (capital-compatible) (compatible fraction 87%; kill threshold 10%)

@@ -1,0 +1,257 @@
+{
+ "https://assets.kalshi.com/contract_terms/BTC.pdf": {
+  "template": "BTC",
+  "bound_series": [
+   "BTC",
+   "BTCD",
+   "BTCD-B",
+   "KXBTC",
+   "KXBTCD",
+   "KXBTCD-B",
+   "KXBTCE",
+   "KXBTCEU",
+   "KXBTCYEAR"
+  ],
+  "served_sha256": "e7d857369971e75e9db14c5e2d91c29b94eb9a06e83e2acd9777991c4f2a0e2f",
+  "registered_sha256": "e7d857369971e75e9db14c5e2d91c29b94eb9a06e83e2acd9777991c4f2a0e2f",
+  "current_lookup_status": "TERMS_VERIFIED",
+  "filings": [
+   [
+    "regulatory/product-certifications/BTC.pdf",
+    "2024-03-14T21:20:02.000Z",
+    158894
+   ],
+   [
+    "regulatory/notices/BTC Amendment for posting.pdf",
+    "2024-11-12T07:33:48.000Z",
+    256777
+   ],
+   [
+    "contract_terms/BTC.pdf",
+    "2025-03-17T08:34:12.000Z",
+    24445
+   ],
+   [
+    "regulatory/notices/BTC Amendment 2 for posting.pdf",
+    "2025-04-28T14:27:29.000Z",
+    274431
+   ]
+  ],
+  "served_pdf_s3_last_modified": "2025-03-17T08:34:12.000Z",
+  "filings_newer_than_served_pdf": [
+   [
+    "regulatory/notices/BTC Amendment 2 for posting.pdf",
+    "2025-04-28T14:27:29.000Z",
+    274431
+   ]
+  ],
+  "latest_filing": "regulatory/notices/BTC Amendment 2 for posting.pdf",
+  "latest_filing_sha256": "efd80967164d20f1ebfe71e88e21a8d79083957b2d16d7af4e535fc2f9042dd8",
+  "served_vs_latest_filing_terms": {
+   "equal": false,
+   "only_in_served": [],
+   "only_in_latest_filing": [
+    "Official Product Name: Will the spot price of Bitcoin be <above/below/between> <price> on <date> at <time>?",
+    "Rulebook: BTC KalshiEX LLC KalshiEX LLC BTC Scope:These rules shall apply to this contract.",
+    "KalshiEX LLC KalshiEX LLC LastTradingDate:TheLastTradingDateoftheContractwillbe<date>.TheLastTrading Time will be <time>.",
+    "KalshiEX LLC"
+   ]
+  },
+  "live_market_rules_amendment_markers": {},
+  "lock_like_validation_records": {}
+ },
+ "https://assets.kalshi.com/contract_terms/ETH.pdf": {
+  "template": "ETH",
+  "bound_series": [
+   "ETH",
+   "ETHD",
+   "KXETH",
+   "KXETHD",
+   "KXETHE",
+   "KXETHEU"
+  ],
+  "served_sha256": "ae079241099608c13c0c0ed31a6c91be174c6e61abe706dd76e8976ba682cc6d",
+  "registered_sha256": "ae079241099608c13c0c0ed31a6c91be174c6e61abe706dd76e8976ba682cc6d",
+  "current_lookup_status": "TERMS_VERIFIED",
+  "filings": [
+   [
+    "regulatory/product-certifications/ETH.pdf",
+    "2024-03-14T21:20:03.000Z",
+    158589
+   ],
+   [
+    "regulatory/notices/ETH Amendment for posting.pdf",
+    "2024-11-12T07:33:59.000Z",
+    255887
+   ],
+   [
+    "contract_terms/ETH.pdf",
+    "2025-03-17T08:33:33.000Z",
+    24347
+   ],
+   [
+    "regulatory/notices/ETH Amendment 2 for posting.pdf",
+    "2025-04-28T14:27:37.000Z",
+    273544
+   ]
+  ],
+  "served_pdf_s3_last_modified": "2025-03-17T08:33:33.000Z",
+  "filings_newer_than_served_pdf": [
+   [
+    "regulatory/notices/ETH Amendment 2 for posting.pdf",
+    "2025-04-28T14:27:37.000Z",
+    273544
+   ]
+  ],
+  "latest_filing": "regulatory/notices/ETH Amendment 2 for posting.pdf",
+  "latest_filing_sha256": "1c62e7e6faf01b125078ef847e6c0592b89adf95b52950b73fc0c99e0c69a995",
+  "served_vs_latest_filing_terms": {
+   "equal": false,
+   "only_in_served": [],
+   "only_in_latest_filing": [
+    "Official Product Name: Will the spot price of Ether be <above/below/between> <price> on <date> at <time>?",
+    "Rulebook: ETH KalshiEX LLC KalshiEX LLC ETH Scope:These rules shall apply to this contract.",
+    "KalshiEX LLC KalshiEX LLC LastTradingDate:TheLastTradingDateoftheContractwillbe<date>.TheLastTrading Time will be <time>.",
+    "KalshiEX LLC"
+   ]
+  },
+  "live_market_rules_amendment_markers": {},
+  "lock_like_validation_records": {}
+ },
+ "https://assets.kalshi.com/contract_terms/GLOBALTEMPERATURE.pdf": {
+  "template": "GLOBALTEMPERATURE",
+  "bound_series": [
+   "KXHIGHAUS",
+   "KXHIGHCHI",
+   "KXHIGHDEN",
+   "KXHIGHLAX",
+   "KXHIGHMIA",
+   "KXHIGHNY",
+   "KXHIGHPHIL",
+   "KXHIGHTATL",
+   "KXHIGHTBOS",
+   "KXHIGHTDAL",
+   "KXHIGHTDC",
+   "KXHIGHTEGLL",
+   "KXHIGHTEHAM",
+   "KXHIGHTEWR",
+   "KXHIGHTHOU",
+   "KXHIGHTKSAN",
+   "KXHIGHTLFPG",
+   "KXHIGHTLV",
+   "KXHIGHTMIN",
+   "KXHIGHTNOLA",
+   "KXHIGHTOKC",
+   "KXHIGHTPHX",
+   "KXHIGHTSAN",
+   "KXHIGHTSATX",
+   "KXHIGHTSDF",
+   "KXHIGHTSEA",
+   "KXHIGHTSFO",
+   "KXHIGHTTTN",
+   "KXHIGHTVHHH",
+   "KXHIGHTZSPD",
+   "KXLOWNY",
+   "KXLOWTATL",
+   "KXLOWTAUS",
+   "KXLOWTBOS",
+   "KXLOWTCHI",
+   "KXLOWTDAL",
+   "KXLOWTDC",
+   "KXLOWTDEN",
+   "KXLOWTEWR",
+   "KXLOWTHOU",
+   "KXLOWTKSAN",
+   "KXLOWTLAX",
+   "KXLOWTLV",
+   "KXLOWTMIA",
+   "KXLOWTMIN",
+   "KXLOWTNOLA",
+   "KXLOWTNYC",
+   "KXLOWTOKC",
+   "KXLOWTPHIL",
+   "KXLOWTPHX",
+   "KXLOWTSAN",
+   "KXLOWTSATX",
+   "KXLOWTSDF",
+   "KXLOWTSEA",
+   "KXLOWTSFO",
+   "KXLOWTTTN",
+   "KXWEEKHTLAS",
+   "KXWEEKHTLAX",
+   "KXWEEKHTMIA",
+   "KXWEEKHTNYC",
+   "KXWEEKHTPHX"
+  ],
+  "served_sha256": "160281687cf9d3cd694c1c419522f3d53a8e1a6d4eddd40a7f5559c3a06211d0",
+  "registered_sha256": "160281687cf9d3cd694c1c419522f3d53a8e1a6d4eddd40a7f5559c3a06211d0",
+  "current_lookup_status": "TERMS_VERIFIED",
+  "filings": [
+   [
+    "regulatory/product-certifications/GLOBALTEMPERATURE.pdf",
+    "2025-12-12T18:08:25.000Z",
+    267225
+   ],
+   [
+    "contract_terms/GLOBALTEMPERATURE.pdf",
+    "2025-12-12T18:08:27.000Z",
+    31861
+   ],
+   [
+    "regulatory/notices/GLOBALTEMPERATURE Amendment (for posting).pdf",
+    "2026-08-18T17:55:55.000Z",
+    308464
+   ],
+   [
+    "regulatory/notices/GLOBALTEMPERATURE Amendment 2 (for posting).pdf",
+    "2026-09-02T12:00:55.000Z",
+    249342
+   ]
+  ],
+  "served_pdf_s3_last_modified": "2025-12-12T18:08:27.000Z",
+  "filings_newer_than_served_pdf": [
+   [
+    "regulatory/notices/GLOBALTEMPERATURE Amendment (for posting).pdf",
+    "2026-08-18T17:55:55.000Z",
+    308464
+   ],
+   [
+    "regulatory/notices/GLOBALTEMPERATURE Amendment 2 (for posting).pdf",
+    "2026-09-02T12:00:55.000Z",
+    249342
+   ]
+  ],
+  "latest_filing": "regulatory/notices/GLOBALTEMPERATURE Amendment 2 (for posting).pdf",
+  "latest_filing_sha256": "ef1bdaed7ea78c644d6aa17dc39c2dbda2856e98b8e85e704452b4565ac47a24",
+  "served_vs_latest_filing_terms": {
+   "equal": false,
+   "only_in_served": [
+    "Source Agency: The Source Agencies are, in hierarchical order, National Weather Service, the national weather service for <area> (e.g.",
+    "Unless otherwise stated, <area> will be defined by the data received from the primary official weather measurement station(s) for that location as designated by the National Weather Service, or as otherwise specified by the Exchange.",
+    "Only the first official non-preliminary report published by the Source Agencies that includes the relevant data will be used for resolution.",
+    "Revisions after the Expiration Date are not included in the Payout Criterion."
+   ],
+   "only_in_latest_filing": [
+    "SourceAgency:TheSourceAgenciesare,inhierarchicalorder,TheWeatherCompany(TWC), National Weather Service, the national weather service for<area>(e.g.AustralianBureauof Meteorology, the Met Office, etc.).",
+    "<area>:<area>referstoageographiclocationspecifiedbytheExchange.Itmaytaketheform ofaspecificgeographiclocation,geographiclocation(s)inthesingularortheplural,geographic location(s)bydistinguishingcharacteristics,geographiclocation(s)thatareanelementofasetof geographiclocation(s),ortaketheforms\"Any\"or\"None\".Unlessotherwisestated,<area>will bedefinedbythedatareceivedfromtheprimaryofficialweathermeasurementstation(s)forthat location.",
+    "Only the first official non-preliminary report published by the Source Agencies that includestherelevantdatawillbeusedforresolutionunlessotherwiseexplicitlyspecified bytheExchange.RevisionsthattheExchangedetermines,initssolediscretion,donot remedyamaterialerrorarenotincludedinthePayoutCriterion.Wherenecessaryforthe avoidance of confusion, the Exchange may concretely specify which report(s) are considered for market resolution.",
+    "If the Exchange determines, in its sole discretion, that the initial non-preliminary publication contains a material error, it may delay expiration until the earlier of (i) publicationofreviseddataor(ii)theExpirationDate.Ifdataissuespersistinsubsequent publications, the Exchange may continue to delay expiration until the earlier of (i) publication of non-erroneous data or (ii) the Expiration Date.",
+    "If no reliable data is available by the Expiration Date, all markets will resolve to the last fair price, as determined by the Exchange in its sole discretion."
+   ]
+  },
+  "live_market_rules_amendment_markers": {
+   "open_markets_checked": 25,
+   "markets_containing": {
+    "The Weather Company": 25,
+    "material error": 25
+   }
+  },
+  "lock_like_validation_records": {
+   "audit_smoke | 2026-09-27.5-audit | GUARANTEED_STRUCTURAL_NOT_EXECUTABLE | R1_SHORT": 1,
+   "validation_run1 | 2026-09-27.2-validation | GUARANTEED_STRUCTURAL_NOT_EXECUTABLE | R1_SHORT": 3,
+   "validation_run2 | 2026-09-27.2-validation | GUARANTEED_STRUCTURAL_NOT_EXECUTABLE | R1_SHORT": 11,
+   "validation_run3 | 2026-09-27.3-validation-feeledger | GUARANTEED_STRUCTURAL_NOT_EXECUTABLE | R1_SHORT": 2,
+   "validation_run4 | 2026-09-27.4-validation | GUARANTEED_STRUCTURAL_NOT_EXECUTABLE | R1_SHORT": 30
+  }
+ }
+}

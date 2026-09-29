@@ -1,0 +1,50 @@
+BTC: 9 series; lookup today = TERMS_VERIFIED; served sha e7d857369971 (registered e7d857369971)
+   served PDF S3 LastModified 2025-03-17T08:34:12.000Z
+   filing 2024-03-14T21:20:02.000Z  regulatory/product-certifications/BTC.pdf
+   filing 2024-11-12T07:33:48.000Z  regulatory/notices/BTC Amendment for posting.pdf
+   filing 2025-03-17T08:34:12.000Z  contract_terms/BTC.pdf
+   filing 2025-04-28T14:27:29.000Z  regulatory/notices/BTC Amendment 2 for posting.pdf   <-- NEWER THAN SERVED PDF
+   served terms vs latest filing (regulatory/notices/BTC Amendment 2 for posting.pdf, sha efd80967164d): EVERY SERVED SENTENCE IS IN THE FILING (filing-only lines below)
+      + filing only : Official Product Name: Will the spot price of Bitcoin be <above/below/between> <price> on <date> at <time>?
+      + filing only : Rulebook: BTC KalshiEX LLC KalshiEX LLC BTC Scope:These rules shall apply to this contract.
+      + filing only : KalshiEX LLC KalshiEX LLC LastTradingDate:TheLastTradingDateoftheContractwillbe<date>.TheLastTrading Time will be <time>.
+      + filing only : KalshiEX LLC
+   lock-like validation records: 0
+   series: BTC, BTCD, BTCD-B, KXBTC, KXBTCD, KXBTCD-B, KXBTCE, KXBTCEU, KXBTCYEAR
+ETH: 6 series; lookup today = TERMS_VERIFIED; served sha ae0792410996 (registered ae0792410996)
+   served PDF S3 LastModified 2025-03-17T08:33:33.000Z
+   filing 2024-03-14T21:20:03.000Z  regulatory/product-certifications/ETH.pdf
+   filing 2024-11-12T07:33:59.000Z  regulatory/notices/ETH Amendment for posting.pdf
+   filing 2025-03-17T08:33:33.000Z  contract_terms/ETH.pdf
+   filing 2025-04-28T14:27:37.000Z  regulatory/notices/ETH Amendment 2 for posting.pdf   <-- NEWER THAN SERVED PDF
+   served terms vs latest filing (regulatory/notices/ETH Amendment 2 for posting.pdf, sha 1c62e7e6faf0): EVERY SERVED SENTENCE IS IN THE FILING (filing-only lines below)
+      + filing only : Official Product Name: Will the spot price of Ether be <above/below/between> <price> on <date> at <time>?
+      + filing only : Rulebook: ETH KalshiEX LLC KalshiEX LLC ETH Scope:These rules shall apply to this contract.
+      + filing only : KalshiEX LLC KalshiEX LLC LastTradingDate:TheLastTradingDateoftheContractwillbe<date>.TheLastTrading Time will be <time>.
+      + filing only : KalshiEX LLC
+   lock-like validation records: 0
+   series: ETH, ETHD, KXETH, KXETHD, KXETHE, KXETHEU
+GLOBALTEMPERATURE: 61 series; lookup today = TERMS_VERIFIED; served sha 160281687cf9 (registered 160281687cf9)
+   served PDF S3 LastModified 2025-12-12T18:08:27.000Z
+   filing 2025-12-12T18:08:25.000Z  regulatory/product-certifications/GLOBALTEMPERATURE.pdf
+   filing 2025-12-12T18:08:27.000Z  contract_terms/GLOBALTEMPERATURE.pdf
+   filing 2026-08-18T17:55:55.000Z  regulatory/notices/GLOBALTEMPERATURE Amendment (for posting).pdf   <-- NEWER THAN SERVED PDF
+   filing 2026-09-02T12:00:55.000Z  regulatory/notices/GLOBALTEMPERATURE Amendment 2 (for posting).pdf   <-- NEWER THAN SERVED PDF
+   served terms vs latest filing (regulatory/notices/GLOBALTEMPERATURE Amendment 2 (for posting).pdf, sha ef1bdaed7ea7): DIFFERENT
+      - served only : Source Agency: The Source Agencies are, in hierarchical order, National Weather Service, the national weather service for <area> (e.g.
+      - served only : Unless otherwise stated, <area> will be defined by the data received from the primary official weather measurement station(s) for that location as designated by the National Weather Service, or as otherwise specified by the Exchange.
+      - served only : Only the first official non-preliminary report published by the Source Agencies that includes the relevant data will be used for resolution.
+      - served only : Revisions after the Expiration Date are not included in the Payout Criterion.
+      + filing only : SourceAgency:TheSourceAgenciesare,inhierarchicalorder,TheWeatherCompany(TWC), National Weather Service, the national weather service for<area>(e.g.AustralianBureauof Meteorology, the Met Office, etc.).
+      + filing only : <area>:<area>referstoageographiclocationspecifiedbytheExchange.Itmaytaketheform ofaspecificgeographiclocation,geographiclocation(s)inthesingularortheplural,geographic location(s)bydistinguishingcharacteristics,geographiclocation(s)thatareanelementofasetof geographiclocation(s),ortaketheforms"Any"or"None".Unlessotherwisestated,<area>will bedefinedbythedatareceivedfromtheprimaryofficialweathermeasurementstation(s)forthat location.
+      + filing only : Only the first official non-preliminary report published by the Source Agencies that includestherelevantdatawillbeusedforresolutionunlessotherwiseexplicitlyspecified bytheExchange.RevisionsthattheExchangedetermines,initssolediscretion,donot remedyamaterialerrorarenotincludedinthePayoutCriterion.Wherenecessaryforthe avoidance of confusion, the Exchange may concretely specify which report(s) are considered for market resolution.
+      + filing only : If the Exchange determines, in its sole discretion, that the initial non-preliminary publication contains a material error, it may delay expiration until the earlier of (i) publicationofreviseddataor(ii)theExpirationDate.Ifdataissuespersistinsubsequent publications, the Exchange may continue to delay expiration until the earlier of (i) publication of non-erroneous data or (ii) the Expiration Date.
+      + filing only : If no reliable data is available by the Expiration Date, all markets will resolve to the last fair price, as determined by the Exchange in its sole discretion.
+   live market rules carrying amendment-only phrases: {'open_markets_checked': 25, 'markets_containing': {'The Weather Company': 25, 'material error': 25}}
+   lock-like validation records: 47
+      ('audit_smoke', '2026-09-27.5-audit', 'GUARANTEED_STRUCTURAL_NOT_EXECUTABLE', 'R1_SHORT'): 1
+      ('validation_run1', '2026-09-27.2-validation', 'GUARANTEED_STRUCTURAL_NOT_EXECUTABLE', 'R1_SHORT'): 3
+      ('validation_run2', '2026-09-27.2-validation', 'GUARANTEED_STRUCTURAL_NOT_EXECUTABLE', 'R1_SHORT'): 11
+      ('validation_run3', '2026-09-27.3-validation-feeledger', 'GUARANTEED_STRUCTURAL_NOT_EXECUTABLE', 'R1_SHORT'): 2
+      ('validation_run4', '2026-09-27.4-validation', 'GUARANTEED_STRUCTURAL_NOT_EXECUTABLE', 'R1_SHORT'): 30
+   series: KXHIGHAUS, KXHIGHCHI, KXHIGHDEN, KXHIGHLAX, KXHIGHMIA, KXHIGHNY, KXHIGHPHIL, KXHIGHTATL, KXHIGHTBOS, KXHIGHTDAL, KXHIGHTDC, KXHIGHTEGLL, KXHIGHTEHAM, KXHIGHTEWR, KXHIGHTHOU, KXHIGHTKSAN, KXHIGHTLFPG, KXHIGHTLV, KXHIGHTMIN, KXHIGHTNOLA, KXHIGHTOKC, KXHIGHTPHX, KXHIGHTSAN, KXHIGHTSATX, KXHIGHTSDF, KXHIGHTSEA, KXHIGHTSFO, KXHIGHTTTN, KXHIGHTVHHH, KXHIGHTZSPD, KXLOWNY, KXLOWTATL, KXLOWTAUS, KXLOWTBOS, KXLOWTCHI, KXLOWTDAL, KXLOWTDC, KXLOWTDEN, KXLOWTEWR, KXLOWTHOU, KXLOWTKSAN, KXLOWTLAX, KXLOWTLV, KXLOWTMIA, KXLOWTMIN, KXLOWTNOLA, KXLOWTNYC, KXLOWTOKC, KXLOWTPHIL, KXLOWTPHX, KXLOWTSAN, KXLOWTSATX, KXLOWTSDF, KXLOWTSEA, KXLOWTSFO, KXLOWTTTN, KXWEEKHTLAS, KXWEEKHTLAX, KXWEEKHTMIA, KXWEEKHTNYC, KXWEEKHTPHX

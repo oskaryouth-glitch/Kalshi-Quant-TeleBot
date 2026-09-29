@@ -5,6 +5,7 @@ portfolio or authenticated endpoints here.
 """
 from __future__ import annotations
 
+import http.client
 import json
 import time
 import urllib.error
@@ -39,7 +40,7 @@ def get(path: str, params: dict | None = None, allow_404: bool = False) -> dict 
                 time.sleep(min(2 ** attempt, 30))
                 continue
             raise
-        except (urllib.error.URLError, TimeoutError):
+        except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException):   # post-freeze fix: connection resets
             time.sleep(min(2 ** attempt, 30))
     raise RuntimeError("GET failed repeatedly: " + url)
 
