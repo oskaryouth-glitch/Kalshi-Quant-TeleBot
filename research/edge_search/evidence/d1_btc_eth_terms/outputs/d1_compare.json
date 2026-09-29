@@ -1,0 +1,369 @@
+{
+ "documents": {
+  "controlling_BTC": {
+   "bytes": 274431,
+   "sha256": "efd80967164d20f1ebfe71e88e21a8d79083957b2d16d7af4e535fc2f9042dd8",
+   "source": "https://kalshi-public-docs.s3.amazonaws.com/regulatory/notices/BTC%20Amendment%202%20for%20posting.pdf"
+  },
+  "controlling_ETH": {
+   "bytes": 273544,
+   "sha256": "1c62e7e6faf01b125078ef847e6c0592b89adf95b52950b73fc0c99e0c69a995",
+   "source": "https://kalshi-public-docs.s3.amazonaws.com/regulatory/notices/ETH%20Amendment%202%20for%20posting.pdf"
+  },
+  "new_contract_terms_BTC.pdf": {
+   "bytes": 38090,
+   "sha256": "7bba1b819bd027e69755c76ed082e1004eb9466e170c1ae38996cf7d52e322a6",
+   "source": "https://kalshi-public-docs.s3.amazonaws.com/contract_terms/BTC.pdf"
+  },
+  "new_contract_terms_ETH.pdf": {
+   "bytes": 37895,
+   "sha256": "74bae3f5bed2f91798eeab0c23dea093d43a2c311c3a541aa77266c5859363ae",
+   "source": "https://kalshi-public-docs.s3.amazonaws.com/contract_terms/ETH.pdf"
+  },
+  "reviewed_BTC": {
+   "bytes": 24445,
+   "sha256": "e7d857369971e75e9db14c5e2d91c29b94eb9a06e83e2acd9777991c4f2a0e2f",
+   "source": "structural_arb/sources/contract_terms/contract_terms_BTC.pdf"
+  },
+  "reviewed_ETH": {
+   "bytes": 24347,
+   "sha256": "ae079241099608c13c0c0ed31a6c91be174c6e61abe706dd76e8976ba682cc6d",
+   "source": "structural_arb/sources/contract_terms/contract_terms_ETH.pdf"
+  },
+  "rulebook_v1.29.pdf": {
+   "bytes": 860053,
+   "sha256": "3b6d4ffd5b32330d3466179d4cae610372d07511123c9976bc6cbb1b5185240b",
+   "source": "https://kalshi-public-docs.s3.amazonaws.com/regulatory/rulebook/Kalshi%20DCM%20Rulebook%20v.1.29.pdf"
+  }
+ },
+ "rulebook_excerpts": {
+  "RULE 5.18": "RULE 5.18 POSITION ACCOUNTABILITY (a) Kalshi imposes Position Accountability Levels on all Contracts as specified in each contract's Terms and Conditions, except for those contracts where Kalshi imposes a Position Limit under Rule 5.15. (b) Any Participant who exceeds a Position Accountability Level is required to provide to Kalshi's Compliance staff all information regarding its position that Kalshi's Compliance staff deems necessary. (c) A Participant whose position exceeds the position accountability level must refrain from increasing the size of their position or reduce the size of their position in a timely fashion if instructed to do so by Kalshi. If a Participant fails to reduce a position as instructed by Kalshi's Compliance staff, Kalshi shall have the authority to liquidate the applicable position to a level below the Position Accountability Level or a limit imposed on the Participant under this paragraph. (d) Violations of the requirements in this Rule, including the requirement to provide information to Kalshi's Compliance staff, may result in disciplinary action in accordance with Chapter 9 of these rules.",
+  "RULE 5.19": "RULE 5.19 POSITION LIMITS (a) Kalshi may impose Position Limits on all Contracts, which will be specified in each contract's Terms and Conditions. Any Participant who exceeds a Position Limit shall be deemed in violation of this Rule. In addition, any Participant entering bids or offers, if accepted, which would cause that Participant to exceed the applicable Position Limit shall be in violation of this rule. As described in Chapter 4, a Market Maker is expressly excluded from this Rule with respect to contracts that are part of a market maker program and the market maker is subject to the obligations described in Chapter 4. 60 (b) If a Trader fails to reduce any position in a manner and time as directed by Kalshi, Kalshi shall have the authority to liquidate the applicable position to a level below the defined Position Limit stipulated under the relevant Contract in Chapter 13 of these Rules."
+ },
+ "templates": {
+  "BTC": {
+   "bucket_objects_now": [
+    [
+     "regulatory/product-certifications/BTC.pdf",
+     "2024-03-14T21:20:02.000Z",
+     158894
+    ],
+    [
+     "regulatory/notices/BTC Amendment 2 for posting.pdf",
+     "2025-04-28T14:27:29.000Z",
+     274431
+    ],
+    [
+     "regulatory/notices/BTC Amendment for posting.pdf",
+     "2024-11-12T07:33:48.000Z",
+     256777
+    ],
+    [
+     "contract_terms/BTC.pdf",
+     "2026-09-29T20:38:36.000Z",
+     38090
+    ]
+   ],
+   "cdn_now_sha256": "e7d857369971e75e9db14c5e2d91c29b94eb9a06e83e2acd9777991c4f2a0e2f",
+   "char_diff_reviewed_to_new": [
+    [
+     "replace",
+     "L",
+     "Accountab"
+    ],
+    [
+     "replace",
+     "m",
+     "l"
+    ],
+    [
+     "insert",
+     "",
+     "yLevel"
+    ],
+    [
+     "replace",
+     "L",
+     "Accountab"
+    ],
+    [
+     "replace",
+     "m",
+     "l"
+    ],
+    [
+     "insert",
+     "",
+     "yLevel"
+    ],
+    [
+     "replace",
+     "1,000",
+     "25"
+    ]
+   ],
+   "clauses": {
+    "Contingencies": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Expiration Date": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Expiration Value": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Expiration time": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Issuance": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Last Trading Date": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Minimum Tick": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Payout Criterion": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Position Accountability Level": {
+     "identical_reviewed_vs_new": false,
+     "in_new": true,
+     "in_reviewed": false
+    },
+    "Position Limit": {
+     "identical_reviewed_vs_new": false,
+     "in_new": false,
+     "in_reviewed": true
+    },
+    "Settlement Date": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Settlement Value": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Source Agency": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Type": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Underlying": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    }
+   },
+   "controlling_sha256_now": "efd80967164d20f1ebfe71e88e21a8d79083957b2d16d7af4e535fc2f9042dd8",
+   "filing_status_now": "TERMS_FILING_CHANGED",
+   "new_sentences_absent_from_controlling_filing": [
+    "Position Accountability Level: The Position Accountability Level for the $1 referred Contract shall be $25,000 per strike, per Member."
+   ],
+   "new_sha256": "7bba1b819bd027e69755c76ed082e1004eb9466e170c1ae38996cf7d52e322a6",
+   "registry": {
+    "controlling_filing": "regulatory/notices/BTC Amendment 2 for posting.pdf",
+    "controlling_filing_sha256": "efd80967164d20f1ebfe71e88e21a8d79083957b2d16d7af4e535fc2f9042dd8",
+    "served_sha256_reviewed": "e7d857369971e75e9db14c5e2d91c29b94eb9a06e83e2acd9777991c4f2a0e2f"
+   },
+   "reviewed_sentences_absent_from_controlling_filing": [],
+   "reviewed_sha256": "e7d857369971e75e9db14c5e2d91c29b94eb9a06e83e2acd9777991c4f2a0e2f",
+   "rules_required_present_in_new": {
+    "BRTI": true,
+    "CF Benchmarks": true
+   },
+   "sentences_only_in_new": [
+    "Position Accountability Level: The Position Accountability Level for the $1 referred Contract shall be $25,000 per strike, per Member."
+   ],
+   "sentences_only_in_reviewed": [
+    "Position Limit: The Position Limit for the $1 referred Contract shall be $1,000,000 per strike, per Member."
+   ]
+  },
+  "ETH": {
+   "bucket_objects_now": [
+    [
+     "regulatory/product-certifications/ETH.pdf",
+     "2024-03-14T21:20:03.000Z",
+     158589
+    ],
+    [
+     "regulatory/notices/ETH Amendment 2 for posting.pdf",
+     "2025-04-28T14:27:37.000Z",
+     273544
+    ],
+    [
+     "regulatory/notices/ETH Amendment for posting.pdf",
+     "2024-11-12T07:33:59.000Z",
+     255887
+    ],
+    [
+     "contract_terms/ETH.pdf",
+     "2026-09-29T20:38:52.000Z",
+     37895
+    ]
+   ],
+   "cdn_now_sha256": "ae079241099608c13c0c0ed31a6c91be174c6e61abe706dd76e8976ba682cc6d",
+   "char_diff_reviewed_to_new": [
+    [
+     "replace",
+     "L",
+     "Accountab"
+    ],
+    [
+     "replace",
+     "m",
+     "l"
+    ],
+    [
+     "insert",
+     "",
+     "yLevel"
+    ],
+    [
+     "replace",
+     "L",
+     "Accountab"
+    ],
+    [
+     "replace",
+     "m",
+     "l"
+    ],
+    [
+     "insert",
+     "",
+     "yLevel"
+    ],
+    [
+     "replace",
+     "1,000",
+     "25"
+    ]
+   ],
+   "clauses": {
+    "Contingencies": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Expiration Date": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Expiration Value": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Expiration time": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Issuance": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Last Trading Date": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Minimum Tick": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Payout Criterion": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Position Accountability Level": {
+     "identical_reviewed_vs_new": false,
+     "in_new": true,
+     "in_reviewed": false
+    },
+    "Position Limit": {
+     "identical_reviewed_vs_new": false,
+     "in_new": false,
+     "in_reviewed": true
+    },
+    "Settlement Date": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Settlement Value": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Source Agency": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Type": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    },
+    "Underlying": {
+     "identical_reviewed_vs_new": true,
+     "in_new": true,
+     "in_reviewed": true
+    }
+   },
+   "controlling_sha256_now": "1c62e7e6faf01b125078ef847e6c0592b89adf95b52950b73fc0c99e0c69a995",
+   "filing_status_now": "TERMS_FILING_CHANGED",
+   "new_sentences_absent_from_controlling_filing": [
+    "Position Accountability Level: The Position Accountability Level for the $1 referred Contract shall be $25,000 per strike, per Member."
+   ],
+   "new_sha256": "74bae3f5bed2f91798eeab0c23dea093d43a2c311c3a541aa77266c5859363ae",
+   "registry": {
+    "controlling_filing": "regulatory/notices/ETH Amendment 2 for posting.pdf",
+    "controlling_filing_sha256": "1c62e7e6faf01b125078ef847e6c0592b89adf95b52950b73fc0c99e0c69a995",
+    "served_sha256_reviewed": "ae079241099608c13c0c0ed31a6c91be174c6e61abe706dd76e8976ba682cc6d"
+   },
+   "reviewed_sentences_absent_from_controlling_filing": [],
+   "reviewed_sha256": "ae079241099608c13c0c0ed31a6c91be174c6e61abe706dd76e8976ba682cc6d",
+   "rules_required_present_in_new": {
+    "CF Benchmarks": true,
+    "ERTI": true
+   },
+   "sentences_only_in_new": [
+    "Position Accountability Level: The Position Accountability Level for the $1 referred Contract shall be $25,000 per strike, per Member."
+   ],
+   "sentences_only_in_reviewed": [
+    "Position Limit: The Position Limit for the $1 referred Contract shall be $1,000,000 per strike, per Member."
+   ]
+  }
+ }
+}

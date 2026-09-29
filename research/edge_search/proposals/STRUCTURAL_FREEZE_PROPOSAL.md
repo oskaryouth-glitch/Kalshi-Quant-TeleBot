@@ -1,189 +1,138 @@
 # structural_arb: proposed freeze package (NOT FROZEN, NOT STARTED)
 
-- **Status:** PROPOSAL.
-  - Nothing in `research/structural_arb/` was changed to produce it.
-  - No collection is running.
-  - No infrastructure is provisioned.
-- **Prepared:** 2026-09-29.
-- **Separation:** H022/H038/H039 are untouched. M6 is untouched (manifest `5dcb3af7…` still verifies).
-- **Blocker, see D1:** as the code stands, **0 markets are terms-verified**, so the frozen protocol could not produce a `RULE_DEFINED_LOCK`. Fixing that needs a registry change, which is the owner's decision. It has not been made.
+- **Status:** PROPOSAL, revision 2 (2026-09-29). It uses the owner's provisional choices for D2–D8.
+- **Blocked by D1.**
+  - 0 markets are terms-verified.
+  - The existing verification protocol does **not** permit accepting the replaced BTC/ETH terms PDFs without a posted filing whose text backs them (`D1_BTC_ETH_TERMS_EVIDENCE.md`).
+  - Per the owner's instruction, nothing is frozen or started while 0 markets are verified.
+- **Unchanged:**
+  - `research/structural_arb/`: same experiment manifest, 945/945 tests pass.
+  - M6: manifest `5dcb3af7…` verifies, 61/61 tests pass.
+  - H022/H038/H039 were not touched.
 
-## 1. Exact identity that would be frozen
+## 1. Identity that would be frozen
 
 | item | value |
 |---|---|
-| git commit | `0ae71707b59b983864078257ed84caea2861e52e`. structural_arb content is unchanged since `25267df` (terms patch `3f3f44a` plus relabel ledger) |
+| experiment manifest (binding) | `456eafb5a669d5d96043284fab9ae574817a2c012cff6dc45506fbfa3db90582`: 66 git-tracked files of `research/structural_arb/`, excluding `data/` and `relabels/`. The list is in `STRUCTURAL_FREEZE_HASHES.txt` |
+| deploy manifest (binding) | `c440969dbd30cc983cc5c762e46525f75eaf09e681e8effa34ffd5bf0a30a8eb`: the 11 git-tracked files of `proposals/structural_deploy/`, listed in `STRUCTURAL_DEPLOY_HASHES.txt` |
+| manifest definition | `git ls-files` → `sha256sum` → `LC_ALL=C sort -k2` → `sha256sum`, as in `structural_deploy/verify_manifest.sh` |
 | `CONFIG_VERSION` | `2026-09-29.6-amendment-aware-terms` |
-| code/doc manifest | `456eafb5a669d5d96043284fab9ae574817a2c012cff6dc45506fbfa3db90582` |
-| manifest definition | sha256 of the 66 lines `sha256  path` (`sha256sum` output, sorted by path) for every git-tracked file under `research/structural_arb/` except `data/` and `relabels/`. The list is in `STRUCTURAL_FREEZE_HASHES.txt` |
-| regenerate | `cd research/structural_arb && sha256sum $(git ls-files \| grep -v '^data/\|^relabels/') \| sort -k2 \| sha256sum` |
-| test suite at this version | `python -m pytest -q tests` → **945 passed** (2026-09-29) |
-| relabel ledger (historical, not an input) | `relabels/2026-09-29_terms_v2_relabel.jsonl` (409 demote-only records) |
+| commit | Any commit whose trees hash to both manifests; it is designated at FREEZE. `structural_arb/` content is unchanged since `25267df`. The collector records the checked-out commit in every record's provenance, and evaluation requires that exact commit |
 
-If D1 is resolved by editing `sarb/terms.py`, then a new CONFIG_VERSION, commit and manifest replace the three identifiers above. That package then needs its own review before the freeze.
+**What would change these identifiers:**
+- Resolving D1 (a new registry entry keyed to a future BTC/ETH filing) changes `sarb/terms.py`. That means a new CONFIG_VERSION, a new experiment manifest, a re-run of the suite, and your review.
+- Any change to the deploy files changes the deploy manifest.
 
-## 2. Configuration (`sarb/config.py`, as frozen)
+## 2. Configuration and protocol (unchanged, as coded)
 
-| parameter | value | parameter | value |
-|---|---|---|---|
-| MAX_REQUESTS_PER_SECOND | 5 | MAX_REQUEST_BURST | 6 |
-| CYCLE_TARGET_S | 60 | MAX_PHASE2_CANDIDATES_PER_CYCLE | 40 |
-| AUDIT_FAMILIES_PER_CYCLE | 2 | AUDIT_MAX_MARKETS_PER_FAMILY | 30 |
-| SERIES_REFRESH_S | 21600 | TERMS_REFRESH_S | 3600 |
-| MAX_FILINGS_LISTING_AGE_S | 7200 | AMENDMENT_PENDING_S | 1382400 (16 d) |
-| FEE_CHANGES_REFRESH_S | 300 | EVENTS_PAGE_MIN_INTERVAL_S | 0.25 |
-| STATSCREEN_REWRITE_S | 1800 | OBSERVATION_REUSE_S | 10 |
-| MAX_LEG_SKEW_NS | 2e9 (2 s) | MAX_SNAPSHOT_AGE_NS | 5e9 (5 s) |
-| PERSISTENCE_REFETCH_DELAY_S | 1.0 | SIZE_GRID | (1, 10, 100) |
-| TAKER_COEF / MAKER_COEF | 0.07 / 0.0175 | fee rounding units | 0.01 default, 0.0001 alternative |
+- **Configuration:** `sarb/config.py`, as tabulated in revision 1.
+  - Rates: 5 req/s, burst 6.
+  - Cycle target: 60 s.
+  - P2 cap: 40 candidates per cycle.
+  - AUDIT: 2 families, ≤ 30 markets each.
+  - Persistence re-fetch after 1 s.
+  - Freshness: skew ≤ 2 s, age ≤ 5 s.
+  - `SIZE_GRID` (1, 10, 100).
+  - Fee coefficients: taker 0.07, maker 0.0175.
+  - Filing listing ≤ 2 h old.
+  - Amendment pending period: 16 days.
+- **Protocol:** DESIGN.md §H (collection), §C and §I (labels, gates and the only path to `RULE_DEFINED_LOCK`), §I.3 (reconstruction).
+- **Inclusion and exclusion:** as in revision 1.
+  - Only registry-verified series with filing status `OK` can reach `RULE_DEFINED_LOCK`.
+  - **Weather/GLOBALTEMPERATURE stays excluded (D7)** as `TERMS_SUPERSEDED`.
+  - INX is removed.
+  - AAA gas and CRYPTO.pdf stay unresolved.
+  - Combos never qualify.
 
-Gates that live in code rather than config:
-- Rule 5.11 band ±$0.20 at the executed size;
-- market-active freshness ≤ 120 s;
-- exchange-status freshness ≤ 30 s.
+## 3. Provisional choices adopted (D2–D8)
 
-## 3. Protocol (already defined; would be frozen as is)
-
-- **Collection:** `research/structural_arb/DESIGN.md` §H.
-  - Refresh cadences.
-  - Discovery and summary screen (R1/R3 templates, `screen_pairs`, MECNET top-3).
-  - P2 books for ≤ 40 flagged candidates per cycle.
-  - P3 independent re-fetch after 1 s.
-  - AUDIT of 2 random families per cycle (screen false-negative rate).
-  - Streams: `candidates`, `rule511`, `books`, `statscreen`, `counts`, `ops`, `universe`, fee ledger.
-  - Unwind metric; report.
-- **Labels and gates:** DESIGN §C and §I.1/I.2. `RULE_DEFINED_LOCK` needs every gate:
-  - verified terms, including an OK filing-record check;
-  - checker agreement;
-  - fresh books;
-  - full depth at size C;
-  - fee state resolved;
-  - edge > 0 under every fee scenario;
-  - Rule 5.11 at the size;
-  - skew/age/activity/exchange freshness;
-  - P3 persistence;
-  - metadata/terms match, including a live terms re-hash at P3.
-- **Reconstruction:** DESIGN §I.3. `python -m sarb.reconstruct <data_dir>` re-derives every record from the recorded streams.
-- **Report:** `python -m sarb.report <data_dir>`.
-- **Invocation:** `python -m sarb.collector --duration-s <S> --data-dir <DIR>`, public unauthenticated GETs only. The CLI has no absolute end time and no approval gate (see D5).
-
-## 4. Inclusion and exclusion rules (as coded)
-
-**Included in discovery:**
-- every open event from `/events`;
-- only active binary $1 markets become legs;
-- families come from parsed strike semantics (numeric ladders; MECNET categorical events);
-- anything unparseable is rejected and never templated.
-
-**Can reach `RULE_DEFINED_LOCK`:** only series whose `contract_terms_url` is in `REGISTRY`, whose hash matches, and whose filing-record status is `OK` at the snapshot.
-
-**Capped at `CANDIDATE_TERMS_UNVERIFIED`:**
-- every other series;
-- **GLOBALTEMPERATURE / all weather:** `TERMS_SUPERSEDED`, left excluded as instructed (D7);
-- **INX:** removed from the registry;
-- **AAA gas, Solana/CRYPTO.pdf:** `TERMS_EQUIVALENCE_UNRESOLVED`, or a per-strike no-data rule the payoff model cannot represent.
-
-**Never qualify:** combos (multivariate events).
-
-**Rejected per snapshot:** see the REJECTED row of DESIGN §C.
-
-## 5. Decisions needed from the owner before the freeze
-
-### D1. BLOCKER: BTC/ETH `contract_terms` objects changed on 2026-09-29. Stop-and-show; nothing was changed.
-
-**Observed:** during the post-patch live validation, `filings.status()` returns `TERMS_FILING_CHANGED` for BTC and ETH. The result is **0 verified markets out of 117,933**, so no record can reach `RULE_DEFINED_LOCK`.
-
-**Cause:** in the regulatory bucket, two objects were replaced with no new regulatory filing posted:
-
-| object | reviewed | now (LastModified 2026-09-29) |
+| | choice | implemented by |
 |---|---|---|
-| `contract_terms/BTC.pdf` | 24,445 B, sha `e7d85736…` | 20:38:36Z, 38,090 B, sha `7bba1b81…` |
-| `contract_terms/ETH.pdf` | 24,347 B, sha `ae079241…` | 20:38:52Z, 37,895 B, sha `74bae3f5…` |
+| D2 | 28-day collection: END_UTC = START_UTC + exactly 28 × 24 h. Downtime is not made up | `start.sh`, `run.sh`, `sarb_ops.read_window` |
+| D3 | one formal evaluation at END_UTC + 24 h, with the criteria in §4; no interim peeking; operational-health monitoring only | `sarb_ops.evaluate` (refuses earlier), `sarb_ops.health` (ops and universe streams only; other streams raise `PermissionError`) |
+| D4 | dedicated host and public IP, separate from M6 and H038/H039; request limit **unchanged** | `preflight.sh` G7 |
+| D5 | isolated deployment modelled on M6: approval-file gate, timed stop, manifest re-verification on every start | `structural_deploy/` (outside the experiment tree) |
+| D6 | ≥ 100 GB free at START | `preflight.sh` G1 and `start.sh` |
+| D7 | GLOBALTEMPERATURE/weather excluded | registry, unchanged |
+| D8 | ≥ 30-minute validation on the target host, with a mid-way restart; data deleted afterwards | `validate.sh` (refuses < 30) |
 
-- The CDN URL the registry is keyed on (`assets.kalshi.com/contract_terms/*.pdf`) **still serves the reviewed PDFs**, so the P3 live re-hash passes for now. It will fail once the CDN refreshes.
-- **Text diff, one sentence per template:**
-  - old: "Position Limit: … $1,000,000 per strike, per Member";
-  - new: "Position Accountability Level: … $25,000 per strike, per Member".
-- Expiration, source agency, no-data (ALL_NO), payout criterion and settlement wording are otherwise identical.
-- On my reading this does not change settlement semantics. Accepting it is still a change to the verified registry.
+**Measured footprint** (tooling smoke test, 2 cycles; the data was deleted):
+- about 13 KB/s, so ~31 GB over 28 days;
+- the 100 GB START requirement is about a 3× margin;
+- 2.2 req/s mean against the unchanged 5 req/s cap;
+- 1 × 429 in 661 requests.
 
-**Options:**
-- **(a) Accept.** Re-review the new PDFs.
-  - Update the `contract_terms/*.pdf` entries in `_BTC_FILINGS`/`_ETH_FILINGS` (LastModified, size).
-  - Decide whether to re-key the entry sha to the new PDF now or when the CDN serves it. Both hashes cannot be accepted silently; one option is to register both hashes explicitly with a note.
-  - Bump CONFIG_VERSION, re-hash, and re-validate.
-- **(b) Freeze as is.** BTC/ETH stay fail-closed, the experiment can only yield `CANDIDATE_TERMS_UNVERIFIED` and below, and the lock null cannot be rejected. I would not recommend spending a collection on this.
-- **(c) Defer the freeze** until Kalshi posts a filing or the CDN converges, then re-review.
+## 4. Exact pre-specified evaluation criteria (proposed; implemented in `sarb_ops.evaluate`, 19 synthetic tests)
 
-**Related (D1b).** The BTC/ETH `reviewed` text still reads "PROPOSED 2026-09-29 … REQUIRES independent reviewer sign-off".
-- The reviewer approved the Amendment 2 re-key, but that string has not been updated to record the sign-off.
-- Recommendation: record the sign-off (who and when) in the same registry edit as D1(a).
-- It is text only; the code does not gate on it.
+### 4.1 Definitions
 
-### D2. Collection duration: not pre-specified anywhere
+- **Window W** = [START_UTC, END_UTC]. Records logged after END_UTC are excluded and counted.
+- **Qualifying lock (QL):** a `candidates` record meeting **all** of:
+  1. `status == RULE_DEFINED_LOCK` and `phase == P3`. Only a P3 re-fetch can pass the persistence gate.
+  2. `logged_utc_ns` is in W.
+  3. Code identity: provenance `git_sha` = the frozen commit, `dirty == False`, and `config_version` = the frozen CONFIG_VERSION.
+  4. Every leg recorded `terms_status == TERMS_VERIFIED` **and** `terms_filing_status == OK` at the snapshot.
+  5. `sarb.reconstruct` re-derives the record exactly from the recorded streams (status, edges by size, max size, the 5.11 size, all gates).
+  6. The demote-only `sarb.terms_retro` check against the bucket listing at evaluation time leaves it standing.
+  7. It is not demoted by the **late-filing review**: a human reads every BTC/ETH regulatory object posted after the record's filing set. If that filing's effective date (or, if none is stated, its filing date + 10 business days) is at or before the snapshot, the record is demoted. This is demote-only, and the review file is required even if it demotes nothing.
+- **Verified exposure E:** total time in W during which the latest `universe` snapshot showed ≥ 1 terms-verified market. Stretches across a gap > 300 s do not count.
+- **Downtime:** every gap longer than 300 s between consecutive `ops` records, including START → first record and last record → END.
 
-- Recommendation: **28 days** of wall clock from START, including a full monthly crypto expiry cycle and 4 weekly cycles.
-- Downtime is recorded and not extended.
-- The run is **invalid** if cumulative downtime exceeds 3 days, or any single gap exceeds 24 h.
+### 4.2 Validity conditions
 
-### D3. Evaluation schedule and decision rule: not pre-specified
+| id | condition |
+|---|---|
+| V1 | total downtime ≤ 72 h **and** longest single gap ≤ 24 h |
+| V2 | in every rolling 24 h window, 429 responses / requests ≤ 1% |
+| V3 | every candidate record in W carries the frozen CONFIG_VERSION, and every one with provenance (P2/P3) carries the frozen commit with `dirty == False` |
+| V4 | ≤ 1% of P2/P3 records lack their leg market/orderbook snapshots, or are P3 without a P2 |
+| V5 | cycle errors ≤ 5% of cycles |
 
-Recommendation:
-- **One formal evaluation**, at the end of collection only.
-- **Primary result:**
-  - the null ("no rule-defined lock exists at displayed prices") is rejected iff there is ≥ 1 `RULE_DEFINED_LOCK` record;
-  - that record must be exactly reconstructable by `sarb.reconstruct`;
-  - its terms must have been verified (filing status `OK`) at the snapshot.
-- **Also reported:**
-  - count, size and edge distribution of locks;
-  - the `GUARANTEED_STRUCTURAL_NOT_EXECUTABLE` gate-failure breakdown;
-  - screen false-negative rate (AUDIT);
-  - Rule 5.11 statistics (never used to loosen the gate).
-- **During collection:** ops-only monitoring of request rate, 429s, errors, disk and integrity. No status counts are read before the end.
-- **Invalid-run rule:** as in D2, plus a sustained 429 rate > 1% of requests over any 24 h.
+### 4.3 Verdict (evaluated in this order; exactly one applies)
 
-### D4. Host and request rate
+| verdict | rule | meaning |
+|---|---|---|
+| **INVALID** | V3 fails | The run is not the frozen experiment. No conclusion either way |
+| **SUCCESS** (null rejected) | ≥ 1 QL | At least one rule-defined lock existed at displayed, executable prices after fees, depth, Rule 5.11, timing and persistence, under verified terms. It is exactly reconstructable. It is **not** a profitability or tradability claim: the residual risks (6.3(c)/7.1/7.2/5.11, non-atomic execution) are unchanged. Existence does not need coverage, so V1/V2/V4/V5 and E do not block it; they are reported |
+| **FAILURE** (null not rejected) | 0 QL **and** V1, V2, V4, V5 all hold **and** E ≥ 21 days | No rule-defined lock was observed in 28 days of adequate, verified collection |
+| **INSUFFICIENT_EVIDENCE** | otherwise: 0 QL, with a validity failure or E < 21 days | Absence cannot be claimed. With D1 unresolved, E = 0, so a run started now would certainly end here |
 
-- The config allows 5 req/s. Validation runs saw 2.1–3.7 req/s.
-- If it runs on the `kalshi-collector` host, it would share one public IP with M6 (2 req/s) and H038/H039.
-- Recommendation: **a separate host/IP.** Any change to MAX_REQUESTS_PER_SECOND is a config change and needs new validation. I have not made one.
+### 4.4 Timing and reporting
 
-### D5. Deployment package: none exists yet
+- Evaluation opens at END_UTC + 24 h and runs **once**.
+- The verdict is computed first. Afterwards the evaluator attaches a descriptive report that cannot change the verdict:
+  - `sarb.report` statuses by phase;
+  - gate-failure breakdown of `GUARANTEED_STRUCTURAL_NOT_EXECUTABLE`;
+  - AUDIT screen misses;
+  - P2 budget skips;
+  - Rule 5.11 statistics, which are never used to loosen the gate;
+  - per-QL relationship, size and edges;
+  - the number of distinct QL keys (relationship × legs).
+- `CANDIDATE_TERMS_UNVERIFIED` counts are **not** evidence for SUCCESS.
+- No re-run, extension or re-analysis with different rules. A second collection would need a new pre-registration.
 
-Recommendation: an M6-style isolated unit, which is new operational files, not protocol changes:
-- own user, directory and syslog id;
-- resource caps;
-- an `APPROVED` file equal to the manifest, checked in `ExecStartPre`;
-- a manifest-verifying install;
-- `--duration-s` computed from the approved end time;
-- `Restart=on-failure`. Each restart continues into the same data dir, and the fee ledger reloads from `sarb_fee_ledger.jsonl`.
+### 4.5 During collection
 
-These files would be added to the manifest before the freeze.
+- Health output only: ops, universe and disk.
+- No config, rate or code change.
+- Operator actions are limited to crash or reboot restarts, freeing unrelated disk, or stopping for host harm (recorded as downtime).
 
-### D6. Storage
+## 5. Decisions and what is needed next
 
-- Measured footprint is 0.33–1.1 GB/day, so 9–32 GB over 28 days.
-- Proposed preflight: **≥ 3 × 32 GB ≈ 100 GB free** on the data filesystem, or a smaller duration.
-
-### D7. Weather (GLOBALTEMPERATURE)
-
-Already fail-closed (`TERMS_SUPERSEDED`); left excluded as instructed. No action or delay.
-
-### D8. Target-host operational validation
-
-- A ≥ 30-minute validation on the target host, with a mid-way restart, then delete the data and keep only a sha256 list.
-- It checks:
-  - manifest verify;
-  - no order/credential code;
-  - 429s and cycle errors;
-  - gzip integrity;
-  - reconstruct of all P2/P3 records;
-  - `filings.status` for each registry entry.
-
-## 6. What happens at FREEZE and START
-
-1. The owner decides D1–D6 and D8.
-2. The implementing decisions (D1 registry edit, D5 deploy files) get a new CONFIG_VERSION, commit and manifest. The suite is re-run and results returned.
-3. FREEZE: the manifest, D2/D3 rules and deployment procedure are recorded in a `PREREG` file alongside this proposal.
-4. Host preflight, then install (disabled), then D8 validation. The report goes to the owner.
-5. START: only on the owner's explicit approval, via the `APPROVED` file.
+1. **D1, blocking.** No action is possible under the current protocol. Wait for Kalshi to post a BTC/ETH amendment that backs the new text, or for the served copies to revert. Then do a human re-review and write a new registry entry for your sign-off; the 16-day pending rule applies.
+   - Alternatively, you may explicitly decide to **change the verification standard**. I have not proposed or made such a change.
+2. **Approve or amend the parameters I introduced to make D2/D3/D6/D8 executable.** None comes from performance data.
+   - SUCCESS threshold ≥ 1 QL.
+   - FAILURE exposure ≥ 21 days.
+   - V1: 72 h total downtime, 24 h single gap, 300 s gap definition.
+   - V2: 1%.
+   - V4: 1%.
+   - V5: 5%.
+   - Evaluation at END + 24 h.
+   - The late-filing review rule (4.1 item 7).
+   - Host resource caps (3 GB RAM, 1 CPU) and preflight G2 (≥ 4 GB available).
+   - The host-separation check (public IP via `checkip.amazonaws.com`, plus unit and directory checks).
+3. **Review the deployment package** (`structural_deploy/`, deploy manifest in `STRUCTURAL_DEPLOY_HASHES.txt`).
+4. **Provide a dedicated host.** Then have the operator run preflight, install, and the ≥ 30-minute validation, and return both reports.
+5. **FREEZE.** Only after 1–4: designate the commit, record both manifests in a PREREG file, then give final START approval via `start.sh`.

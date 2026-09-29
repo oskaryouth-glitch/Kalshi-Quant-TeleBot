@@ -1,0 +1,45 @@
+# structural_arb long collection on a DEDICATED host (separate host/IP from M6 and H038/H039).
+# Installed DISABLED. It cannot start unless /srv/sarb/APPROVED equals the installed frozen manifest and
+# /srv/sarb/WINDOW exists (both written only by start.sh after the owner's approval). run.sh stops the
+# collector at END_UTC; after that the service exits 0 and is not restarted. Public GETs only; no credentials.
+[Unit]
+Description=structural_arb read-only collector (research; public data only; no orders)
+After=network-online.target time-sync.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sarb
+Group=sarb
+EnvironmentFile=/opt/sarb/current/release.env
+WorkingDirectory=/opt/sarb/current/repo/research/structural_arb
+Environment=PYTHONDONTWRITEBYTECODE=1 HOME=/srv/sarb
+# lets the frozen code record its git SHA from the root-owned release clone (provenance: code.git_sha, dirty)
+Environment=GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0=*
+UnsetEnvironment=KALSHI_API_KEY KALSHI_KEY_ID KALSHI_PRIVATE_KEY KALSHI_API_KEY_ID
+ExecStartPre=/bin/sh -c 'test "$(cat /srv/sarb/APPROVED 2>/dev/null)" = "$SARB_MANIFEST" && test -s /srv/sarb/WINDOW'
+ExecStartPre=/opt/sarb/current/repo/research/edge_search/proposals/structural_deploy/verify_manifest.sh /opt/sarb/current/repo/research/structural_arb ${SARB_MANIFEST} /opt/sarb/current/repo/research/edge_search/proposals/structural_deploy ${SARB_DEPLOY_MANIFEST}
+ExecStart=/opt/sarb/current/repo/research/edge_search/proposals/structural_deploy/run.sh
+Restart=on-failure
+RestartSec=60
+StandardOutput=append:/srv/sarb/logs/collector.log
+StandardError=append:/srv/sarb/logs/collector.log
+SyslogIdentifier=sarb
+Nice=5
+CPUQuota=100%
+MemoryMax=3G
+IOWeight=50
+TasksMax=64
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/sarb
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target
