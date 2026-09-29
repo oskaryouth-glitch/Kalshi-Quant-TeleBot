@@ -1,3 +1,21 @@
+# M6 paper experiment: PRE-START AUDIT, v4
+
+- **Date:** 2026-09-29.
+- **Status:** **NOT STARTED and NOT DEPLOYED.**
+- **Frozen candidate manifest v4:** `5dcb3af7227108ed7175b3cdb4bc48d84d234432f1b63dea913981d3415d4811`. It supersedes v3 `d8a1aa0a…`.
+
+**Design amendments applied** (reviewer, 2026-09-29):
+- **A5:** the payout SE uses fixed 6-hour UTC batches [00,06) [06,12) [12,18) [18,24). Fewer than 2 batches → conservative payout 0. The coverage/gap rule is unchanged.
+- **A7:** the first observed `status != active` during an episode terminates it permanently, at the receive time, with the status recorded. There is no resume rule and no backdating. v3 had also applied a market's *first-ever* non-active observation to later, separate episodes; v4 corrects that.
+- **A9:** `TRACKING_BREACHES` and the affected episode ids appear in `status.py` and `analysis.decide`. Breaches are never excluded or repaired.
+- **Frozen:** the six additional coded choices (`DESIGN.md` §14), and every A/B interpretation (`INTERPRETATIONS.md`).
+
+**Tests:** 61 passed. That is the 53 previous plus 8 new in `tests/test_v4_amendments.py`: exact 6-hour boundaries; the same block cannot form multiple batches; permanent termination with no fills, samples or resumption afterwards; old observations don't end new episodes; the ledger records termination; breaches are reported, not repaired.
+
+**Hetzner:** preflight and validation **not run**. This session cannot reach the host (no SSH, and the host is not allowed by the network policy). The operator must run `deploy/preflight.sh`, then `install.sh 5dcb3af7227108ed7175b3cdb4bc48d84d234432f1b63dea913981d3415d4811`, then `validate.sh 5dcb3af7227108ed7175b3cdb4bc48d84d234432f1b63dea913981d3415d4811 20`, with the unchanged criteria (≥ 40 GB free under /srv, etc.). **FAIL, not threshold changes,** if they are not met. H038/H039 have priority: stop M6 on any measurable degradation.
+
+---
+
 # M6 paper experiment: PRE-START AUDIT, v3 (for the independent reviewer)
 
 - **Date:** 2026-09-29.

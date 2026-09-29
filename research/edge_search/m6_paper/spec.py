@@ -1,4 +1,4 @@
-"""M6 paper experiment: every frozen parameter in one place (DESIGN.md v2).
+"""M6 paper experiment: every frozen parameter in one place (DESIGN.md v4).
 
 Changing any value here after collection starts is a recorded deviation (PREREG_M6_PAPER.md).
 """
@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from decimal import Decimal as D
 
-SPEC_VERSION = "m6-paper-v3"
+SPEC_VERSION = "m6-paper-v4"
 
 # ---------------------------------------------------------------- data sources (public GETs only)
 API = "https://api.elections.kalshi.com/trade-api/v2"
@@ -59,7 +59,7 @@ DIRECT_G, NONDIRECT_G = D("0.0001"), D("0.01")      # direct member (primary) / 
 # ---------------------------------------------------------------- rewards (DESIGN §7)
 GAP_S = 60                                   # a poll covers at most 60 s; longer silences are gaps (earn 0)
 Z_CONSERVATIVE = D("1.645")                  # conservative payout: P - 1.645*SE >= $1.00
-BATCH_S = 3600                               # SE from hourly batch means
+BATCH_S = 6 * 3600                           # SE from fixed 6-hour UTC batch means [00,06) [06,12) [12,18) [18,24) (reviewer A5)
 
 # ---------------------------------------------------------------- stopping and decision (DESIGN §10 v2)
 CHECKPOINT_DAY = 35

@@ -57,7 +57,8 @@ class World:
         self.traded_since_poll: dict[str, dict] = defaultdict(lambda: defaultdict(D))
         self.market: dict[str, dict] = {}
         self.settled_at: dict[str, tuple[int, D]] = {}     # ticker -> (first observed ns, YES settlement value)
-        self.inactive_at: dict[str, int] = {}
+        self.inactive_at: dict[str, int] = {}              # ticker -> latest non-active observation (receive ns)
+        self.status_obs: dict[str, list] = defaultdict(list)   # ticker -> [(receive ns, status)] for status != active
         self.tracked_since: dict[str, int] = {}
         self.fee_series_hist: dict[str, list] = defaultdict(list)   # series -> [(observed ns, raw fee fields)]
         self.fee_event_hist: dict[str, list] = defaultdict(list)    # event  -> [(observed ns, raw fields)]
@@ -73,7 +74,8 @@ class World:
         for k, m in rec["markets"].items():
             self.market[k] = m
             if m.get("status") != "active":
-                self.inactive_at.setdefault(k, t)
+                self.inactive_at[k] = t
+                self.status_obs[k].append((t, m.get("status")))
             if m.get("status") in ("settled", "finalized") and k not in self.settled_at:
                 v = m.get("settlement_value_dollars")
                 if v is None:
@@ -139,11 +141,17 @@ class World:
             return (*S.UNKNOWN_FEE_STATE, {**prov, "status": "no_fee_type"})
         return ftype, D(str(mult if mult is not None else 1)), {**prov, "status": "ok", "fee_type": ftype, "fee_multiplier": str(mult)}
 
-    def ended(self, ticker: str, t: int) -> bool:
+    def first_non_active(self, ticker: str, since_ns: int, t: int) -> tuple[int, str] | None:
+        """The first observation of status != active received in [since_ns, t], or None (A7, reviewer-approved:
+        permanent termination at the first observation during the episode; never backdated)."""
+        for obs, st in self.status_obs.get(ticker, ()):
+            if since_ns <= obs <= t:
+                return obs, st
+        return None
+
+    def close_ns(self, ticker: str) -> int | None:
         m = self.market.get(ticker) or {}
-        if ticker in self.inactive_at and self.inactive_at[ticker] <= t:
-            return True
-        return bool(m.get("close_time")) and SEL.ts_ns(m["close_time"]) <= t
+        return SEL.ts_ns(m["close_time"]) if m.get("close_time") else None
 
     def best(self, ticker: str) -> tuple[D | None, D | None]:
         b = self.book.get(ticker) or {}
@@ -169,6 +177,8 @@ class Episode:
     fills: list = field(default_factory=list)
     repricings: int = 0
     tracked_ok: bool = True
+    end_status: str | None = None          # observed status that terminated the episode (A7)
+    end_observed_ns: int | None = None     # receive time of that observation
 
 
 @dataclass
@@ -239,13 +249,18 @@ class VariantState:
         for name in todo:
             acct = self.accounts[name]
             for ticker, e in list(acct.active.items()):
-                end = None
+                cands = []
                 if e.end_ns <= t:
-                    end, why = e.end_ns, "program_end"
-                elif self.w.ended(ticker, t):
-                    end, why = min(t, max(e.entry_ns, self.w.inactive_at.get(ticker, t))), "market_closed_or_inactive"
-                if end is None:
+                    cands.append((e.end_ns, "program_end", None, None))
+                close = self.w.close_ns(ticker)
+                if close is not None and close <= t:
+                    cands.append((max(e.entry_ns, close), "market_close_time", None, None))
+                obs = self.w.first_non_active(ticker, e.entry_ns, t)
+                if obs is not None:
+                    cands.append((obs[0], "market_status_non_active", obs[1], obs[0]))
+                if not cands:
                     continue
+                end, why, e.end_status, e.end_observed_ns = min(cands, key=lambda c: c[0])
                 if e.last_poll_ns is not None:
                     e.cover_ns += covered(end - e.last_poll_ns)
                 e.ended_ns, e.end_reason = end, why
@@ -483,6 +498,15 @@ class Replay:
                              counts={v: len(x) for v, x in sets.items()})
             self.next_checkpoint_day += 1
 
+    def breaches(self) -> dict:
+        """Tracking breaches per variant (A9): entered markets whose tracking record did not arrive within
+        TRACK_GRACE_NS of entry. Reported prominently; never excluded or repaired."""
+        out = {}
+        for v, st in self.states.items():
+            out[v] = [e.eid for e in st.episodes
+                      if self.world.tracked_since.get(e.cand.ticker, 1 << 62) > e.entry_ns + TRACK_GRACE_NS]
+        return out
+
     def counts(self) -> dict:
         """Completed-episode counts per arm and variant (the only in-flight output; no profitability)."""
         out = {}
@@ -493,6 +517,21 @@ class Replay:
 
 
 # ============================================================================ valuation (used by analysis only)
+def batch_of(t_ns: int) -> int:
+    """Fixed UTC batch index (A5, reviewer): 6-hour blocks [00:00,06:00) [06:00,12:00) [12:00,18:00) [18:00,24:00).
+    The Unix epoch is 00:00 UTC, so floor division by 6 h aligns exactly to these boundaries."""
+    return t_ns // (S.BATCH_S * NS)
+
+
+def batch_means_input(samples, halves) -> dict:
+    """Observations grouped by fixed 6-hour UTC block; every observation of one block is ONE batch, however many
+    clock hours it spans. A batch counts if it holds at least one observation (existing rule, preserved)."""
+    batches = defaultdict(list)
+    for (t, _), h in zip(samples, halves):
+        batches[batch_of(t)].append(h)
+    return batches
+
+
 def payout(e: Episode) -> dict:
     c = e.cand
     period = D(max(1, c.end_ns - c.start_ns))
@@ -502,9 +541,7 @@ def payout(e: Episode) -> dict:
     halves = [s / 2 for _, s in e.samples]
     mean = sum(halves, D(0)) / len(halves)
     p_hat = c.reward * frac * mean
-    batches = defaultdict(list)
-    for (t, _), h in zip(e.samples, halves):
-        batches[t // (S.BATCH_S * NS)].append(h)
+    batches = batch_means_input(e.samples, halves)
     bm = [sum(b, D(0)) / len(b) for b in batches.values()]
     se = (D(statistics.stdev([float(x) for x in bm])) / D(math.sqrt(len(bm)))) * c.reward * frac if len(bm) >= 2 else None
     cent = lambda x: (x * 100).to_integral_value(rounding=ROUND_FLOOR) / 100              # noqa: E731
@@ -539,7 +576,8 @@ def episode_ledger(rp: Replay, cutoff_ns: int) -> list[dict]:
             trading = sum((f.pnl_direct for f in e.fills), D(0))
             rows.append({"variant": v, "eid": e.eid, "arm": e.arm, "account": e.account, "program_id": e.cand.program_id,
                          "ticker": e.cand.ticker, "event_ticker": e.cand.event_ticker, "entry_ns": e.entry_ns,
-                         "ended_ns": e.ended_ns, "end_reason": e.end_reason, "x": e.cand.x, "cstar": e.cand.cstar,
+                         "ended_ns": e.ended_ns, "end_reason": e.end_reason, "end_status": e.end_status,
+                         "end_observed_ns": e.end_observed_ns, "x": e.cand.x, "cstar": e.cand.cstar,
                          "reward_primary": p["primary"], "reward_conservative": p["conservative"], "p_hat": p["p_hat"],
                          "p_se": p["se"], "trading_pnl": trading,
                          "trading_pnl_nondirect": sum((f.pnl_nondirect for f in e.fills), D(0)),

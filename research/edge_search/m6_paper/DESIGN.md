@@ -1,4 +1,4 @@
-# M6-REWARDS: prospective paper experiment (frozen design v3, NOT STARTED)
+# M6-REWARDS: prospective paper experiment (frozen design v4, NOT STARTED)
 
 - **Status (2026-09-29):** IMPLEMENTED AND TESTED. **NOT STARTED.**
   - The collector, simulator and analysis exist and are hash-frozen in `PREREG_M6_PAPER.md`. See also `PRE_START_AUDIT.md`.
@@ -11,6 +11,11 @@
     - the fee provenance rule of §4.2;
     - the fill-assumption completion rule of §10;
     - deployment to an isolated service on the persistent collector host.
+  - v4 incorporates the final design amendments of 2026-09-29:
+    - A5: the payout SE uses fixed 6-hour UTC batches;
+    - A7: permanent, episode-scoped termination on an observed non-active status;
+    - A9: breaches reported prominently;
+    - the six additional coded choices are frozen (§14).
 - **Why:** PRICE TEST 1 found M6 **capital-compatible** (`../price_test_1/RESULTS.md` §M6). It measured *no* fills, adverse selection, competitor response or payout-floor risk. This experiment measures those.
 - **Freeze procedure.** Implementation starts only after this design is approved. The collector, the simulator and their tests are then written to this specification. They are committed with sha256 hashes in `PREREG_M6_PAPER.md` **before the first collection request**. Any later change is a recorded deviation.
 - **Smoke test.** A ≤ 2-hour technical smoke test of the collector is allowed before the freeze. Its data is deleted unread.
@@ -120,6 +125,11 @@ At every epoch:
 - **Replenishment.** A partially filled order keeps its queue place. A shortfall against the desired size is posted as a new order at the back. An excess is cancelled newest-first.
 - **Capital limit** (Arm P). No order is placed or enlarged if `committed` would exceed K. The size is cut to the largest integer that fits, and a side is left empty if nothing fits. Sides that reduce |q| have priority.
 - **Stop.** At program end, market close, or market status ≠ active, cancel everything. Inventory is **held to settlement**.
+- **Non-active status (A7, v4).** The first observation of `status != active` received during an episode (on or after its entry) terminates it **permanently**, at that observation's receive time. Termination is not backdated.
+  - The simulated orders are cancelled.
+  - The observed status and receive time are recorded.
+  - The episode is never resumed, even if the market becomes active again. There is no resume rule.
+  - A later, separate entry by the frozen selection rule is a new episode. Observations made before its entry do not affect it.
 - There is no taking, no unwinding and no cross-market hedging.
 
 ## 6. Frozen fill model (paper, causal, event-ordered)
@@ -152,7 +162,10 @@ Our order has side s, price p, remaining size n, queue ahead Q (the level size a
   - **all other resting size is assumed eligible**, which is conservative for our share.
 - **Payout estimate.** P̂ = R × (T_cov / T_period) × mean_k[(s_y,k + s_n,k)/2].
   - T_cov is the sum of our inter-poll intervals in the period that are ≤ 60 s. A longer interval is a gap: it earns 0, and none of it counts (v3).
-  - Because polls are independent of book state, the sample mean estimates the time average. Its SE uses hourly batch means.
+  - Because polls are independent of book state, the sample mean estimates the time average.
+  - **SE (A5, v4):** the SE uses **fixed 6-hour UTC batch means**, aligned to [00:00, 06:00), [06:00, 12:00), [12:00, 18:00) and [18:00, 24:00).
+    - All observations in one block form one batch, however many clock hours they span.
+    - A batch counts if it holds at least one observation (the existing rule, preserved). With fewer than two batches, SE is undefined and the conservative payout is 0.
 - **Payment.**
   - Primary: floor-to-cent of P̂, paid only if P̂ ≥ $1.00.
   - **Conservative:** paid only if P̂ − 1.645·SE ≥ $1.00.
@@ -294,3 +307,12 @@ Their size is exactly why the untested terms (fills, adverse selection, competit
   - selection determinism;
   - no look-ahead: a property test that shuffling future data does not change past decisions.
 - `PREREG_M6_PAPER.md`: code hashes, start date, and this document's hash.
+
+## 14. Frozen additional coded choices (reviewer, 2026-09-29; may not change after collection begins)
+
+1. **Entry and eligibility timing.** An entry takes effect at the **receipt of the selection (epoch) record**. Eligibility and the ex-ante metrics are evaluated at the **selection boundary** (`epoch_ns`). (`sim.Replay._on_epoch`, `selection.candidates`)
+2. **Own-order priority.** Earlier simulated orders at a price count as queue **ahead of** later simulated orders at that price. Real contracts consumed before reaching an order = count − own fills ahead of it. (`fills.match_trade`)
+3. **Side-order tie.** When net inventory is zero and the capital limit creates an ordering tie, the **YES side is placed first**. (`sim.VariantState._quote`)
+4. **Capital check and reserve.** The admission capital check uses C\*, which **includes** the maker fee on the one-side fill. The held reserve in `committed` follows the existing design definition, max(x·p_y, x·p_n). (`selection.evaluate`, `selection.admit`, `sim.Account.committed`)
+5. **Completeness backfill.** A backfill after a > 1% completeness gap starts at the **previous completeness check**. (`collector.completeness`)
+6. **Post-fill movement.** Markouts use the **first causally available poll** at or after each horizon (10 s, 1 min, 5 min, 30 min, 2 h). (`sim.VariantState._markouts`)

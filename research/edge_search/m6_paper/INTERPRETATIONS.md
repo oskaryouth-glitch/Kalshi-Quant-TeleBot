@@ -1,4 +1,19 @@
-# M6 paper experiment: implementation interpretations (for final reviewer approval)
+# M6 paper experiment: implementation interpretations (reviewer decisions recorded; FROZEN in v4)
+
+**Reviewer decisions (2026-09-29).**
+
+| item | decision |
+|---|---|
+| A1, A2, A4, A6, A8 | APPROVED as implemented |
+| A3 | APPROVED: `Q -= Δ·Q/L_prev`. The literal `level - n` is rejected, because our simulated order is not part of the observed real-book level. |
+| A5 | AMENDED: fixed 6-hour UTC batch means for the payout SE. The coverage/gap rule is unchanged. |
+| A7 | AMENDED: permanent termination at the first observed `status != active` during the episode. The status and receive time are recorded. No backdating, no resume rule. |
+| A9 | APPROVED, with breaches reported prominently (`TRACKING_BREACHES` in `status.py` and `analysis.decide`). Breaches are never excluded or repaired. |
+| A10 | APPROVED: last causally recorded book at or before the cutoff; executable-side best bid − applicable taker fee, or 0 without a bid. Later settlement information is never substituted. |
+| B1–B5 | APPROVED as implemented |
+| Six additional coded choices | FROZEN (`DESIGN.md` §14; section C below) |
+
+The text below is the reviewed text, with A5 and A7 updated to the implemented amendments.
 
 These are the ten interpretations listed in `PRE_START_AUDIT.md` §4, in complete detail, plus the choices made since (section B). Each is fixed in the hash-frozen code (`PREREG_M6_PAPER.md`).
 
@@ -58,24 +73,14 @@ These are the ten interpretations listed in `PRE_START_AUDIT.md` §4, in complet
   - Fractional replenishment would add less than one contract of resting size per side, occasionally.
   - **R/F/C/P&L:** below one contract per side. **Not material.**
 
-### 5. Reward coverage and payout SE (tightened in v3 to "no compensation")
-- **Design said (§7):** "P̂ = R × (T_cov / T_period) × mean_k[(s_y,k + s_n,k)/2]. T_cov is our time in the period, excluding gaps. Gaps earn 0. … SE uses hourly batch means." (§2: "no book for > 60 s is in a gap".)
-- **Implementation (v3):**
-  - Coverage:
-    - Each inter-poll interval of the episode counts toward T_cov **in full if ≤ 60 s and not at all if longer**.
-    - The 60 s cap was chosen ex ante: at the 10 s mean poll a longer silence occurs by chance with probability e^−6 ≈ 0.25%.
-    - The ~2-min selection pause and any loop stall therefore earn nothing (reviewer: no compensation).
-  - Score mean:
-    - It is the unweighted mean over polls. Poll times are Poisson and independent of the book, so it estimates the time average.
-  - Payout SE:
-    - The SE of P̂ uses clock-hour batch means.
-    - With fewer than 2 batches the conservative payout is 0. Episodes last ≥ 24 h, so this never binds in practice.
-  - Code: `sim.covered`, `sim.VariantState.on_poll`, `sim.payout`.
-- **Why necessary:** the design did not define how a poll interval maps to covered time, or the batching clock.
-- **Alternative and materiality:**
-  - v2's "each poll covers ≤ 60 s" credited 60 s of every longer gap. That is about 4 × 60 s a day, i.e. **≈ 0.3% of reward time**. v3 removes it.
-  - Time-weighting the scores instead of the plain mean differs negligibly under Poisson sampling.
-  - **R:** ≤ 0.3%. **Not material.**
+### 5. Reward coverage and payout SE (AMENDED by the reviewer, v4)
+- **Coverage (unchanged):** an inter-poll interval counts toward T_cov in full if ≤ 60 s and **not at all** if longer. Selection pauses and stalls are never compensated.
+- **Score mean:** the unweighted mean over Poisson-timed polls.
+- **SE (v4):**
+  - **Fixed 6-hour UTC batch means**, aligned to [00:00, 06:00), [06:00, 12:00), [12:00, 18:00) and [18:00, 24:00) (`sim.batch_of`, `sim.batch_means_input`). All observations in one block are one batch, however many clock hours they span.
+  - A batch counts if it holds ≥ 1 observation. With fewer than two batches the conservative payout is 0 (the existing rule, preserved).
+- **Why amended:** hourly batches could understate the SE when reward shares are autocorrelated over more than an hour, making the conservative $1-floor test too lenient.
+- **Tests:** `tests/test_v4_amendments.py` covers the exact boundaries (05:59:59.999… vs 06:00:00, every hour of a day, the day edge). It also shows that polls from 5 clock hours inside one block form ONE batch, leaving SE undefined and the conservative payout 0.
 
 ### 6. Valuation consistent with $1 netting
 - **Design said (§8):** "min(a, b) pairs are redeemed at $1 as they form (netting) … YES pays the settlement value; NO pays 1 − value … unsettled then is marked at liquidation value: best bid on our side minus the taker fee, or 0 if there is no bid."
@@ -93,16 +98,20 @@ These are the ten interpretations listed in `PRE_START_AUDIT.md` §4, in complet
   - The flat split changes per-episode attribution only when two episodes share a market-account. Totals and event clusters are unaffected.
   - **P&L:** material only for the rejected alternative.
 
-### 7. When an episode ends
-- **Design said (§5):** "Stop. At program end, market close, or market status ≠ active, cancel everything."
-- **Implementation:**
-  - The end is the earliest of: program end; the market's recorded `close_time`; the first **observation** of a non-active status (market state is polled every 5 min).
-  - Code: `sim.VariantState.expire`, `sim.World.ended`.
-- **Why necessary:** a status change is only known when observed.
-- **Alternative and materiality:**
-  - Backdating to the true status-change time is impossible from public data.
-  - While a market is halted or closed there are no trades, so quoting for up to 5 more minutes produces no fills. Coverage in that window is negligible.
-  - **Not material.**
+### 7. When an episode ends (AMENDED by the reviewer, v4)
+- **The end is the earliest of:**
+  - program end;
+  - the recorded market `close_time`;
+  - the **first observation of `status != active` received on or after the episode's entry**.
+- **Non-active status:**
+  - The episode ends at that observation's **receive time**, never backdated.
+  - Simulated orders are cancelled.
+  - `end_status` and `end_observed_ns` are recorded in the ledger.
+  - The episode is **permanently** terminated, with no resume rule, even if the market becomes active again.
+- **A separate later entry** by the frozen selection rule is a new episode. Observations made before its entry do not affect it.
+  - The v3 code kept only the first-ever non-active observation per market. That would have ended such a new episode at its entry, a hidden rule the reviewer did not approve. It is corrected in v4.
+- **Code:** `sim.World.first_non_active`, `sim.VariantState.expire`.
+- **Tests:** `tests/test_v4_amendments.py` (permanent termination at the receive time, with no fills or reward samples afterwards and no resumption after reactivation; an old observation doesn't end a new episode; the ledger records status and time).
 
 ### 8. The Arm U seed and de-duplication
 - **Design said (§4.4):** "Draw 10 at random from each 24-hour-volume stratum (= 0 and > 0) with `random.Random(20261001 + epoch_day)`." `epoch_day` was not defined.
@@ -161,3 +170,12 @@ These are the ten interpretations listed in `PRE_START_AUDIT.md` §4, in complet
 **B4. Validation quarantine.** Validation runs write a `validation` meta record into a directory whose path must contain `validation`. The collector refuses to mix validation and prospective data, and the simulator refuses any directory containing validation data.
 
 **B5. Request ceiling 2.0/s** (reviewer item 2).
+
+## C. Six additional coded choices (FROZEN by the reviewer, 2026-09-29; `DESIGN.md` §14)
+
+1. Entry takes effect at receipt of the selection record; eligibility is evaluated at the selection boundary.
+2. Earlier simulated orders count as queue ahead of later simulated orders.
+3. The YES side is placed first when net inventory is zero and the capital limit creates an ordering tie.
+4. The admission capital check includes the maker fee; the held reserve follows the existing design definition.
+5. The completeness backfill begins at the previous check.
+6. Post-fill movement uses the first causally available poll after each horizon.

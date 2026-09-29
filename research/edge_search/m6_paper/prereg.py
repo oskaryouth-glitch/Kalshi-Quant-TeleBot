@@ -9,7 +9,8 @@ FROZEN = ("DESIGN.md", "INTERPRETATIONS.md", "deploy/README.md", "spec.py", "lip
           "collector.py", "storage.py", "status.py", "prereg.py", "smoke_check.py", "size_probe.py", "validate_run.py",
           "__init__.py", "deploy/m6-paper-collector.service", "deploy/preflight.sh", "deploy/install.sh", "deploy/validate.sh",
           "tests/conftest.py", "tests/test_lip_accounting.py", "tests/test_fills.py", "tests/test_selection.py",
-          "tests/test_sim.py", "tests/test_collector_analysis.py", "tests/test_v3_changes.py")
+          "tests/test_sim.py", "tests/test_collector_analysis.py", "tests/test_v3_changes.py",
+          "tests/test_v4_amendments.py")
 
 
 def manifest_sha256() -> str:

@@ -38,7 +38,8 @@ def main(root: str) -> dict:
            "day": (rp.last_t - rp.day0) / SIM.DAY, "completed_episodes": rp.counts(),
            "arms": {a: {k: v for k, v in s.items() if k in ("verdict_state", "decided_ns", "decision_day", "counts")}
                     for a, s in rp.arm_status.items()},
-           "tracking_breaches": len(rp.world.breaches), "integrity": integrity(root)}
+           "TRACKING_BREACHES": {v: len(x) for v, x in rp.breaches().items()},
+           "tracking_breach_episodes": rp.breaches(), "integrity": integrity(root)}
     print(json.dumps(out, indent=1, default=str))
     return out
 

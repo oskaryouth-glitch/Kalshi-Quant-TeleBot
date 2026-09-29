@@ -69,15 +69,16 @@ def decide(root: str, arm: str, data_end_ns: int | None = None) -> dict:
     net = per[worst]["net"]
     lb = bootstrap_lb95([(r["event_ticker"], r["net"]) for r in rows])
     best = max((r["net"] for r in rows), default=D(0))
-    out = {"arm": arm, "decision_day": st["decision_day"], "worst_variant": worst,
+    breach_eids = [r["eid"] for r in rows if not r["tracked_ok"]]
+    out = {"arm": arm, "TRACKING_BREACHES": len(breach_eids), "tracking_breach_episodes": breach_eids,
+           "decision_day": st["decision_day"], "worst_variant": worst,
            "net_by_variant": {v: str(per[v]["net"]) for v in S.VARIANTS}, "n_by_variant": {v: per[v]["n"] for v in S.VARIANTS},
            "net": str(net), "lb95": str(lb), "net_without_best": str(net - best),
            "reward_conservative": str(sum((r["reward_conservative"] for r in rows), D(0))),
            "reward_primary": str(sum((r["reward_primary"] for r in rows), D(0))),
            "trading_pnl": str(sum((r["trading_pnl"] for r in rows), D(0))),
            "trading_pnl_nondirect_fees": str(sum((r["trading_pnl_nondirect"] for r in rows), D(0))),
-           "fees": str(sum((r["fees"] for r in rows), D(0))), "fills": sum(r["n_fills"] for r in rows),
-           "tracking_breaches": sum(1 for r in rows if not r["tracked_ok"])}
+           "fees": str(sum((r["fees"] for r in rows), D(0))), "fills": sum(r["n_fills"] for r in rows)}
     if arm == "U":
         out["verdict"] = "REPORTED_ONLY"
         out["mean_net_per_episode"] = str(net / len(rows)) if rows else None
