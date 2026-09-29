@@ -177,9 +177,17 @@ All markets combined: **$17,362.77 direct** ($17,362.23 non-direct).
 - A small participant cannot create an eligible book, but can free-ride on one.
 - It says nothing about profitability. The frozen configuration rests at the **best bid**, so fills are likely, and zero 24-hour volume was not treated as zero fill risk. The adverse selection of those fills is the untested question. So are the stability of competitors' depth, uptime, and the ≥ $1 floor under dynamic competition.
 - In the join-best configuration, one side is often priced near certainty (e.g. a NO bid at 98¢). A fill there risks up to 98¢ per contract to earn a small reward share.
-- **Second pass** (+60 min, same 60 programs, reported only): *(pending: `outputs/m6_summary_second.txt`)*
+- **Second pass** (+60 min, 04:59–05:00 UTC, the same 60 programs, reported only): **the small-capital opportunities persisted.**
+  - Compatible: 52/60 = 87% again, and the **same 52 programs**, with 0 lost and 0 gained. Competing depth changed in 49 of them.
+  - Median C\* across all 60 was $25.65 (first pass $21.39).
+  - Among compatible programs: x_min p10/p50/p90 = 5/14/51 contracts; C\* $8.70/$23.66/$90.71; L\* median $10.32 (p90 $45.12).
+  - The per-program C\* ratio second/first was median 1.00 (p10 0.79, p90 1.57). 39/60 kept identical quotes.
+  - The 8 incompatible programs were the same 7 lone-provider books plus KXAAL.
+  - Payout at the $200 budget: median $8.51 per period.
 
-**Per-program detail:** `outputs/m6_per_program_first.csv`, and `_second.csv` once the second pass exists.
+**Per-program detail:** `outputs/m6_per_program_first.csv` and `outputs/m6_per_program_second.csv`.
+
+**Next step (designed, not started):** `../m6_paper/DESIGN.md` tests net economics with fills, at K = $30/$100/$200.
 
 ---
 
