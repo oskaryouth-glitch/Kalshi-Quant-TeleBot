@@ -1,8 +1,10 @@
-# M6-REWARDS: prospective paper experiment (frozen design, NOT STARTED)
+# M6-REWARDS: prospective paper experiment (frozen design v2, NOT STARTED)
 
-- **Status:** design only.
-  - No collector or simulator exists yet. Nothing is running. No order has been or will be placed. No credentials are used.
-  - H038/H039 are not touched. `structural_arb` is not touched.
+- **Status (2026-09-29):** IMPLEMENTED AND TESTED. **NOT STARTED.**
+  - The collector, simulator and analysis exist and are hash-frozen in `PREREG_M6_PAPER.md`. See also `PRE_START_AUDIT.md`.
+  - No collection has started. The collector refuses to run without an explicit approval flag. No order has been or will be placed. No credentials are used.
+  - H038/H039 are not touched.
+  - v2 incorporates the reviewer amendments of 2026-09-29 (§10).
 - **Why:** PRICE TEST 1 found M6 **capital-compatible** (`../price_test_1/RESULTS.md` §M6). It measured *no* fills, adverse selection, competitor response or payout-floor risk. This experiment measures those.
 - **Freeze procedure.** Implementation starts only after this design is approved. The collector, the simulator and their tests are then written to this specification. They are committed with sha256 hashes in `PREREG_M6_PAPER.md` **before the first collection request**. Any later change is a recorded deviation.
 - **Smoke test.** A ≤ 2-hour technical smoke test of the collector is allowed before the freeze. Its data is deleted unread.
@@ -167,36 +169,61 @@ Our order has side s, price p, remaining size n, queue ahead Q (the level size a
   - daily NET marked to market;
   - maximum drawdown.
 
-## 10. Frozen duration, stopping and decision rules
+## 10. Frozen duration, stopping and decision rules (v2, reviewer amendment of 2026-09-29)
 
-**Duration and stopping.**
-- **Collection:** 35 days from the first 00:00 UTC after start. There are no new entries after day 35, and episodes already entered run to their end.
-- **No early stopping on results.** Cumulative collector downtime > 24 h, or loss of the trade feed for > 6 h, makes the run **INVALID**. It would then be re-registered and restarted, not patched.
-- **LIP rules.** If an LIP filing modifies the rules during the window, results are split at its effective date. Episodes spanning the change are reported separately.
+**Arms.** Every arm is evaluated separately:
+- the ranked portfolio arms **P30**, **P100** and **P200**;
+- the random-sample arm **U**.
 
-**Primary metric per K.**
-- NET_K = Σ over completed P-K episodes of (conservative payout + settled or liquidation-marked trading P&L − fees).
-- Take the **minimum over V_T, V_P and V_C**, so the worst fill model decides.
+Results are **never pooled** across arms.
+
+**Clock.** Day 0 is the first 00:00 UTC after collection starts. Checkpoints fall at 00:00 UTC.
+
+**Stopping rule, per arm.**
+
+| step | rule |
+|---|---|
+| day 35 | First formal checkpoint. Let n be the number of the arm's **completed** episodes: episode end ≤ checkpoint. |
+| n ≥ 20 at day 35 | Formal decision on exactly the episodes completed by day 35. The arm makes no new entries after day 35. Its still-running episodes are simulated to the end and **reported**, but are not part of the decision. |
+| n < 20 at day 35 | The arm keeps entering programs under the unchanged frozen rules. It is checked at every daily checkpoint from day 36 to day 60, **counts only**. At the first checkpoint where n ≥ 20, the formal decision is made on exactly the episodes completed by then, and the arm stops entering. |
+| day 60 and still n < 20 | **INSUFFICIENT EVIDENCE.** No decision, and the threshold is not changed. |
+
+**No peeking.** Until an arm reaches its formal checkpoint, the analysis code outputs only its episode counts. That is enforced in code (`analysis.py`); no profitability of a continuing arm is computed or shown. No parameter is changed after collection starts.
+
+**Collection end.**
+- Book and trade collection runs until every arm has reached its formal checkpoint, or until day 60.
+- Episodes entered before an arm's checkpoint are followed to their end.
+- Market-state polling for every ever-tracked market continues until the arm's **settlement cutoff**: its formal checkpoint + 30 days.
+
+**Invalid runs.** Cumulative collector downtime > 24 h, or loss of the trade feed for > 6 h, before the last formal checkpoint makes the run **INVALID**. It would be re-registered and restarted, not patched.
+
+**LIP rules.** If an LIP filing modifies the rules during the window, results are split at its effective date. Episodes spanning the change are reported separately.
+
+**Primary metric per arm A.**
+- NET_A = Σ over the decision set of (conservative payout + trading P&L − fees).
+- Trading P&L is settled value where the market settled by the settlement cutoff. Otherwise it is the liquidation mark at the cutoff: best bid on our side − taker fee, or 0 with no bid.
+- Take the **minimum over the three fill assumptions V_T, V_P and V_C**: the worst decides.
 
 **Uncertainty.**
-- LB95_K is the 5th percentile of NET_K from a cluster bootstrap over episodes, clustered by `event_ticker`, with 10,000 resamples and seed 20261001.
+- LB95_A comes from a cluster bootstrap. Resample the `event_ticker` clusters of the worst variant's decision set with replacement, with clusters sorted by name before resampling. Use 10,000 resamples and `random.Random(20261001)`. LB95 is the **500th smallest** resampled NET: the order statistic ceil(0.05 × 10,000).
 
-**Decision per K.**
+**Decision per ranked arm (P30, P100, P200).**
 
 | verdict | condition |
 |---|---|
-| **SURVIVE (paper)** | ≥ 8 completed episodes **and** NET_K > 0 **and** LB95_K > 0 **and** NET_K > 0 with the single most profitable episode removed |
-| **KILL** | ≥ 8 completed episodes and NET_K ≤ 0 |
-| **INCONCLUSIVE** | otherwise |
+| **SURVIVE (paper)** | n ≥ 20 **and** NET > 0 **and** LB95 > 0 **and** NET > 0 with the single most profitable episode removed |
+| **KILL** | n ≥ 20 and NET ≤ 0 |
+| **INCONCLUSIVE** | n ≥ 20 and neither of the above |
+| **INSUFFICIENT EVIDENCE** | n < 20 at day 60 |
 
 **M6 overall.**
-- **SURVIVE** if any K survives (the report names which).
-- **KILL for this project** if all three K are KILL.
+- **SURVIVE** if any ranked arm survives (the report names which).
+- **KILL for this project** if all three ranked arms are KILL.
 - **INCONCLUSIVE** otherwise.
 
 A paper SURVIVE is not authorisation to trade.
 
-**Arm U** reports mean NET per episode, and per $ of C\* per day, with cluster-bootstrap CIs. It is representative evidence, not the decision.
+**Arm U** follows the same stopping rule. It reports NET, LB95, mean NET per episode and per $ of C\* per day, all separately. It is representative evidence, not the M6 decision.
 
 ## 11. Feasibility at K = $30 / $100 / $200 (static; no fills; `outputs/feasibility_20260929T0435.txt`)
 

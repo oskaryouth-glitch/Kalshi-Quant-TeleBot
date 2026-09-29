@@ -14,6 +14,15 @@
 | **M5-GOLF** | **KILL** | The whole-field price already contains the expected tie payouts within bid/ask and fees. Across 26 fully covered KXPGATOP10 events, buying the field never beat its payout (U > 0 in 0/26), and selling it beat the payout in only 3/26. Both one-sided 95% lower bounds are negative: U −23.57, O −3.69. |
 | **M6-REWARDS** | **SURVIVE (capital-compatible)**, weak by construction | 52/60 sampled programs (87%, kill threshold 10%) let a small participant earn ≥ $1 per Time Period with C\* ≤ $200 (median C\* $19). It works only because other providers already meet the Target on both sides. Where they don't, C\* ≈ $1,750–1,790, as derived. Profitability and adverse selection were **not** tested. |
 
+## Independent reviewer decisions (2026-09-29)
+
+| mechanism | decision |
+|---|---|
+| **M5-GOLF** | KILL accepted. No further testing. |
+| **M2-NO** | KILL accepted. The post-freeze candlestick field-name fix and the re-measurement on the original frozen market list are accepted. The subsequently settled NFL market is **not** added. The original bugged outputs (`outputs/asrun_bug_*`) and the corrected outputs are both kept permanently. |
+| **M8-T20** | KILL accepted. No further testing. |
+| **M6-REWARDS** | Approved with amendments for a prospective paper experiment (`../m6_paper/DESIGN.md`, v2). Not started. |
+
 ## Changes after the freeze (all disclosed)
 
 1. **Data-access fix in `pt1_common.get()`.**
