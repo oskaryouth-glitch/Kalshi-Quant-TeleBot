@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Sources · LockerLab{% endblock %}
+{% block body %}
+<h1>Sources and permissions</h1>
+<p class="muted">Whether your screenshots of a platform may be stored and read by AI. Default is manual-only wherever terms restrict copying or extraction, or haven't been reviewed. Changing it records who, when and why, permanently. Automated collection (bots) stays off for every source regardless; see config/sources.yaml.</p>
+{% if error %}<div class="banner bad">{{ error }}</div>{% endif %}
+<div class="tablewrap panel"><table>
+<thead><tr><th>Source</th><th>Screenshots + AI</th><th>Why</th><th>Change</th></tr></thead><tbody>
+{% for k, s in sources.items() %}{% set p = pols[k] %}
+<tr><td><b>{{ s.name }}</b><div class="small muted">{{ k }}</div></td>
+<td>{% if p.screenshot_policy == 'allowed' %}<span class="chip good">Allowed</span>{% else %}<span class="chip warn">Manual only</span>{% endif %}<div class="small muted">{{ p.decided_by }}</div></td>
+<td class="wrap-text small">{{ p.reason }}</td>
+<td><form method="post" action="/sources/{{ k }}/policy" class="est">
+  <div class="row"><select name="policy"><option value="allowed">Allow</option><option value="manual_only">Manual only</option></select>
+  <select name="basis"><option value="written_permission">Written permission</option><option value="api_agreement">API agreement</option>
+    <option value="terms_reviewed_no_restriction">I read the terms: no restriction</option><option value="revoked">Permission revoked</option><option value="other">Other</option></select></div>
+  <input type="text" name="note" required placeholder="e.g. email from support 10/7, ticket #123" style="width:100%">
+  <button type="submit">Record</button></form></td></tr>
+{% endfor %}</tbody></table></div>
+{% if events %}<h2>Policy history</h2><table><thead><tr><th>When</th><th>Source</th><th>Policy</th><th>Basis</th><th>Note</th></tr></thead><tbody>
+{% for e in events %}<tr><td>{{ local(e.recorded_at) }}</td><td>{{ e.source_key }}</td><td>{{ e.screenshot_policy }}</td><td>{{ e.basis }}</td><td class="wrap-text">{{ e.note }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+{% endblock %}

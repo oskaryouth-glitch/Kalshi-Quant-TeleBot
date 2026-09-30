@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Capture · LockerLab{% endblock %}
+{% block body %}
+<h1>Capture an auction</h1>
+{% if error %}<div class="banner bad">{{ error }}</div>{% endif %}
+<div class="grid-main">
+<form class="panel est" method="post" action="/capture" enctype="multipart/form-data" id="capform">
+  <label>Auction URL <span class="muted">(paste it; LockerLab reads the address only and never visits the site)</span>
+    <input type="text" name="url" value="{{ url }}" placeholder="https://www.storagetreasures.com/..." autofocus style="width:100%"></label>
+  <div class="row">
+    <label>Platform <select name="source_key"><option value="">Detect from URL</option>
+      {% for k, s in sources.items() %}<option value="{{ k }}">{{ s.name }}</option>{% endfor %}</select></label>
+    <label>Market <select name="market_key">{% for m in markets %}<option value="{{ m }}" {{ 'selected' if m == 'colorado_springs' }}>{{ m.replace('_', ' ').title() }}</option>{% endfor %}</select></label>
+  </div>
+  <div class="pastetarget" id="paste" tabindex="0">Paste screenshots here (Ctrl/Cmd+V), drop files, or choose below.
+    <div id="pasted" class="small"></div></div>
+  <label>Listing screenshots <span class="muted">(details: size, bid, end time, fees). Read by AI only where the platform allows it.</span>
+    <input type="file" name="screenshots" id="shots" accept="image/*" multiple></label>
+  <label>Auction photos <span class="muted">(optional; kept for the estimate screen where allowed)</span>
+    <input type="file" name="photos" accept="image/*" multiple></label>
+  <div><button class="primary" type="submit">Continue to review</button></div>
+</form>
+<aside class="panel">
+  <h3>What each platform allows</h3>
+  <table><thead><tr><th>Platform</th><th>Screenshots + AI</th></tr></thead><tbody>
+  {% for k, s in sources.items() %}
+    <tr><td>{{ s.name }}</td><td>{% if pols[k].screenshot_policy == 'allowed' %}<span class="chip good">Allowed</span>{% else %}<span class="chip warn">Manual only</span>{% endif %}</td></tr>
+  {% endfor %}</tbody></table>
+  <p class="small muted">Manual only: the platform's terms restrict copying or extracting its content, or you haven't reviewed its terms yet. You type the key fields yourself; no screenshot is stored or sent to AI. Change this on <a href="/sources">Sources</a> once you have permission or have read the terms.</p>
+</aside>
+</div>
+<script>
+(() => {
+  const input = document.getElementById("shots"), zone = document.getElementById("paste"), list = document.getElementById("pasted");
+  const add = (files) => {
+    const dt = new DataTransfer();
+    for (const f of input.files) dt.items.add(f);
+    for (const f of files) if (f.type.startsWith("image/")) dt.items.add(f);
+    input.files = dt.files;
+    list.textContent = input.files.length + " screenshot(s) ready";
+    zone.classList.add("hot");
+  };
+  document.addEventListener("paste", (e) => { const fs = [...e.clipboardData.files]; if (fs.length) { e.preventDefault(); add(fs); } });
+  zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("hot"); });
+  zone.addEventListener("drop", (e) => { e.preventDefault(); add([...e.dataTransfer.files]); });
+  input.addEventListener("change", () => { list.textContent = input.files.length + " screenshot(s) ready"; });
+})();
+</script>
+{% endblock %}

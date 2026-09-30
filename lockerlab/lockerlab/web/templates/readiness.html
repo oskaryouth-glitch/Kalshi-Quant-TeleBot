@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Readiness · LockerLab{% endblock %}
+{% block body %}
+<h1>Evidence before a first real experiment</h1>
+<p class="muted">This page lists what is still unknown. It never recommends buying. Meeting every line would only make a small, pre-registered experiment worth <em>discussing</em>.</p>
+{% if error %}<div class="banner bad">{{ error }}</div>{% endif %}
+<div class="panel"><p><b>{{ r.met }} of {{ r.total }}</b> evidence items in place.</p>
+<div class="tablewrap"><table><thead><tr><th></th><th>Evidence</th><th>Have</th><th>Need</th><th>Missing</th></tr></thead><tbody>
+{% for i in r["items"] %}<tr><td>{% if i.done %}<span class="chip good">In place</span>{% else %}<span class="chip warn">Missing</span>{% endif %}</td>
+<td>{{ i.name }}</td><td class="num">{{ i.have }}</td><td class="num">{{ i.need }}</td><td class="wrap-text small">{{ '' if i.done else i.missing }}</td></tr>{% endfor %}
+</tbody></table></div></div>
+
+<div class="grid2" style="margin-top:16px">
+<div class="panel">
+  <h3>Unresolved assumptions that move the answer most</h3>
+  {% if r.unresolved %}<table><tbody>{% for u in r.unresolved %}<tr><td>{{ u.label }}</td><td><span class="chip warn">{{ STATUS_LABELS[u.status] }}</span></td></tr>{% endfor %}</tbody></table>
+  {% else %}<p>All verified.</p>{% endif %}
+  <p class="small"><a href="/assumptions">Update assumptions</a> when you verify one (mark it Verified first-hand and say how).</p>
+  <h3>Data sources</h3>
+  <table><thead><tr><th>Source</th><th>Screenshots</th><th>Automation</th></tr></thead><tbody>
+  {% for s in r.sources %}<tr><td>{{ s.source }}</td><td>{{ s.policy.replace('_', ' ') }}</td><td>{{ s.automated }}</td></tr>{% endfor %}</tbody></table>
+</div>
+<div class="panel">
+  <h3>First-hand checks</h3>
+  <table><tbody>{% for k, label in CHECKS.items() %}<tr><td class="wrap-text">{{ label }}</td>
+  <td>{% if k in checks %}<span class="chip {{ 'good' if checks[k].status == 'done' else 'warn' }}">{{ checks[k].status.replace('_', ' ') }}</span> <span class="small muted">{{ checks[k].note }}</span>{% else %}<span class="chip">not recorded</span>{% endif %}</td></tr>{% endfor %}</tbody></table>
+  <form method="post" action="/readiness/check" class="est" style="margin-top:8px">
+    <div class="row"><label>Check<select name="check_key">{% for k, label in CHECKS.items() %}<option value="{{ k }}">{{ label[:48] }}</option>{% endfor %}</select></label>
+      <label>Status<select name="status"><option value="done">Done</option><option value="not_done">Not done / fell through</option></select></label></div>
+    <label>What exactly did you confirm?<input type="text" name="note" required style="width:100%" placeholder="e.g. Woodmen Dump 10/6: household self-haul OK, 250 lb = $54"></label>
+    <div><button type="submit">Record check</button></div>
+  </form>
+</div>
+</div>
+
+<h2 id="selling">Timed selling experiment <span class="count">sell your own things; time the listing and the selling</span></h2>
+<div class="grid2">
+<form class="panel est" method="post" action="/readiness/selling">
+  <div class="row"><label>Item<input type="text" name="item" required></label>
+    <label>Platform<input type="text" name="platform" value="FB Marketplace" required></label></div>
+  <div class="row"><label>Listing minutes<input type="number" name="listing_minutes" step="0.5" min="0" required></label>
+    <label>Selling minutes<input type="number" name="selling_minutes" step="0.5" min="0" required></label>
+    <label>Sold?<select name="sold"><option value="1">Yes</option><option value="0">Not yet</option></select></label>
+    <label>Price $<input type="number" name="price" min="0"></label></div>
+  <p class="small muted">Listing: clean, photograph, research price, write. Selling: every message, no-shows, the meetup or packing.</p>
+  <div><button type="submit">Log it</button></div>
+</form>
+<div class="panel">
+  {% if r.timed %}<p class="num">Median listing <b>{{ r.timed.median_listing_minutes }}</b> min (model assumes {{ r.timed.assumed_listing }}) · median selling <b>{{ r.timed.median_selling_minutes }}</b> min (model assumes {{ r.timed.assumed_selling }}).</p>{% endif %}
+  {% if sells %}<table><thead><tr><th>Item</th><th>Where</th><th>List</th><th>Sell</th><th>Price</th></tr></thead><tbody>
+  {% for s in sells %}<tr><td>{{ s.item }}</td><td>{{ s.platform }}</td><td class="num">{{ s.listing_minutes }}</td><td class="num">{{ s.selling_minutes }}</td><td class="num">{{ fmt(s.price_cents) if s.price_cents is not none else ("unsold" if not s.sold else "—") }}</td></tr>{% endfor %}
+  </tbody></table>{% else %}<p class="muted">Nothing logged yet. This is the cheapest high-value experiment available: selling time decides whether lockers are worth your hours.</p>{% endif %}
+</div>
+</div>
+{% endblock %}

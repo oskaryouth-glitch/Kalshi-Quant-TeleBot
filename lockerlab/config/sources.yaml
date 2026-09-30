@@ -7,12 +7,18 @@
 #
 # automated_collection: prohibited | unknown | authorized
 # manual_capture:       allowed | gray_area | prohibited
+# screenshot_policy:    allowed | manual_only   (default for the capture screen:
+#   whether your screenshots/photos of this source may be stored and read by
+#   the AI extractor). Changes are recorded with a reason via
+#   `lockerlab source-policy` or the Sources page, and the latest one wins.
 #
 # Reviewed 2026-09-30 via web research (the dev sandbox could not load these
 # sites directly; see docs/PHASE0_RESEARCH.md). Re-verify terms yourself before
 # relying on this: terms change.
 
 storagetreasures:
+  screenshot_policy: manual_only
+  screenshot_policy_reason: "Terms exclude 'any data extraction or data mining whatsoever' and reproduction. AI extraction from screenshots and storing copies of listing photos are extraction/reproduction. Needs written permission."
   name: StorageTreasures
   base_url: https://www.storagetreasures.com
   terms_url: https://www.storagetreasures.com/terms
@@ -30,6 +36,8 @@ storagetreasures:
   next_step: "Email for written permission to record auctions for personal bidding research (draft in docs/PERMISSION_REQUESTS.md)."
 
 lockerfox:
+  screenshot_policy: manual_only
+  screenshot_policy_reason: "Terms prohibit automatic or manual processes to monitor or copy pages or content without written permission."
   name: Lockerfox
   base_url: https://www.lockerfox.com
   terms_url: https://www.lockerfox.com/terms-of-service/
@@ -47,6 +55,8 @@ lockerfox:
   note: "2026-10 audit: v1 marked manual capture 'allowed', but the clause covers MANUAL processes to monitor or copy too. Viewing auctions to bid is fine; keeping a systematic record needs written permission. Used by some U-Haul facilities in Colorado Springs."
 
 storageauctions_com:
+  screenshot_policy: manual_only
+  screenshot_policy_reason: "Full terms not yet reviewed by you. Read them, then record a review."
   name: StorageAuctions.com
   base_url: https://www.storageauctions.com
   terms_url: https://www.storageauctions.com/page/tos
@@ -61,6 +71,8 @@ storageauctions_com:
   next_step: "Read full ToS in a browser; request permission."
 
 bid13:
+  screenshot_policy: manual_only
+  screenshot_policy_reason: "Terms not yet reviewed by you. Read them, then record a review (or ask about their API)."
   name: Bid13
   base_url: https://bid13.com
   terms_url: https://bid13.com/terms-of-service
@@ -73,6 +85,8 @@ bid13:
   next_step: "Best candidate for an authorized feed: ask Bid13 for API access (draft in docs/PERMISSION_REQUESTS.md)."
 
 ibid4storage:
+  screenshot_policy: manual_only
+  screenshot_policy_reason: "Terms not yet reviewed by you."
   name: iBid4Storage
   base_url: https://www.ibid4storage.com
   terms_url: https://www.ibid4storage.com/terms_of_use
@@ -82,6 +96,8 @@ ibid4storage:
   sold_prices_public: unknown
 
 publicstorage_notices:
+  screenshot_policy: manual_only
+  screenshot_policy_reason: "Discovery only: no auction details to extract."
   name: "Public Storage lien-sale notice site"
   base_url: https://publicstorageauctions.com
   api: none
@@ -94,6 +110,8 @@ publicstorage_notices:
     use not yet reviewed. Never store occupant names.
 
 cubesmart_schedule:
+  screenshot_policy: manual_only
+  screenshot_policy_reason: "Discovery only."
   name: "CubeSmart state auction schedule"
   base_url: https://www.cubesmart.com/storage-auctions/colorado-storage-auctions/
   api: none
@@ -102,6 +120,8 @@ cubesmart_schedule:
   note: "Lists Colorado facilities, dates and a StorageTreasures link per auction. Discovery / universe count. Terms not yet reviewed."
 
 public_notice:
+  screenshot_policy: manual_only
+  screenshot_policy_reason: "Contains occupant names; never store screenshots."
   name: "Newspaper / public-notice lien sale ads"
   base_url: null
   api: "Varies by publisher (e.g. publicnoticecolorado.com, Marin IJ legals)"
@@ -113,6 +133,8 @@ public_notice:
     occupant names. Never store occupant names.
 
 manual_other:
+  screenshot_policy: allowed
+  screenshot_policy_reason: "Your own photos of in-person auctions or facility-provided information."
   name: "Other / in-person auctions recorded manually"
   base_url: null
   automated_collection: prohibited

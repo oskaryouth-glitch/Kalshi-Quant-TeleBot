@@ -16,7 +16,15 @@ from typing import Any
 
 import yaml
 
-STATUSES = ("VERIFIED", "SOURCED", "UNVERIFIED", "GUESS")
+STATUSES = ("VERIFIED", "SOURCED", "UNVERIFIED", "GUESS", "USER")
+# How each status is shown to the operator.
+STATUS_LABELS = {
+    "VERIFIED": "Verified first-hand",
+    "SOURCED": "Sourced, not first-hand",
+    "UNVERIFIED": "Unverified",
+    "GUESS": "Unverified (guess)",
+    "USER": "Your assumption",
+}
 
 
 def _is_leaf(node: Any) -> bool:

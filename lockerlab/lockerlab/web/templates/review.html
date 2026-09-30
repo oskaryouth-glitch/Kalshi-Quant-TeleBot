@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Review capture · LockerLab{% endblock %}
+{% block body %}
+{% set LABELS = {"facility_name": "Facility", "facility_operator": "Operator", "address": "Address", "city": "City", "state": "State",
+  "postal_code": "ZIP", "unit_label": "Unit #", "unit_size": "Unit size", "current_bid": "Current bid $", "opening_bid": "Opening bid $",
+  "bid_count": "Number of bids", "ends_at": "Ends (local time)", "buyer_premium_pct": "Buyer premium %", "cleaning_deposit": "Cleaning deposit $",
+  "cleanout_hours": "Cleanout time", "description": "Description", "visible_contents": "Visible contents", "photo_count": "Photos in listing",
+  "distance_miles": "Miles from you (one way)"} %}
+{% set ESSENTIAL = ["unit_size", "current_bid", "bid_count", "ends_at", "facility_name", "city"] %}
+<h1>Review and confirm</h1>
+<p class="muted">{{ it.source_key }} · {{ it.url or "no URL" }}</p>
+{% for n in notices %}<div class="banner warn">{{ n }}</div>{% endfor %}
+{% if error %}<div class="banner bad">{{ error }}</div>{% endif %}
+{% if pol.screenshot_policy != 'allowed' %}
+<div class="banner info"><b>Manual only for {{ it.source_key }}.</b> {{ pol.reason }} Type the fields from the listing you have open. Six fields matter most (top); the rest are optional. Blank means "not recorded": nothing is guessed or filled from defaults.</div>
+{% elif ex is none %}
+<div class="banner info">No screenshots to read. Fill the fields by hand, or go back and add screenshots.</div>
+{% elif ex.status != 'ok' %}
+<div class="banner bad">Extraction {{ ex.status }}: {{ ex.error }} Fill the fields by hand or <form method="post" action="/capture/{{ it.id }}/extract" style="display:inline"><button type="submit">try again</button></form>.</div>
+{% else %}
+<div class="banner info">Fields below were read from your screenshots by {{ ex.extractor }}. Check each one against the screenshot, especially anything marked low confidence, ambiguous or not visible. Edit what's wrong; blank what you can't confirm.</div>
+{% endif %}
+
+<form method="post" action="/capture/{{ it.id }}/confirm">
+<div class="grid-main">
+  <div class="panel">
+    {% if files %}<div class="shots">{% for f in files %}<figure style="margin:0"><img src="/evidence/{{ f.id }}" alt="screenshot {{ loop.index }}"><figcaption class="small muted">{{ f.role.replace('_', ' ') }} {{ loop.index }}</figcaption></figure>{% endfor %}</div>
+    {% elif it.url %}<p><a class="btn" href="{{ it.url }}" target="_blank" rel="noopener">Open the listing</a></p><p class="small muted">Read it there and type the fields.</p>{% endif %}
+  </div>
+  <div class="panel fields">
+    <div class="field"><label for="external_id">Auction ID</label>
+      <input type="text" id="external_id" name="external_id" value="{{ it.external_id or '' }}" placeholder="from the URL or the page">
+      <div class="meta">{{ it.url_evidence }}</div></div>
+    {% for group in [ESSENTIAL, form_fields.keys()|reject("in", ESSENTIAL)|list] %}
+    {% if not loop.first %}<details><summary class="muted">More fields (optional)</summary><div class="fields" style="margin-top:10px">{% endif %}
+    {% for f in group %}{% set fv = fields[f] %}
+    <div class="field">
+      <label for="{{ f }}">{{ LABELS[f] }}</label>
+      {% if f in ("description", "visible_contents") %}<textarea id="{{ f }}" name="{{ f }}" rows="2">{{ fv.display }}</textarea>
+      {% else %}<input type="text" id="{{ f }}" name="{{ f }}" value="{{ fv.display }}" {% if f == 'ends_at' %}placeholder="YYYY-MM-DD HH:MM"{% elif f == 'unit_size' %}placeholder="5x10"{% endif %}>{% endif %}
+      <div class="meta">
+        {% if fv.status == 'found' %}<span class="chip {{ 'good' if fv.confidence >= 0.8 else 'warn' }}">read · {{ (fv.confidence * 100)|round|int }}%</span>
+        {% elif fv.status in ('ambiguous', 'inferred') %}<span class="chip warn">{{ fv.status }} · {{ (fv.confidence * 100)|round|int }}%</span>
+        {% elif fv.status == 'invalid' %}<span class="chip bad">couldn't parse "{{ fv.text }}"</span>
+        {% elif ex and ex.status == 'ok' %}<span class="chip">not visible</span>{% endif %}
+        {% if fv.evidence and fv.status != 'not_visible' %}<span>{{ fv.evidence }}</span>{% endif %}
+        {% for note in fv.notes %}<span class="chip warn">{{ note }}</span>{% endfor %}
+        <label class="small"><input type="checkbox" name="unsure_{{ f }}" value="1"> unsure</label>
+      </div>
+    </div>
+    {% endfor %}
+    {% if not loop.first %}</div></details>{% endif %}
+    {% endfor %}
+    <div><button class="primary" type="submit">Confirm snapshot</button> <span class="small muted">Stored permanently with each field's source and confidence.</span></div>
+  </div>
+</div>
+</form>
+{% endblock %}

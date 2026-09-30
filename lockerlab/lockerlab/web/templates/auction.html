@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}{{ row.size_text or "Auction" }} · LockerLab{% endblock %}
+{% macro money_cls(c) %}{{ 'pos' if c is not none and c > 0 else 'neg' if c is not none and c < 0 else '' }}{% endmacro %}
+{% block body %}
+{% set latest = obs|selectattr("status", "in", ["scheduled", "active"])|list|last %}
+<h1>{{ row.size_text or "Unit size not recorded" }} · {{ row.facility or a.source_key }}</h1>
+<p class="tag-list">
+  <span class="chip">{{ a.source_key }} {{ a.external_id }}</span>
+  <span class="chip info">{{ row.state.replace('_', ' ').title() }}</span>
+  {% if row.url %}<a href="{{ row.url }}" target="_blank" rel="noopener">Open listing ↗</a>{% endif %}
+  <a href="/capture?url={{ row.url or '' }}">Capture again</a>
+</p>
+{% for w in warnings %}<div class="banner warn">{{ w }}</div>{% endfor %}
+{% if error %}<div class="banner bad">{{ error }}</div>{% endif %}
+
+<div class="grid-main">
+<div class="panel">
+  <dl class="kv">
+    <dt>Current bid</dt><dd>{{ fmt(row.current_bid_cents) if row.current_bid_cents is not none else "—" }}{% if row.bid_count is not none %} · {{ row.bid_count }} bids{% endif %}</dd>
+    <dt>Ends</dt><dd>{{ local(row.ends_at) }} · {{ left(row.hours_left) }}</dd>
+    {% if latest %}
+    <dt>Buyer premium</dt><dd>{{ pct(latest.buyer_premium_rate) if latest.buyer_premium_rate is not none else "not recorded (18% assumed)" }}</dd>
+    <dt>Cleaning deposit</dt><dd>{{ fmt(latest.cleaning_deposit_cents) if latest.cleaning_deposit_cents is not none else "not recorded ($100 assumed)" }}</dd>
+    <dt>Cleanout time</dt><dd>{{ (latest.cleanout_hours|int ~ " h") if latest.cleanout_hours else "not recorded" }}</dd>
+    <dt>Unit</dt><dd>{{ latest.unit_label or "—" }} · {{ row.city or "" }}</dd>
+    {% endif %}
+    <dt>Snapshots</dt><dd>{{ row.snapshots }}</dd>
+  </dl>
+  {% if latest and latest.description %}<p class="small">{{ latest.description }}</p>{% endif %}
+  {% set rf = json.loads(latest.raw_fields_json) if latest else {} %}
+  {% if rf.visible_contents %}<p class="small"><b>Visible:</b> {{ rf.visible_contents }}</p>{% endif %}
+  {% if shots or imgs %}
+  <h3>Photos and screenshots</h3>
+  <div class="thumbs">{% for s in shots %}<a href="/evidence/{{ s.id }}" target="_blank"><img src="/evidence/{{ s.id }}" alt="screenshot"></a>{% endfor %}
+  {% for i in imgs %}<a href="/evidence/{{ i.raw_capture_id }}" target="_blank"><img src="/evidence/{{ i.raw_capture_id }}" alt="auction photo"></a>{% endfor %}</div>
+  {% elif row.url %}<p class="small muted">No photos stored for this source. <a href="{{ row.url }}" target="_blank" rel="noopener">View them on the listing ↗</a> while you estimate.</p>{% endif %}
+</div>
+
+<div class="panel" id="estimate">
+{% if is_open %}
+  <h2 style="margin-top:0">Quick estimate <span class="count">about a minute; realistic SOLD prices, not asking prices</span></h2>
+  <form class="est" method="post" action="/auction/{{ a.id }}/estimate">
+    <div class="row">
+      <label>Visible items would sell for $<input type="number" name="visible" value="{{ est.visible }}" min="0" step="1" required></label>
+      <label>Hidden value low $<input type="number" name="hidden_low" value="{{ est.hidden_low }}" min="0" step="1"></label>
+      <label>Hidden value high $<input type="number" name="hidden_high" value="{{ est.hidden_high }}" min="0" step="1"></label>
+      <label>Confidence %<input type="number" name="confidence" value="{{ est.confidence }}" min="0" max="100" step="5" required></label>
+    </div>
+    <div><div class="muted small">Disposal burden</div><div class="seg">
+      {% for d in DISPOSAL_LEVELS %}<label><input type="radio" name="disposal" value="{{ d }}" {{ 'checked' if est.disposal == d }}> {{ d.title() }}</label>{% endfor %}</div></div>
+    <div><div class="muted small">Needs at least</div><div class="seg">
+      {% for t in TRANSPORT_LEVELS %}<label><input type="radio" name="transport" value="{{ t }}" {{ 'checked' if est.transport == t }}> {{ TRANSPORT_LABELS[t] }}</label>{% endfor %}</div></div>
+    <div><div class="muted small">Categories (optional)</div><div class="seg">
+      {% for c in CATEGORIES %}<label><input type="checkbox" name="tags" value="{{ c }}" {{ 'checked' if c in est.tags }}> {{ c.replace('_', '/').title() }}</label>{% endfor %}</div></div>
+    <label>Note (optional)<input type="text" name="note" value="{{ est.note }}" style="width:100%"></label>
+    <div><button class="primary" type="submit" name="action" value="calculate">Calculate</button></div>
+
+    {% if calc %}{% set o = calc.uw.outputs %}{% set b = o.evaluations.base %}{% set lo = o.evaluations.low %}{% set hi = o.evaluations.high %}
+    <div class="banner {{ 'info' if o.model_recommendation == 'PAPER_BID' else 'warn' }}">
+      Model says <b>{{ o.model_recommendation.replace('_', ' ') }}</b>. {{ calc.uw.reasons|join(' ') }}</div>
+    <div class="results">
+      <div class="stat"><div class="l">Current bid</div><div class="v">{{ fmt(o.current_bid_cents) if o.current_bid_cents is not none else "—" }}</div><div class="s">observed</div></div>
+      <div class="stat"><div class="l">Max paper bid</div><div class="v">{{ fmt(o.max_bid_cents) }}</div><div class="s">limited by {{ o.binding_constraints|join(', ')|replace('_', ' ') }}</div></div>
+      <div class="stat"><div class="l">All-in acquisition</div><div class="v">{{ fmt(b.acquisition.total_cents) }}</div><div class="s">at max bid, incl. premium + tax</div></div>
+      <div class="stat"><div class="l">Cash costs</div><div class="v">{{ fmt(b.cash_expenses_cents) }}</div><div class="s">vehicle {{ fmt(b.transport_cents) }} · dump {{ fmt(b.disposal_cents) }}</div></div>
+      {% set c = o.evaluations_at_current_bid.base %}
+      <div class="stat"><div class="l">Cash profit at current bid</div><div class="v {{ money_cls(c.cash_profit_cents) }}">{{ fmt(c.cash_profit_cents) }}</div><div class="s">at max bid {{ fmt(b.cash_profit_cents) }} (low {{ fmt(lo.cash_profit_cents) }} · high {{ fmt(hi.cash_profit_cents) }})</div></div>
+      {% set econ = o.economic_profit_cents_by_labor_value_at_current_bid.base %}{% set econ_max = o.economic_profit_cents_by_labor_value.base %}
+      <div class="stat"><div class="l">Economic profit @ ${{ lv // 100 }}/h, current bid</div><div class="v {{ money_cls(econ[lv|string]) }}">{{ fmt(econ[lv|string]) }}</div><div class="s">{% for v in labor_values %}${{ v // 100 }}/h: {{ fmt(econ[v|string]) }}{{ " · " if not loop.last }}{% endfor %}. At the max bid: {{ fmt(econ_max[lv|string]) }} (the ${{ lv // 100 }}/h rule binds there)</div></div>
+      <div class="stat"><div class="l">Cash ROI</div><div class="v">{{ pct(b.cash_roi) }}</div><div class="s">on {{ fmt(b.cash_invested_cents) }} invested</div></div>
+      <div class="stat"><div class="l">Cash profit / hour</div><div class="v">{{ fmt(b.cash_profit_per_hour_cents|round|int) if b.cash_profit_per_hour_cents is not none else "—" }}</div><div class="s">{{ b.labor_hours }} h of work</div></div>
+      <div class="stat"><div class="l">Cash profit / kept ft³</div><div class="v">{{ fmt((b.cash_profit_cents / b.retained_cuft)|round|int) if b.retained_cuft else "—" }}</div><div class="s">{{ b.retained_cuft|round|int }} ft³ to store · {{ o.value_density|lower }} density</div></div>
+      <div class="stat"><div class="l">Transport</div><div class="v" style="font-size:14px">{{ o.transport.choice.trips }}× {{ o.transport.choice.vehicle.replace('_', ' ') }}</div><div class="s">{{ fmt(o.transport.choice.cost_cents) }}</div></div>
+      <div class="stat"><div class="l">Disposal</div><div class="v" style="font-size:14px">{{ o.disposal.burden_level|title }}</div><div class="s">{{ o.disposal.pathways|join(', ')|replace('_', ' ') }}</div></div>
+      <div class="stat"><div class="l">Opportunity score</div><div class="v">{{ calc.score.score }}/100</div><div class="s">attention only</div></div>
+    </div>
+    <details><summary class="muted small">Why this score</summary><table><tbody>
+      {% for c in calc.score.components %}<tr><td>{{ c.name }}</td><td class="num">{{ c.points }} / {{ c.max }}</td><td class="wrap-text">{{ c.why }}</td></tr>{% endfor %}
+      {% for m in calc.score.minus %}<tr><td colspan="3" class="neg">− {{ m }}</td></tr>{% endfor %}</tbody></table></details>
+    {% endif %}
+
+    <div class="decide">
+      <label>Paper bid $<input type="number" name="paper_bid" value="{{ (calc.uw.outputs.max_bid_cents // 100) if calc and calc.uw.outputs.max_bid_cents is not none else '' }}" min="0"></label>
+      <button class="bid" type="submit" name="action" value="PAPER_BID">Paper bid</button>
+      <button class="watch" type="submit" name="action" value="WATCH">Watch</button>
+      <button class="pass" type="submit" name="action" value="PASS">Pass</button>
+    </div>
+    <div><div class="muted small">Pass reasons (needed for Pass)</div><div class="seg">
+      {% for t in PASS_TAGS %}<label><input type="checkbox" name="pass_tags" value="{{ t }}"> {{ t.replace('_', ' ').title() }}</label>{% endfor %}</div></div>
+    <p class="small muted">Recording a decision stores this estimate, the auction snapshot it saw, the max bid, your choice and the model version, permanently. The paper bid can't exceed the max paper bid.</p>
+  </form>
+
+  <details style="margin-top:12px"><summary>Pass or watch without estimating</summary>
+  <form method="post" action="/auction/{{ a.id }}/triage" class="est" style="margin-top:8px">
+    <div class="seg">{% for t in PASS_TAGS %}<label><input type="checkbox" name="pass_tags" value="{{ t }}"> {{ t.replace('_', ' ').title() }}</label>{% endfor %}</div>
+    <label>Note<input type="text" name="note" style="width:100%"></label>
+    <input type="hidden" name="back" value="1">
+    <div class="decide"><button class="pass" type="submit" name="action" value="PASS">Pass</button><button class="watch" type="submit" name="action" value="WATCH">Watch</button></div>
+  </form></details>
+{% else %}
+  <h2 style="margin-top:0">{{ "Record the result" if row.state == "AWAITING_RESULT" else "Closed" }}</h2>
+{% endif %}
+
+  <details id="result" {{ 'open' if not is_open }} style="margin-top:12px"><summary><b>Record result</b> <span class="muted small">after it closes (or if it's cancelled)</span></summary>
+  <form method="post" action="/auction/{{ a.id }}/result" class="est" style="margin-top:8px">
+    <div class="seg">{% for v, l in [("sold", "Sold"), ("cancelled", "Cancelled"), ("unsold", "No bids"), ("unknown", "Result unknown")] %}
+      <label><input type="radio" name="outcome" value="{{ v }}" {{ 'checked' if v == 'sold' }}> {{ l }}</label>{% endfor %}</div>
+    <div class="row"><label>Winning price $<input type="number" name="winning_price" min="0" step="1"></label>
+      <label>Number of bids<input type="number" name="bid_count" min="0"></label>
+      <label>Note<input type="text" name="note"></label></div>
+    <div><button class="primary" type="submit">Save result</button></div>
+  </form></details>
+
+  {% if settlement %}
+  <h3>What the result means</h3>
+  {% for d in settlement.decisions %}
+  <div class="panel" style="margin-bottom:8px">
+    <b>{{ d.decision.replace('_', ' ').title() }}</b> <span class="muted small">({{ d.strategy }})</span>
+    {% if d.result %}<span class="chip {{ 'good' if d.result == 'WON' else '' }}">{{ d.result.replace('_', ' ') }}</span>{% endif %}
+    <dl class="kv">
+      {% if d.final_price_cents is not none %}<dt>Winning price</dt><dd>{{ fmt(d.final_price_cents) }}</dd>{% endif %}
+      {% if d.max_bid_cents is not none %}<dt>Our max paper bid</dt><dd>{{ fmt(d.max_bid_cents) }}</dd>{% endif %}
+      {% if d.max_bid_minus_price_cents is defined %}<dt>Max bid minus winning price</dt><dd class="{{ money_cls(d.max_bid_minus_price_cents) }}">{{ fmt(d.max_bid_minus_price_cents) }}</dd>{% endif %}
+      {% if d.result == 'WON' %}
+      <dt>Simulated price (conservative: our full bid)</dt><dd>{{ fmt(d.acquisition_price_conservative_cents) }}</dd>
+      <dt>Simulated price (neutral: winner + 1 increment)</dt><dd>{{ fmt(d.acquisition_price_neutral_cents) }}</dd>
+      <dt>Estimated cash profit, conservative</dt><dd>{{ fmt(d.estimated_cash_profit_conservative_cents) }}</dd>
+      <dt>Estimated cash profit, neutral</dt><dd>{{ fmt(d.estimated_cash_profit_neutral_cents) }}</dd>
+      {% endif %}
+    </dl>
+    {% if d.result == 'WON' %}<p class="small muted">SIMULATED win, ESTIMATED profit: from your estimate of the contents, which nobody has seen. Not realized.</p>{% endif %}
+  </div>
+  {% endfor %}
+  {% endif %}
+</div>
+</div>
+
+<h2 id="decisions">Decisions <span class="count">permanent record</span></h2>
+{% if decisions %}<div class="tablewrap"><table><thead><tr><th>When</th><th>Choice</th><th>Model said</th><th>Max bid</th><th>Paper bid</th><th>Bid seen</th><th>Reasons</th></tr></thead><tbody>
+{% for d in decisions %}{% set out = json.loads(d.outputs_json) %}{% set rs = json.loads(d.reasons_json) %}
+<tr><td>{{ local(d.decided_at) }}</td><td>{{ d.decision.replace('_', ' ').title() }} <span class="muted small">{{ d.strategy_key }}</span></td>
+<td>{{ (out.model_recommendation or "—").replace('_', ' ') }}</td><td class="num">{{ fmt(d.max_bid_cents) }}</td><td class="num">{{ fmt(d.paper_bid_cents) }}</td>
+<td class="num">{{ fmt(d.current_bid_cents) }}</td><td class="wrap-text small">{% if rs is mapping %}{{ rs.pass_tags|join(', ')|replace('_', ' ')|lower }}{% if rs.note %} · {{ rs.note }}{% endif %}{% else %}{{ rs|join(' ') }}{% endif %}</td></tr>
+{% endfor %}</tbody></table></div>{% else %}<p class="empty">No decision yet.</p>{% endif %}
+
+<details><summary class="muted">Snapshot history ({{ obs|length }})</summary>
+<div class="tablewrap"><table><thead><tr><th>Observed</th><th>Status</th><th>Bid</th><th>Ends</th><th>How each field was recorded</th></tr></thead><tbody>
+{% for o in obs %}{% set meta = json.loads(o.field_meta_json) %}
+<tr><td>{{ local(o.observed_at) }}</td><td>{{ o.status }}</td><td class="num">{{ fmt(o.final_price_cents or o.current_bid_cents) }}</td><td>{{ local(o.ends_at) }}</td>
+<td class="wrap-text small">{% for k, m in meta.items() %}{{ k }}: {{ m.label|lower|replace('_', ' ') }}{% if m.confidence is defined %} {{ (m.confidence * 100)|round|int }}%{% endif %}{{ "; " if not loop.last }}{% endfor %}</td></tr>
+{% endfor %}</tbody></table></div></details>
+{% endblock %}

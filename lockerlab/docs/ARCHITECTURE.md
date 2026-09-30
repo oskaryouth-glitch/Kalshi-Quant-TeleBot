@@ -65,6 +65,23 @@ See `lockerlab/migrations/001_init.sql` for the exact DDL.
 | `paper_decisions` | What we would have done, when, on what information, and why |
 | `paper_settlements` | Decision vs observed outcome under a versioned rule |
 
+## 4b. Schema v2 / v3 (implemented, daily MVP)
+
+| Table | Purpose |
+|---|---|
+| `intakes`, `intake_files` | A capture in progress: URL, detected platform/ID, the capture policy in force, files (screenshots/photos stored only when allowed) |
+| `extractions` | Raw model output + normalized fields (value, confidence, evidence, status). A proposal only |
+| `intake_confirmations` | Links a reviewed capture to the observation it created |
+| `source_policy_events` | Who allowed/disallowed screenshots for a source, when, on what basis |
+| `assumption_sets` | Complete override set from the assumptions panel; latest wins; decisions embed the effective config |
+| `selling_time_log`, `readiness_checks` | Timed-selling experiment; first-hand verifications |
+| `raw_captures` | Rebuilt (copy-and-swap) to add `screenshot`, `review_form`, `result_form`, `decision_form` |
+| v3: `real_acquisitions`, `items`, `item_events`, `item_photos`, `listings`, `listing_events`, `sales`, `disposal_events`, `donation_events` | Resale skeleton (Phase 7+), unused, append-only |
+
+Web layer: `lockerlab/web/app.py` (FastAPI, per-request SQLite connection,
+127.0.0.1). Strategies: `manual_v1` (full), `quick_v1` (five inputs),
+`triage_v1` (pass/watch without estimate).
+
 ## 5. Schema (planned, added as new migrations when each phase starts)
 
 | Phase | Tables |

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Assumptions · LockerLab{% endblock %}
+{% block body %}
+<h1>Assumptions</h1>
+<p class="muted">Changes apply to <b>future</b> decisions only. Every recorded decision keeps the full set of assumptions it was made with. To see how a change would have moved past decisions, use the retrospective table on <a href="/calibration">Calibration</a>.</p>
+{% if error %}<div class="banner bad">{{ error }}</div>{% endif %}
+{% if saved %}<div class="banner info">Saved as assumption set #{{ saved }}.</div>{% elif saved == "" and request.query_params.get('saved') is not none %}<div class="banner info">Nothing changed.</div>{% endif %}
+<form method="post" action="/assumptions">
+<div class="tablewrap panel"><table>
+<thead><tr><th>Assumption</th><th>Value</th><th>Status</th><th>Source / how you know</th></tr></thead>
+<tbody>
+{% for r in rows %}
+{% if loop.first or r.group != loop.previtem.group %}<tr><th colspan="4" style="padding-top:14px">{{ r.group }}</th></tr>{% endif %}
+<tr>
+  <td class="wrap-text">{{ r.label }}{% if r.overridden %} <span class="chip info">changed</span>{% endif %}</td>
+  <td><input type="text" name="v::{{ r.path }}" value="{{ r.value }}" size="{{ 28 if r.kind == 'schedule' else 10 }}">
+    <span class="small muted">{{ {"cents": "$", "cents_per_mile": "$/mile", "pct": "%", "minutes": "min", "schedule": "lb:$ pairs", "int": "", "number": "", "text": ""}[r.kind] }}</span></td>
+  <td><select name="s::{{ r.path }}">{% for st in STATUSES %}<option value="{{ st }}" {{ 'selected' if st == r.status }}>{{ STATUS_LABELS[st] }}</option>{% endfor %}</select></td>
+  <td class="wrap-text small"><div class="muted">{{ r.source }}</div><input type="text" name="n::{{ r.path }}" placeholder="new source note (optional)" style="width:100%"></td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+<p><label>Why this change <input type="text" name="note" size="50" placeholder="e.g. called Woodmen Dump 10/6"></label> <button class="primary" type="submit">Save new assumption set</button></p>
+</form>
+{% if history %}<h2>History</h2><table><tbody>{% for h in history %}<tr><td>#{{ h.id }}</td><td>{{ local(h.created_at) }}</td><td>{{ h.note or "" }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+{% endblock %}

@@ -15,9 +15,13 @@ labor_value_scenarios_cents:
 
 # Operator profile. These gate which vehicles and pathways are real options.
 operator_age:
-  value: null
-  status: GUESS
-  source: "UNKNOWN. Matters: Home Depot rentals need 21+, Enterprise trucks 25+, U-Haul 18+. null = no age filter."
+  value: 19
+  status: VERIFIED
+  source: "Stated by Oskar 2026-10. Rules out Home Depot Load 'N Go (21+) and Enterprise trucks (25+); U-Haul (18+) remains."
+labor_value_cents_per_hour:
+  value: 2500
+  status: USER
+  source: "Value of time used for the headline economic profit on the desk and in the opportunity score. All four values are always shown."
 transport_kinds:
   value: [borrowed, rental]
   status: GUESS
@@ -103,3 +107,46 @@ bid_increments:
   value: [[10000, 500], [50000, 1000], [100000, 2500], [null, 5000]]
   status: GUESS
   source: "Platform increment tables not verified; record them from auction pages."
+
+# Quick underwriter (quick_v1): five inputs -> full scenario set.
+quick:
+  visible_low_factor: {value: 0.6, status: GUESS, source: "Low case: visible items bring 60% of your estimate (condition, no-sale)"}
+  visible_high_factor: {value: 1.25, status: GUESS}
+  hidden_base_position: {value: 0.5, status: GUESS, source: "Base case takes this point of your hidden-value range (0 = low end)"}
+  listings_per_order: {value: 1.25, status: GUESS, source: "Some listings never sell or are bundled"}
+  avg_sale_by_category_cents:
+    value: {TOOLS: 4500, SKI_SNOWBOARD: 7000, OUTDOOR: 4500, ELECTRONICS: 6000, BIKES: 12000, CLOTHING: 1500,
+            FURNITURE: 6000, COLLECTIBLES: 4000, MUSICAL: 12000, HOUSEHOLD: 1200, UNKNOWN: 3000}
+    status: GUESS
+    source: "Average proceeds per completed sale by category. Drives selling labor, the dominant cost of time. Replace with comps and your timed sales."
+  # Share of unit volume (w x l x 8ft) by destination, plus special items per 50 sq ft.
+  disposal_profiles:
+    value:
+      negligible: {retained: 0.10, donate: 0.10, trash: 0.005, mattresses_per_50sqft: 0, appliances_per_50sqft: 0, ewaste: 0, bulky_per_50sqft: 0, longest_in: 48}
+      light: {retained: 0.10, donate: 0.125, trash: 0.02, mattresses_per_50sqft: 0, appliances_per_50sqft: 0, ewaste: 0, bulky_per_50sqft: 0, longest_in: 48}
+      medium: {retained: 0.10, donate: 0.20, trash: 0.15, mattresses_per_50sqft: 0.8, appliances_per_50sqft: 0, ewaste: 1, bulky_per_50sqft: 0, longest_in: 60}
+      heavy: {retained: 0.10, donate: 0.225, trash: 0.36, mattresses_per_50sqft: 2, appliances_per_50sqft: 0.5, ewaste: 2, bulky_per_50sqft: 2, longest_in: 84}
+    status: GUESS
+    source: "Derived from the 2026-10 audit's LOW/MEDIUM/HIGH load profiles. Checked against real units only in Phase 7."
+  # Your transport call -> the vehicles the model may use.
+  transport_requirements:
+    value:
+      car_suv: {longest_in: 60, min_cuft: 0}
+      pickup_van: {longest_in: 90, min_cuft: 0}
+      truck: {longest_in: 100, min_cuft: 300}
+    status: GUESS
+
+# Opportunity score (attention ranking only; never changes the max bid).
+score:
+  category_points:
+    value: {TOOLS: 3, SKI_SNOWBOARD: 3, OUTDOOR: 2, ELECTRONICS: 2, BIKES: 2, MUSICAL: 3, COLLECTIBLES: 1,
+            CLOTHING: -1, FURNITURE: -3, HOUSEHOLD: -3, UNKNOWN: 0}
+    status: GUESS
+    source: "Prior from the project brief (compact, sellable categories). UNVALIDATED: calibration will test it."
+
+# Screenshot extraction (Claude vision). Only runs for sources whose capture
+# policy is 'allowed'.
+extraction:
+  model: {value: claude-opus-5-5, status: USER}
+  effort: {value: medium, status: USER, source: "low | medium | high. Reading a few fields off a screenshot."}
+  max_images: {value: 6, status: USER}

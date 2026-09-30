@@ -9,11 +9,13 @@ description = "Paper-only storage-unit auction research, underwriting and paper-
 requires-python = ">=3.11"
 dependencies = [
     "PyYAML>=6.0",
+    "python-dateutil>=2.8",
     "tzdata>=2024.1",  # zoneinfo data on machines without a system tz database (Windows)
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+app = ["fastapi>=0.110", "uvicorn>=0.29", "jinja2>=3.1", "python-multipart>=0.0.9", "anthropic>=1.0"]
+dev = ["pytest>=8", "httpx>=0.27", "fastapi>=0.110", "jinja2>=3.1", "python-multipart>=0.0.9", "anthropic>=1.0"]
 
 [project.scripts]
 lockerlab = "lockerlab.cli:main"
@@ -22,7 +24,7 @@ lockerlab = "lockerlab.cli:main"
 include = ["lockerlab*"]
 
 [tool.setuptools.package-data]
-lockerlab = ["migrations/*.sql"]
+lockerlab = ["migrations/*.sql", "web/templates/*.html", "web/static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

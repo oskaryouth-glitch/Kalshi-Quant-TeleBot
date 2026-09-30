@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Desk · LockerLab{% endblock %}
+{% macro chip_state(r) -%}
+  {%- if r.state == "PAPER_BID" %}<span class="chip good">Paper bid {{ fmt(r.decision.paper_bid_cents) }}</span>
+  {%- elif r.state == "WATCHING" %}<span class="chip warn">Watching</span>
+  {%- elif r.state == "PASS" %}<span class="chip bad">Pass</span>
+  {%- elif r.state == "NEEDS_ESTIMATE" %}<span class="chip info">Needs estimate</span>
+  {%- elif r.state == "AWAITING_RESULT" %}<span class="chip warn">Record result</span>
+  {%- else %}<span class="chip">{{ r.result_status|title }}{% if r.final_price_cents %} {{ fmt(r.final_price_cents) }}{% endif %}</span>{% endif -%}
+{%- endmacro %}
+{% macro table(rows, kind) %}
+{% if rows %}
+<div class="tablewrap"><table>
+<thead><tr><th>Unit</th><th>Where</th><th>Bid</th><th>Ends</th>
+{% if kind in ("open", "soon") %}<th>Score</th><th>Max paper bid</th><th>Cash profit at bid</th>{% endif %}
+{% if kind == "closed" %}<th>Result</th><th>Our max</th><th>Paper</th>{% endif %}
+<th>Status</th><th></th></tr></thead>
+<tbody>
+{% for r in rows %}
+<tr class="{{ 'soon' if r.hours_left is not none and 0 < r.hours_left <= 24 else '' }}">
+  <td><a href="/auction/{{ r.id }}"><b>{{ r.size_text or "size ?" }}</b></a> <span class="muted small">{{ r.source_key }}</span></td>
+  <td class="wrap-text">{{ r.facility or "—" }}{% if r.city %}<span class="muted">, {{ r.city }}</span>{% endif %}</td>
+  <td class="num">{{ fmt(r.current_bid_cents) if r.current_bid_cents is not none else "—" }}{% if r.bid_count is not none %} <span class="muted small">({{ r.bid_count }})</span>{% endif %}</td>
+  <td>{{ local(r.ends_at) }} <span class="muted small">{{ left(r.hours_left) }}</span></td>
+  {% if kind in ("open", "soon") %}
+  <td class="num">{% if r.score %}<b>{{ r.score.score }}</b>{% else %}<span class="muted">—</span>{% endif %}</td>
+  <td class="num">{{ fmt(r.metrics.max_bid_cents) if r.metrics else "—" }}</td>
+  <td class="num">{{ fmt(r.metrics.cash_at_current_cents) if r.metrics else "—" }}</td>
+  {% endif %}
+  {% if kind == "closed" %}
+  <td class="num">{{ r.result_status|title }}{% if r.final_price_cents %} {{ fmt(r.final_price_cents) }}{% endif %}</td>
+  <td class="num">{{ fmt(r.decision.max_bid_cents) if r.decision and r.decision.max_bid_cents is not none else "—" }}</td>
+  <td>{% if r.settlement %}<span class="chip {{ 'good' if r.settlement.result == 'WON' else '' }}">{{ r.settlement.result }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+  {% endif %}
+  <td>{{ chip_state(r) }}</td>
+  <td>{% if kind == "await" %}<a class="btn" href="/auction/{{ r.id }}#result">Record result</a>{% elif r.state == "NEEDS_ESTIMATE" %}<a class="btn" href="/auction/{{ r.id }}#estimate">Estimate</a>{% else %}<a href="/auction/{{ r.id }}">Open</a>{% endif %}</td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+{% else %}<p class="empty">Nothing here.</p>{% endif %}
+{% endmacro %}
+
+{% block body %}
+<h1>Today</h1>
+<section class="today">
+  <a class="todo {{ 'hot' if todo.estimate }}" href="#needs"><div class="n">{{ todo.estimate }}</div>need an estimate</a>
+  <a class="todo {{ 'hot' if todo.ending }}" href="#ending"><div class="n">{{ todo.ending }}</div>end within 24 h</a>
+  <a class="todo {{ 'hot' if todo.results }}" href="#await"><div class="n">{{ todo.results }}</div>need a result</a>
+  <div class="health">
+    <div class="row"><span><b>{{ h.closed_small_known }}</b> / {{ h.target_closed_small }} closed small units</span><span class="muted">first review checkpoint, not a statistical threshold</span></div>
+    <div class="bar"><span style="width: {{ [100, h.closed_small_known]|min }}%"></span></div>
+    <div class="row small">
+      <span>Captured <b>{{ h.forward_captured }}</b></span><span>Closed <b>{{ h.closed }}</b> (5x5 {{ h.closed_5x5 }} · 5x10 {{ h.closed_5x10 }} · other {{ h.closed_other }})</span>
+      <span>Paper bids <b>{{ h.paper_bids }}</b></span><span>Paper wins <b>{{ h.paper_wins }}</b></span><span>Passes <b>{{ h.passes }}</b></span>
+      <span>Unknown results <b>{{ h.unknown_results }}</b></span><span>Day <b>{{ h.days_collecting }}</b></span>
+    </div>
+  </div>
+</section>
+
+<details class="filters" {{ 'open' if q.max_bid or q.ending or q.low_disposal or q.fits_suv or q.category or q.min_cash or q.min_roi or q.min_conf or q.sizes != '5x5,5x10' }}>
+<summary>Filters: {{ 'all sizes' if q.sizes == 'all' else q.sizes.replace(',', ', ') }}{% if f.estimate_filters_active() %} · estimate filters on (unestimated auctions stay listed){% endif %}</summary>
+<form class="filterform" method="get" action="/">
+  <label>Sizes<select name="sizes">
+    {% for v, l in [("5x5,5x10", "5x5 + 5x10"), ("5x5", "5x5"), ("5x10", "5x10"), ("5x5,5x10,10x10", "up to 10x10"), ("all", "All sizes")] %}
+    <option value="{{ v }}" {{ 'selected' if q.sizes == v }}>{{ l }}</option>{% endfor %}</select></label>
+  <label>Max current bid $<input type="number" name="max_bid" value="{{ q.max_bid }}" min="0"></label>
+  <label>Ending within (hours)<input type="number" name="ending" value="{{ q.ending }}" min="0"></label>
+  <label>Category<select name="category"><option value="">Any</option>{% for c in CATEGORIES %}<option value="{{ c }}" {{ 'selected' if q.category == c }}>{{ c.replace('_', '/').title() }}</option>{% endfor %}</select></label>
+  <label>Min cash profit $<input type="number" name="min_cash" value="{{ q.min_cash }}"></label>
+  <label>Min ROI %<input type="number" name="min_roi" value="{{ q.min_roi }}"></label>
+  <label>Min confidence %<input type="number" name="min_conf" value="{{ q.min_conf }}" min="0" max="100"></label>
+  <label><span><input type="checkbox" name="low_disposal" value="1" {{ 'checked' if q.low_disposal }}> Low disposal</span></label>
+  <label><span><input type="checkbox" name="fits_suv" value="1" {{ 'checked' if q.fits_suv }}> Fits borrowed car/SUV</span></label>
+  <button type="submit">Apply</button> <a href="/">Reset</a>
+</form>
+</details>
+
+<h2>Most interesting open lockers <span class="count">score orders your attention; it never changes a max bid</span></h2>
+{% if s.TOP %}
+<div class="cards">
+{% for r in s.TOP %}
+<a class="card" href="/auction/{{ r.id }}">
+  <div class="head"><span><b>#{{ loop.index }} · {{ r.size_text or "?" }}</b> · {{ fmt(r.current_bid_cents) if r.current_bid_cents is not none else "no bid" }}</span><span class="score">{{ r.score.score }}<span class="muted small">/100</span></span></div>
+  <div class="muted small">{{ r.facility or r.source_key }} · {{ left(r.hours_left) }}</div>
+  {% if r.score.plus %}<ul>{% for p in r.score.plus[:4] %}<li class="plus">{{ p }}</li>{% endfor %}</ul>{% endif %}
+  {% if r.score.minus %}<ul>{% for m in r.score.minus[:3] %}<li class="minus">{{ m }}</li>{% endfor %}</ul>{% endif %}
+  <dl class="kv">
+    <dt>Max paper bid</dt><dd>{{ fmt(r.metrics.max_bid_cents) }}</dd>
+    <dt>Cash profit at current bid</dt><dd>{{ fmt(r.metrics.cash_at_current_cents) }}</dd>
+    <dt>Economic @ ${{ r.metrics.labor_value_cents // 100 }}/h at current bid</dt><dd>{{ fmt(r.metrics.economic_at_current_cents) }}</dd>
+    <dt>Cash profit if you pay the max</dt><dd>{{ fmt(r.metrics.cash_profit_cents) }}</dd>
+  </dl>
+  <div class="small muted">Estimated from your estimate; nobody has seen the contents.</div>
+  {{ chip_state(r) }}
+</a>
+{% endfor %}
+</div>
+{% else %}<p class="empty">No estimated open auctions yet. Capture a few and estimate them; the best appear here.</p>{% endif %}
+
+<h2 id="ending">Ending soon <span class="count">{{ s.ENDING_SOON|length }}</span></h2>
+{{ table(s.ENDING_SOON, "soon") }}
+<h2 id="needs">Needs estimate <span class="count">{{ s.NEEDS_ESTIMATE|length }} · small units first, then soonest</span></h2>
+{{ table(s.NEEDS_ESTIMATE, "needs") }}
+<h2>Watching <span class="count">{{ s.WATCHING|length }}</span></h2>
+{{ table(s.WATCHING, "open") }}
+<h2>Paper bid <span class="count">{{ s.PAPER_BID|length }}</span></h2>
+{{ table(s.PAPER_BID, "open") }}
+<h2>Pass <span class="count">{{ s.PASS|length }}</span></h2>
+{{ table(s.PASS, "open") }}
+<h2 id="await">Awaiting result <span class="count">{{ s.AWAITING_RESULT|length }} · open each listing and record how it ended</span></h2>
+{{ table(s.AWAITING_RESULT, "await") }}
+<h2>Closed <span class="count">latest 25</span></h2>
+{{ table(s.CLOSED, "closed") }}
+{% endblock %}

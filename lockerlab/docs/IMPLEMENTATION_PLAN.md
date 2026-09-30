@@ -20,6 +20,21 @@ Phases 7–9 happen **only if** Phase 6 justifies them.
 - [x] Collection gate (`PoliteClient`): no source is authorized, so no scraper exists
 - [x] 145 tests
 
+## Daily-use MVP (done)
+
+Desk, screenshot/URL capture with per-source terms gating, quick
+underwriter, transparent opportunity score, paper decisions with pass
+reasons, result capture and settlement, dataset health, calibration,
+filters, assumptions panel, readiness page, and the resale schema skeleton.
+259 tests. See DAILY_WORKFLOW.md and MVP_SELF_AUDIT.md.
+
+Recommended next (small):
+
+1. `settle_v2`: won, then cancelled
+2. Blind-estimate option against anchoring
+3. Universe counting from public notice pages
+4. Background extraction
+
 ## Next two weeks (you)
 
 1. **Phone calls (highest value per minute):**

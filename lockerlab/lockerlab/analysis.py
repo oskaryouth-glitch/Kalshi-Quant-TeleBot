@@ -99,7 +99,6 @@ def breakeven_table(market_key: str, market: Assumptions, uw: Assumptions, bids_
 
 import copy  # noqa: E402
 
-from .config import Assumptions  # noqa: E402
 from .economics import evaluate  # noqa: E402
 from .strategies import Physical, build_scenario, cost_policy  # noqa: E402
 

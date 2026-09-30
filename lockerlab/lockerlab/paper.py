@@ -24,22 +24,30 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import disposal, economics, strategies, transport
+from . import disposal, economics, quick, strategies, transport
 from .config import Config, canonical_json
 from .db import transaction
 from .economics import CostPolicy, Scenario, evaluate, increment_for
 from .pit import TERMINAL_STATUSES, snapshot_as_of, terminal_observation_as_of
-from .strategies import OperatorEstimate, Underwriting
+from .strategies import Underwriting
 from .timeutil import now_ts
 
 SETTLEMENT_RULE = "settle_v1"
 
 # Source files whose code determines a decision; hashed into model_versions.
-_MODEL_MODULES = (economics, transport, disposal, strategies)
+_MODEL_MODULES = (economics, transport, disposal, strategies, quick)
 
 
 class DecisionRefused(RuntimeError):
     pass
+
+
+CHOICES = ("PAPER_BID", "WATCH", "PASS")
+PASS_TAGS = ("TOO_EXPENSIVE", "TOO_MUCH_TRASH", "TOO_LARGE", "TRANSPORT", "LOW_VALUE", "LOW_CONFIDENCE",
+             "BAD_CATEGORY", "TOO_MUCH_LABOR", "OTHER")
+
+# A PASS or WATCH made from the desk without an estimate.
+strategies.STRATEGIES.setdefault("triage_v1", {"fn": None, "version": "1", "automatic": False})
 
 
 def _code_sha() -> str:
@@ -80,15 +88,25 @@ def decide(
     conn: sqlite3.Connection,
     cfg: Config,
     auction_id: int,
-    estimate: OperatorEstimate,
+    estimate,
     strategy_key: str = "manual_v1",
     mode: str = "FORWARD",
     as_of: str | None = None,
     record: bool = True,
     now: str | None = None,
+    choice: str | None = None,
+    paper_bid_cents: int | None = None,
+    pass_tags: tuple[str, ...] = (),
+    note: str = "",
 ) -> DecisionResult:
     """Underwrite an auction using only information available at the decision
     time, and (if ``record``) append the paper decision.
+
+    With ``choice`` (the desk's PAPER BID / WATCH / PASS buttons) the recorded
+    decision is yours, the model's recommendation is stored beside it, and the
+    underwriting rules still bind: a paper bid can't exceed the model's max bid
+    or sit below the current bid. ``triage_v1`` records a PASS/WATCH made
+    without an estimate.
 
     ``now`` exists for tests; in normal use it is the wall clock.
     """
@@ -121,10 +139,40 @@ def decide(
         raise DecisionRefused(f"auction {auction_id} ended at {snap.ends_at}, before decision time {t}")
 
     market = cfg.market(snap.market_key)
-    uw = strat["fn"](snap, estimate, market, cfg.underwriting)
+    if strategy_key == "triage_v1":
+        if choice not in ("PASS", "WATCH"):
+            raise DecisionRefused("without an estimate you can only PASS or WATCH")
+        uw = strategies.Underwriting(choice, None, None, None, [], {"model_recommendation": None},
+                                     {"snapshot": snap.to_dict()})
+    else:
+        uw = strat["fn"](snap, estimate, market, cfg.underwriting)
     unverified = market.unverified(f"markets.{snap.market_key}") + cfg.underwriting.unverified("underwriting")
     uw.inputs["unverified_assumptions"] = unverified
     uw.outputs["unverified_assumption_count"] = len(unverified)
+    reasons: object = uw.reasons
+    if choice is not None:
+        if choice not in CHOICES:
+            raise DecisionRefused(f"choice must be one of {CHOICES}")
+        bad = set(pass_tags) - set(PASS_TAGS)
+        if bad:
+            raise DecisionRefused(f"unknown pass reasons {sorted(bad)}")
+        if choice == "PASS" and not pass_tags:
+            raise DecisionRefused("pick at least one reason for passing")
+        current = snap.current_bid_cents if snap.current_bid_cents is not None else snap.opening_bid_cents
+        if choice == "PAPER_BID":
+            if uw.max_bid_cents is None:
+                raise DecisionRefused("the underwriting rules allow no bid on this unit; WATCH or PASS")
+            bid = uw.max_bid_cents if paper_bid_cents is None else paper_bid_cents
+            if bid > uw.max_bid_cents:
+                raise DecisionRefused(f"paper bid can't exceed the max paper bid ({uw.max_bid_cents / 100:.0f})")
+            if current is not None and bid < current + increment_for(current, cfg.underwriting.get("bid_increments")):
+                raise DecisionRefused("paper bid is below the current bid plus one increment; WATCH or PASS")
+            uw.paper_bid_cents = bid
+        else:
+            uw.paper_bid_cents = None
+        uw.outputs["user_choice"] = choice
+        uw.decision = choice
+        reasons = {"model_reasons": uw.reasons, "pass_tags": list(pass_tags), "note": note}
 
     if not record:
         return DecisionResult(None, t, uw, auction_id, strategy_key)
@@ -145,7 +193,7 @@ def decide(
                 auction_id, strategy_key, mode, t, wall, mv, snap.observation_id, snap.ends_at,
                 snap.current_bid_cents, uw.decision, uw.max_bid_cents, uw.paper_bid_cents,
                 uw.confidence, inputs_json, hashlib.sha256(inputs_json.encode()).hexdigest(),
-                canonical_json(uw.outputs), canonical_json(uw.reasons),
+                canonical_json(uw.outputs), canonical_json(reasons),
             ),
         ).lastrowid
     return DecisionResult(did, t, uw, auction_id, strategy_key)

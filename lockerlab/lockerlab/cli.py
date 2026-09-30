@@ -289,6 +289,45 @@ def cmd_sensitivity(args) -> int:
     return 0
 
 
+def cmd_serve(args) -> int:
+    try:
+        import uvicorn
+
+        from .web.app import create_app
+    except ImportError:
+        print('The desk needs the app extras: pip install -e ".[app]"', file=sys.stderr)
+        return 2
+    paths = default_paths() if not args.home else None
+    home = Path(args.home).resolve() if args.home else paths.home
+    print(f"LockerLab desk: http://{args.host}:{args.port}  (Ctrl+C to stop)")
+    if args.host not in ("127.0.0.1", "localhost"):
+        print("Warning: reachable from other devices on this network. There is no login.", file=sys.stderr)
+    uvicorn.run(create_app(home), host=args.host, port=args.port, log_level="warning")
+    return 0
+
+
+def cmd_source_policy(args) -> int:
+    from . import platforms
+    from .db import transaction
+    from .timeutil import now_ts
+
+    _, cfg, conn = _ctx(args)
+    capture.register_sources(conn, cfg)
+    if args.policy is None:
+        for k in cfg.sources:
+            p = platforms.capture_policy(conn, cfg.sources, k)
+            print(f"{k:22} {p.screenshot_policy:12} ({p.decided_by}) {p.reason[:90]}")
+        return 0
+    try:
+        with transaction(conn):
+            platforms.set_policy(conn, cfg.sources, args.source, args.policy, args.basis, args.note or "", now_ts())
+    except (ValueError, KeyError) as e:
+        print(f"REFUSED: {e}", file=sys.stderr)
+        return 2
+    print(f"{args.source}: screenshots {args.policy} (recorded)")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="lockerlab", description="Paper-only storage auction research system")
     p.add_argument("--home", help="project dir holding config/ and data/ (default: $LOCKERLAB_HOME or cwd)")
@@ -352,6 +391,19 @@ def main(argv: list[str] | None = None) -> int:
     se.add_argument("--avg-sale", type=float, default=50.0, help="average $ per sale (drives labor)")
     se.add_argument("--out-dir", default="docs/generated")
     se.set_defaults(fn=cmd_sensitivity)
+
+    sv = sub.add_parser("serve", help="open the daily desk in your browser (local only)")
+    sv.add_argument("--host", default="127.0.0.1")
+    sv.add_argument("--port", type=int, default=8765)
+    sv.set_defaults(fn=cmd_serve)
+
+    sp = sub.add_parser("source-policy", help="show or record per-source screenshot policy")
+    sp.add_argument("source", nargs="?")
+    sp.add_argument("policy", nargs="?", choices=["allowed", "manual_only"])
+    sp.add_argument("--basis", default="other", choices=["written_permission", "api_agreement",
+                    "terms_reviewed_no_restriction", "revoked", "other"])
+    sp.add_argument("--note", help="why (required when changing)")
+    sp.set_defaults(fn=cmd_source_policy)
 
     args = p.parse_args(argv)
     return args.fn(args)

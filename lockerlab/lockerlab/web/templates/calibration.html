@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Calibration · LockerLab{% endblock %}
+{% block body %}
+<h1>Calibration</h1>
+<p class="muted">How our estimates and max bids compare with what the market actually paid, on auctions we estimated before they closed. This compares against <b>winning prices</b>, not against what the contents were really worth: only real purchases can show that. Groups under {{ MIN_N }} auctions are shown but not interpreted.</p>
+<div class="tablewrap panel"><table>
+<thead><tr><th>Group</th><th>n</th><th>Median max bid ÷ winning price</th><th>We'd have won</th><th>Median estimate ÷ winning price</th><th>Reading</th></tr></thead>
+<tbody>
+{% for name, g in c.groups.items() %}
+<tr><td>{{ name }}</td><td class="num">{{ g.n }}</td>
+{% if g.n %}<td class="num">{{ "%.2f"|format(g.median_max_over_price) }}</td><td class="num">{{ pct(g.share_we_would_win) }}</td><td class="num">{{ "%.2f"|format(g.median_estimate_over_price) }}</td>
+{% else %}<td>—</td><td>—</td><td>—</td>{% endif %}
+<td><span class="chip {{ 'warn' if g.n < MIN_N else 'info' }}">{{ g.reading }}</span></td></tr>
+{% endfor %}
+</tbody></table></div>
+<div class="grid2" style="margin-top:16px">
+<div class="panel">
+  <h3>Do other bidders like what we like?</h3>
+  {% if c.rank_correlation is not none %}
+  <p class="num">Rank correlation between our estimate and the winning price: <b>{{ "%.2f"|format(c.rank_correlation) }}</b> (n={{ c.n }}).</p>
+  <p class="small muted">Near 1: the market ranks lockers as we do, so our "cheap" lockers are rarely cheap. Near 0: prices ignore what we see, which could mean mispricing or that our estimates are noise. Only real units can tell those apart.</p>
+  {% else %}<p class="muted">Needs at least {{ MIN_N }} estimated, sold auctions (have {{ c.n }}).</p>{% endif %}
+  <h3>Missed deals</h3>
+  <p class="num">{{ c.missed_deals }} auction(s) we watched or passed sold below our max bid.</p>
+</div>
+<div class="panel">
+  <h3>Why we pass</h3>
+  {% if c.pass_reasons %}<table><tbody>{% for k, v in c.pass_reasons|dictsort(by='value', reverse=true) %}<tr><td>{{ k.replace('_', ' ').title() }}</td><td class="num">{{ v }}</td></tr>{% endfor %}</tbody></table>
+  {% else %}<p class="muted">No passes recorded yet.</p>{% endif %}
+</div>
+</div>
+<h2>Retrospective: past estimates under today's assumptions</h2>
+<p class="small muted">Analysis only. Recorded decisions keep the max bid they were made with; this shows how much a later assumption change would have moved them.</p>
+{% if retro %}<div class="tablewrap panel"><table><thead><tr><th>Decision</th><th>Auction</th><th>Decided</th><th>Recorded max bid</th><th>Max bid under current assumptions</th></tr></thead><tbody>
+{% for r in retro %}<tr><td>#{{ r.decision_id }}</td><td><a href="/auction/{{ r.auction_id }}">#{{ r.auction_id }}</a></td><td>{{ local(r.decided_at) }}</td><td class="num">{{ fmt(r.recorded_max_bid_cents) }}</td>
+<td class="num">{{ fmt(r.max_bid_under_current_assumptions_cents) if r.max_bid_under_current_assumptions_cents is not string else r.max_bid_under_current_assumptions_cents }}</td></tr>{% endfor %}
+</tbody></table></div>{% else %}<p class="empty">No quick estimates yet.</p>{% endif %}
+{% endblock %}

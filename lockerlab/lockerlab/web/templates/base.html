@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}LockerLab{% endblock %}</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="/">LockerLab</a>
+  <nav>
+    <a href="/">Desk</a>
+    <a href="/readiness">Readiness</a>
+    <a href="/calibration">Calibration</a>
+    <a href="/assumptions">Assumptions</a>
+    <a href="/sources">Sources</a>
+  </nav>
+  <a class="btn primary" href="/capture">+ Capture auction</a>
+</div></header>
+<main class="wrap">
+{% block body %}{% endblock %}
+<footer class="note">Paper only. LockerLab never bids, buys, lists or messages anyone. Figures are OBSERVED (captured), ESTIMATED (your estimate run through the cost model) or SIMULATED (paper wins); nothing here is realized profit.</footer>
+</main>
+</body>
+</html>

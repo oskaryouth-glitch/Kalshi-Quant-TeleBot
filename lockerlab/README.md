@@ -25,13 +25,35 @@ real outcomes without look-ahead bias.
 | 6 Evidence review | Needs 8–12 weeks of forward data |
 | 7–9 Resale OS / listings / real mode | Only if Phase 6 justifies it |
 
-## Setup (your laptop)
+## Daily use (start here)
+
+```bash
+cd lockerlab && python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[app]"
+lockerlab --home . init
+lockerlab --home . serve        # http://127.0.0.1:8765
+```
+
+- **Desk:** what needs attention today, the most interesting lockers (with
+  the reasons behind their score), ending soon, needs estimate, watching,
+  paper bid, pass, awaiting result, closed, and dataset health.
+- **Capture:** paste an auction URL (plus screenshots where the platform's
+  terms allow), review each field's value, confidence and evidence, then
+  confirm.
+- **Quick estimate:** five inputs produce the max paper bid, cash and
+  economic profit, ROI and profit per hour. Then PAPER BID / WATCH / PASS.
+- **Result:** record sold/cancelled; would our paper bid have won?
+
+Guide, including your first 10 auctions: [docs/DAILY_WORKFLOW.md](docs/DAILY_WORKFLOW.md).
+What was built and its open issues: [docs/MVP_SELF_AUDIT.md](docs/MVP_SELF_AUDIT.md).
+
+## Setup (CLI only)
 
 ```bash
 cd lockerlab
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-pytest -q                     # 166 tests
+pytest -q                     # 259 tests (pip install -e ".[dev]")
 lockerlab --home . init       # creates data/lockerlab.sqlite3 (git-ignored)
 ```
 
