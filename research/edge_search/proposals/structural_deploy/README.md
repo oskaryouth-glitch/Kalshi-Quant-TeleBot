@@ -26,7 +26,12 @@ This deployment package is modelled on M6's `deploy/`. It sits outside `research
      - requests, 429s, cycle errors;
      - gzip integrity;
      - code identity (git SHA, dirty flag, CONFIG_VERSION on every record);
-     - "N of N P2/P3 records reconstruct exactly";
+     - the reconstruction criterion (`reconstruction.pass`, see `sarb_ops.reconstruction_check`):
+       every P2/P3 record whose required source responses (legs' market and orderbook, events, series,
+       exchange status) all returned HTTP 200 must reconstruct **exactly**; every record with a failed
+       response (e.g. 429) must have the fail-closed live status `REJECTED` or `FEE_UNRESOLVED`; a
+       required response that was never recorded, or any mismatch or exception on an all-200 record,
+       fails validation;
      - integrity ratio;
      - terms-filing status per registry template;
      - memory peak;

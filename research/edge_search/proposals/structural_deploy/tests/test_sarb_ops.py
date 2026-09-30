@@ -30,6 +30,7 @@ def write(d: Path, kind: str, rows: list[dict]) -> None:
 def lock(t: int, cid: str = "L1", sha: str = COMMIT, cfg: str = CFG, phase: str = "P3", filing: str = "OK") -> dict:
     return {"candidate_id": cid, "logged_utc_ns": t, "status": "RULE_DEFINED_LOCK", "config_version": cfg,
             "relationship": "R2", "legs": [{"ticker": "A"}, {"ticker": "B"}], "max_executable_size": "10",
+            "event_tickers": ["EV-1"],
             "extra": {"phase": phase, "group": "g1", "edges_by_size": {"1": "0.01"},
                       "provenance": {"code": {"git_sha": sha, "dirty": False, "config_version": cfg},
                                      "positions": [["A", "no", "1"], ["B", "yes", "1"]],
@@ -50,8 +51,10 @@ def run(tmp_path):
         write(d, "universe", [{"utc": iso(t), "terms_verified_markets": 5 if verified else 0,
                                "terms_filing_status": {"u": "OK" if verified else "TERMS_FILING_CHANGED"}} for t in ts])
         write(d, "candidates", list(cands))
-        write(d, "books", [{"group": "g1", "phase": p, "kind": k, "ticker": t}
-                           for p in ("P2", "P3") for k in ("market", "orderbook") for t in ("A", "B")])
+        write(d, "books", [{"group": "g1", "phase": p, "kind": k, "ticker": t, "status": 200}
+                           for p in ("P2", "P3") for k in ("market", "orderbook") for t in ("A", "B")]
+              + [{"group": "g1", "phase": p, "kind": k, "ticker": t, "status": 200}
+                 for p in ("P2", "P3") for k, t in (("event", "EV-1"), ("series", "SER"))])
         if cands:
             write(d, "candidates", [{**cands[0], "status": "GUARANTEED_STRUCTURAL_NOT_EXECUTABLE", "candidate_id": "p2",
                                      "extra": {**cands[0]["extra"], "phase": "P2"}}])
@@ -180,3 +183,26 @@ def test_integrity_counts_missing_snapshots_and_orphans():
     c = [{"legs": [{"ticker": "A"}], "extra": {"phase": "P2", "group": "g"}},
          {"legs": [{"ticker": "A"}], "extra": {"phase": "P3", "group": "h"}}]
     assert O.integrity(c, idx) == 1.0
+
+
+def test_lock_with_failed_source_response_does_not_qualify(run):
+    d, w, rv = run(cands=[lock(START + O.DAY)])
+    f = next(d.glob("sarb_books_*"))
+    rows = [json.loads(x) for x in gzip.open(f, "rt")]
+    for b in rows:
+        if b["phase"] == "P3" and b["kind"] == "series":
+            b["status"] = 429
+    with gzip.open(f, "wt") as fh:
+        fh.write("".join(json.dumps(b) + "\n" for b in rows))
+    r = ev(d, w, rv)
+    assert r["qualifying_locks"] == 0 and r["rule_defined_lock_records_by_reason"] == {"source_response_failed_or_missing": 1}
+
+
+def test_reconstruction_exception_on_a_lock_is_not_fatal_and_does_not_qualify(run):
+    d, w, rv = run(cands=[lock(START + O.DAY)])
+
+    def boom(_d, rec, i):
+        raise KeyError("ticker")
+    r = O.evaluate(str(d), str(w), COMMIT, CFG, str(rv), now_ns=END + O.EVAL_DELAY_NS, reconstruct_fn=boom,
+                   retro_fn=lambda rec: (rec["status"], None), secondary=False)
+    assert r["qualifying_locks"] == 0 and r["rule_defined_lock_records_by_reason"] == {"reconstruction_error": 1}

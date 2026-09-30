@@ -41,3 +41,29 @@
     - crashes are counted and reported.
   - This changes only the deploy manifest `c440969d…`.
   - Recommended, because the lock path is unaffected.
+
+## Decision and resolution (2026-09-30): option B
+
+- **Owner's decision.** The owner chose (B). The frozen experiment, its config and manifest `456eafb5…` are unchanged.
+- **Change.** Only the unfrozen validation tooling changed: `structural_deploy/sarb_ops.py`, `reconstruction_check` and `required_inputs`.
+  - It identifies the exact source responses that `sarb.reconstruct` replays for each P2/P3 record.
+  - All inputs HTTP 200 → the record must reconstruct **exactly**. A mismatch or an exception fails validation.
+  - A required response failed → the live status must be `REJECTED`/`FEE_UNRESOLVED`. Anything else fails validation.
+  - A required response was never recorded → validation fails.
+  - Exceptions are caught per record and never abort the check.
+- **Evaluation hardening.** A lock with a failed or unrecorded source response, or whose replay raises, does not qualify. This can only exclude records, never add them.
+- **Demonstration.** The scratch data was deleted, so `structural_deploy/tests/test_failed_responses.py` reproduces the three modes end-to-end with the real frozen collector and reconstruct, plus `/events`:
+
+  | injected 429 | live status | frozen reconstruct | old check | new check |
+  |---|---|---|---|---|
+  | `/series/{s}` | FEE_UNRESOLVED | KeyError crash (as on 2026-09-30) | crashed | pass (fail-closed verified) |
+  | `/markets/{t}` | REJECTED | MISSING_SNAPSHOT mismatch (as on 2026-09-30) | failed | pass (fail-closed verified) |
+  | orderbook | REJECTED | exact (as on 2026-09-30) | passed | pass |
+  | `/events/{e}` | FEE_UNRESOLVED | mismatch | failed | pass (fail-closed verified) |
+
+- **Negative tests.** Validation still fails on:
+  - a failed-input record with a non-fail-closed status;
+  - a tampered all-200 record;
+  - an unrecorded response;
+  - a crash on an all-200 record.
+- **Results and identity.** 31/31 deploy tests pass. New deploy manifest `af28161ec3471289b2287b9b642b9e498776ed81a78f8a8ae06374495c6e2f24`.

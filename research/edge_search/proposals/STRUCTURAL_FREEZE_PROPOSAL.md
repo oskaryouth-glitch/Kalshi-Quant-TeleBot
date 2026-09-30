@@ -15,7 +15,7 @@
 | item | value |
 |---|---|
 | experiment manifest (binding) | `456eafb5a669d5d96043284fab9ae574817a2c012cff6dc45506fbfa3db90582`: 66 git-tracked files of `research/structural_arb/`, excluding `data/` and `relabels/`. The list is in `STRUCTURAL_FREEZE_HASHES.txt` |
-| deploy manifest (binding) | `c440969dbd30cc983cc5c762e46525f75eaf09e681e8effa34ffd5bf0a30a8eb`: the 11 git-tracked files of `proposals/structural_deploy/`, listed in `STRUCTURAL_DEPLOY_HASHES.txt` |
+| deploy manifest (binding) | `af28161ec3471289b2287b9b642b9e498776ed81a78f8a8ae06374495c6e2f24`: the 12 git-tracked files of `proposals/structural_deploy/`, listed in `STRUCTURAL_DEPLOY_HASHES.txt` |
 | manifest definition | `git ls-files` → `sha256sum` → `LC_ALL=C sort -k2` → `sha256sum`, as in `structural_deploy/verify_manifest.sh` |
 | `CONFIG_VERSION` | `2026-09-29.6-amendment-aware-terms` |
 | commit | Any commit whose trees hash to both manifests; it is designated at FREEZE. `structural_arb/` content is unchanged since `25267df`. The collector records the checked-out commit in every record's provenance, and evaluation requires that exact commit |
@@ -63,7 +63,7 @@
 - 2.2 req/s mean against the unchanged 5 req/s cap;
 - 1 × 429 in 661 requests.
 
-## 4. Exact pre-specified evaluation criteria (proposed; implemented in `sarb_ops.evaluate`, 19 synthetic tests)
+## 4. Exact pre-specified evaluation criteria (proposed; implemented in `sarb_ops.evaluate`; 31 tests, synthetic plus end-to-end fixtures)
 
 ### 4.1 Definitions
 
@@ -73,7 +73,7 @@
   2. `logged_utc_ns` is in W.
   3. Code identity: provenance `git_sha` = the frozen commit, `dirty == False`, and `config_version` = the frozen CONFIG_VERSION.
   4. Every leg recorded `terms_status == TERMS_VERIFIED` **and** `terms_filing_status == OK` at the snapshot.
-  5. `sarb.reconstruct` re-derives the record exactly from the recorded streams (status, edges by size, max size, the 5.11 size, all gates).
+  5. `sarb.reconstruct` re-derives the record exactly from the recorded streams (status, edges by size, max size, the 5.11 size, all gates). Every source response the replay uses was recorded with HTTP 200, and a replay exception disqualifies the record (added 2026-09-30 with option B; it can only exclude records).
   6. The demote-only `sarb.terms_retro` check against the bucket listing at evaluation time leaves it standing.
   7. It is not demoted by the **late-filing review**: a human reads every BTC/ETH regulatory object posted after the record's filing set. If that filing's effective date (or, if none is stated, its filing date + 10 business days) is at or before the snapshot, the record is demoted. This is demote-only, and the review file is required even if it demotes nothing.
 - **Verified exposure E:** total time in W during which the latest `universe` snapshot showed ≥ 1 terms-verified market. Stretches across a gap > 300 s do not count.

@@ -23,7 +23,7 @@ echo "== no order/credential code"; ! grep -RInE '/portfolio|KALSHI-ACCESS|Autho
 echo "== unit tests"; (cd "$EXP" && python3 -m pytest -q -p no:cacheprovider tests 2>&1 | tail -1) || echo "pytest unavailable on host (suite verified pre-deployment)"
 echo "== part 1 ($(( MIN * 30 )) s)"; part 1 $(( MIN * 30 ))
 echo "== restart: part 2 ($(( MIN * 30 )) s)"; part 2 $(( MIN * 30 ))
-echo "== validation checks (totals only)"; (cd "$EXP" && python3 "$DEP/sarb_ops.py" validate "$VDIR" "$SARB_COMMIT" "$SARB_CONFIG_VERSION")
+echo "== validation checks (totals only; PASS requires reconstruction.pass and code_identity.ok)"; (cd "$EXP" && python3 "$DEP/sarb_ops.py" validate "$VDIR" "$SARB_COMMIT" "$SARB_CONFIG_VERSION")
 echo "== clock"; timedatectl show -p NTPSynchronized; curl -sI https://api.elections.kalshi.com/trade-api/v2/exchange/status | grep -i '^date:'; date -u
 echo "== resources after"; free -m | head -2; df -h /srv | tail -1; du -sh "$VDIR"
 echo "== quarantine: keep only a manifest of the validation files, then delete them"

@@ -7,8 +7,9 @@ No-peek design:
   * `health` reads ONLY the `ops` and `universe` streams (enforced by `_read`, which refuses any other kind
     unless evaluation is open). They hold request counts, 429s, errors, timings, universe size and terms-filing
     status, and never a candidate status, edge or price.
-  * `validate` runs on the validation directory only (deleted afterwards). It prints totals such as "N of N
-    P2/P3 records reconstruct exactly", never statuses.
+  * `validate` runs on the validation directory only (deleted afterwards). It prints totals only, never a status
+    distribution: all-200 records must reconstruct exactly; records with a failed source response must have
+    failed closed (`reconstruction_check`).
   * `evaluate` refuses to run before END_UTC + EVAL_DELAY_S. It computes the verdict from the pre-specified
     rules below, and only then attaches the descriptive secondary report.
 
@@ -198,8 +199,7 @@ def validate(vdir: str, commit: str, config_version: str, reconstruct_fn=None) -
     for b in _read(vdir, "books", allow_all=True):
         idx[b.get("group")].append(b)
     p23 = [r for r in cands if (r.get("extra") or {}).get("phase") in ("P2", "P3") and "provenance" in r["extra"]]
-    ok = sum(1 for r in p23 if reconstruct_fn(vdir, r, idx)["match"])
-    out["reconstruct_all_p2_p3"] = {"records": len(p23), "exact": ok}
+    out["reconstruction"] = reconstruction_check(vdir, p23, idx, reconstruct_fn)
     out["integrity_fail_ratio"] = integrity(cands, idx)
     uni = _timed(_read(vdir, "universe"))
     out["terms"] = {"terms_verified_markets_last": uni[-1][1].get("terms_verified_markets") if uni else None,
@@ -208,6 +208,88 @@ def validate(vdir: str, commit: str, config_version: str, reconstruct_fn=None) -
     size = sum(os.path.getsize(f) for f in glob.glob(os.path.join(vdir, "*")))
     out["footprint"] = {"bytes": size, "collection_s": busy,
                         "projected_gb_28d": size / busy * COLLECTION_DAYS * 86400 / 1e9 if busy else None}
+    return out
+
+
+FAIL_CLOSED = ("REJECTED", "FEE_UNRESOLVED")     # the only statuses the frozen evaluator can give a failed input
+
+
+def required_inputs(rec: dict, idx: dict) -> tuple[list[str], list[str]]:
+    """The recorded source responses the frozen `sarb.reconstruct` replays for this P2/P3 record, chosen
+    exactly as its `pick` does (same phase, else the P2 copy; the last one wins): each leg's market and
+    orderbook, the event of every event ticker in the record, every series object in the group, and any
+    exchange-status response recorded for the group. Returns (failed, missing): responses recorded with a
+    non-200 status, and required responses that were never recorded."""
+    grp, phase = rec["extra"]["group"], rec["extra"]["phase"]
+    entries = idx.get(grp, [])
+
+    def pick(kind: str, ticker: str):
+        same = [b for b in entries if b.get("kind") == kind and b.get("ticker") == ticker and b.get("phase") == phase]
+        p2 = [b for b in entries if b.get("kind") == kind and b.get("ticker") == ticker and b.get("phase") == "P2"]
+        cand = same or p2
+        return cand[-1] if cand else None
+
+    legs = [p[0] for p in rec["extra"]["provenance"]["positions"]]
+    want = [(k, t) for t in legs for k in ("market", "orderbook")]
+    want += [("event", e) for e in rec.get("event_tickers") or []]
+    series = sorted({b["ticker"] for b in entries if b.get("kind") == "series" and b.get("phase") in (phase, "P2")})
+    want += [("series", x) for x in series]
+    want += sorted({("exchange_status", b.get("ticker", "")) for b in entries
+                    if b.get("kind") == "exchange_status" and b.get("phase") in (phase, "P2")})
+    failed, missing = [], [] if series else ["series:<none recorded>"]
+    for k, t in want:
+        b = pick(k, t)
+        if b is None:
+            missing.append(f"{k}:{t}")
+        elif b.get("status") != 200:
+            failed.append(f"{k}:{t}:HTTP_{b.get('status')}")
+    return failed, missing
+
+
+def reconstruction_check(root: str, records: list[dict], idx: dict, reconstruct_fn) -> dict:
+    """Validation criterion for replaying P2/P3 records (totals only; no status distribution):
+      * every record whose required source responses were all recorded with HTTP 200 must reconstruct
+        EXACTLY with the frozen `sarb.reconstruct` (a mismatch or an exception fails validation);
+      * every record with a required response that failed (non-200, e.g. 429) must carry a fail-closed live
+        status (REJECTED or FEE_UNRESOLVED); anything else fails validation. Its reconstruction is still
+        attempted and reported, but a failed input is not expected to replay;
+      * a record whose required response was never recorded fails validation (missing evidence).
+    A reconstruction exception never aborts the check; it is caught per record and counted."""
+    res = {"all_inputs_ok": Counter(), "failed_input": Counter(), "unrecorded_input": Counter(),
+           "failed_input_kinds": Counter()}
+    failures = []
+    for r in records:
+        failed, missing = required_inputs(r, idx)
+        try:
+            m = reconstruct_fn(root, r, idx)
+            replay = "exact" if m["match"] else "mismatch"
+            detail = [] if m["match"] else m.get("diffs", [])[:3]
+        except Exception as e:                                   # noqa: BLE001  (recorded, never fatal)
+            replay, detail = "error", [f"{type(e).__name__}: {e}"[:120]]
+        if missing:
+            res["unrecorded_input"]["records"] += 1
+            failures.append({"candidate_id": r.get("candidate_id"), "why": "unrecorded_input", "inputs": missing})
+        elif failed:
+            c = res["failed_input"]
+            c["records"] += 1
+            c[f"reconstruct_{replay}"] += 1
+            res["failed_input_kinds"].update(f.split(":")[0] for f in failed)
+            if r.get("status") in FAIL_CLOSED:
+                c["fail_closed"] += 1
+            else:
+                c["NOT_fail_closed"] += 1
+                failures.append({"candidate_id": r.get("candidate_id"), "why": "failed_input_not_fail_closed",
+                                 "inputs": failed})
+        else:
+            c = res["all_inputs_ok"]
+            c["records"] += 1
+            c[replay] += 1
+            if replay != "exact":
+                failures.append({"candidate_id": r.get("candidate_id"), "why": f"all_inputs_ok_but_{replay}",
+                                 "detail": detail})
+    out = {k: dict(v) for k, v in res.items()}
+    out["failures"] = failures[:50]
+    out["pass"] = not failures
     return out
 
 
@@ -245,8 +327,14 @@ def qualifying(rec: dict, commit: str, config_version: str, start: int, end: int
     if not legs or any(leg.get("terms_status") != "TERMS_VERIFIED" or leg.get("terms_filing_status") != "OK"
                        for leg in legs.values()):
         return False, "terms_not_verified_at_snapshot"
-    if not reconstruct_fn(None, rec, idx)["match"]:
-        return False, "reconstruction_mismatch"
+    failed, missing = required_inputs(rec, idx)
+    if failed or missing:
+        return False, "source_response_failed_or_missing"
+    try:
+        if not reconstruct_fn(None, rec, idx)["match"]:
+            return False, "reconstruction_mismatch"
+    except Exception:                                    # noqa: BLE001  (cannot be reconstructed -> not a QL)
+        return False, "reconstruction_error"
     if retro_fn(rec)[1] is not None:
         return False, "terms_retro_demoted"
     if rec.get("candidate_id") in late_demoted:
