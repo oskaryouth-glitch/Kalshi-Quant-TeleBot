@@ -1,5 +1,9 @@
 # Assumptions, failure analysis, and safety
 
+> The ranked top-10 assumption table in [AUDIT_2026-10.md](AUDIT_2026-10.md) §5
+> supersedes §1 below. A1 (the $253 dump minimum) turned out to be a C&D rate
+> applied in error.
+
 ## 1. Assumptions that need empirical validation
 
 The authoritative list is generated from config:

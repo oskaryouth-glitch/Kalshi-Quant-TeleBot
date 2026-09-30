@@ -5,13 +5,21 @@ Definitions (also in docs/UNIT_ECONOMICS.md):
   acquisition      = bid + buyer premium + sales tax
   out_of_pocket    = acquisition + transport + disposal + storage + packing
                      + expected cleaning-deposit forfeit + other
-  selling_costs    = platform/payment fees + returns/refunds + risk reserve
-  profit_before_labor = gross proceeds - out_of_pocket - selling_costs
-  net_profit       = profit_before_labor - labor_hours * labor_rate
+  cash_expenses    = out_of_pocket + platform/payment fees + returns/refunds
+                     + misc cash costs + sales tax remitted on local sales
+  CASH PROFIT      = gross proceeds - cash_expenses      (money in the bank)
+  ECONOMIC PROFIT  = cash profit - labor_hours * labor_value   (any labor value)
   cash_invested    = acquisition + transport + disposal + storage + packing + other
-  roi              = net_profit / cash_invested
+  cash ROI         = cash profit / cash_invested
   cash_required    = acquisition + refundable cleaning deposit + transport + disposal
                      (what must be on hand in the first 72 hours)
+
+Legacy fields kept so stored decisions re-evaluate identically:
+  profit_before_labor = cash profit - risk reserve   (reserve is 0 in config since v2)
+  net_profit          = profit_before_labor - labor_hours * policy labor rate
+
+Labor is never a cash cost. It enters only economic profit, and the max-bid
+rules use cash measures plus an explicit cash-profit-per-hour hurdle.
 
 "gross proceeds" is the expected total sale price of what actually sells
 (sell-through is already applied by the valuation step), before any fees.
@@ -40,11 +48,16 @@ class CostPolicy:
     returns_rate: float = 0.0
     risk_reserve_rate: float = 0.0
     labor_rate_cents_per_hour: int = 0
+    # v2 fields; defaults keep v1 decisions' stored policies valid and unchanged.
+    misc_cash_cost_rate: float = 0.0  # supplies, meetup travel, breakage (share of gross)
+    local_sales_share: float = 0.0  # share of gross sold locally by Oskar directly
+    local_sales_tax_rate: float = 0.0  # tax he must remit on local sales, absorbed in price
 
     def __post_init__(self) -> None:
         for name in (
             "buyer_premium_rate", "sales_tax_rate", "cleaning_deposit_forfeit_prob",
             "selling_fee_rate", "shipped_order_share", "returns_rate", "risk_reserve_rate",
+            "misc_cash_cost_rate", "local_sales_share", "local_sales_tax_rate",
         ):
             v = getattr(self, name)
             if not 0.0 <= v <= 1.0:
@@ -111,6 +124,8 @@ class Evaluation:
     selling_fees_cents: int
     returns_cents: int
     risk_reserve_cents: int
+    misc_cash_cents: int
+    sales_tax_remitted_cents: int
     labor_hours: float
     labor_cost_cents: int
     retained_cuft: float
@@ -126,7 +141,30 @@ class Evaluation:
 
     @property
     def selling_costs_cents(self) -> int:
-        return self.selling_fees_cents + self.returns_cents + self.risk_reserve_cents
+        return (self.selling_fees_cents + self.returns_cents + self.risk_reserve_cents
+                + self.misc_cash_cents + self.sales_tax_remitted_cents)
+
+    @property
+    def cash_expenses_cents(self) -> int:
+        """Every real cash outflow. Excludes the risk reserve (a provision, not
+        a payment) and labor (time, not money)."""
+        return self.out_of_pocket_cents + self.selling_costs_cents - self.risk_reserve_cents
+
+    @property
+    def cash_profit_cents(self) -> int:
+        return self.gross_proceeds_cents - self.cash_expenses_cents
+
+    def economic_profit_cents(self, labor_value_cents_per_hour: int) -> int:
+        return self.cash_profit_cents - cost_cents(self.labor_hours * labor_value_cents_per_hour)
+
+    @property
+    def cash_roi(self) -> float | None:
+        inv = self.cash_invested_cents
+        return None if inv <= 0 else self.cash_profit_cents / inv
+
+    @property
+    def cash_profit_per_hour_cents(self) -> float | None:
+        return None if self.labor_hours <= 0 else self.cash_profit_cents / self.labor_hours
 
     @property
     def all_in_cost_cents(self) -> int:
@@ -176,6 +214,10 @@ class Evaluation:
             net_profit_cents=self.net_profit_cents,
             cash_invested_cents=self.cash_invested_cents,
             roi=self.roi,
+            cash_expenses_cents=self.cash_expenses_cents,
+            cash_profit_cents=self.cash_profit_cents,
+            cash_roi=self.cash_roi,
+            cash_profit_per_hour_cents=self.cash_profit_per_hour_cents,
             profit_per_hour_before_labor_cents=self.profit_per_hour_before_labor_cents,
             net_profit_per_retained_cuft_cents=self.net_profit_per_retained_cuft_cents,
             gross_per_retained_cuft_cents=self.gross_per_retained_cuft_cents,
@@ -204,6 +246,12 @@ def evaluate(bid_cents: int, s: Scenario, p: CostPolicy) -> Evaluation:
         selling_fees_cents=cost_cents(gross * p.selling_fee_rate + s.n_orders * p.per_order_fee_cents),
         returns_cents=cost_cents(gross * p.returns_rate),
         risk_reserve_cents=cost_cents(gross * p.risk_reserve_rate),
+        misc_cash_cents=cost_cents(gross * p.misc_cash_cost_rate),
+        # Local buyers compare against private sellers who charge no tax, so the
+        # tax is inside the price: remitted = gross_local * r / (1 + r).
+        sales_tax_remitted_cents=cost_cents(
+            gross * p.local_sales_share * p.local_sales_tax_rate / (1 + p.local_sales_tax_rate)
+        ),
         labor_hours=s.labor_hours,
         labor_cost_cents=cost_cents(s.labor_hours * p.labor_rate_cents_per_hour),
         retained_cuft=s.retained_cuft,
@@ -216,32 +264,41 @@ def evaluate(bid_cents: int, s: Scenario, p: CostPolicy) -> Evaluation:
 
 @dataclass(frozen=True)
 class MarginRules:
-    """Margin-of-safety constraints. The max bid must satisfy every one."""
+    """Margin-of-safety constraints. The max bid must satisfy every one.
 
-    min_expected_profit_cents: int
-    target_roi: float
+    All rules are in CASH terms (v2). The value of time is an explicit hurdle
+    (cash profit per hour), never a phantom cash cost, so an arbitrary labor
+    valuation cannot decide whether a locker is affordable.
+    """
+
+    min_cash_profit_cents: int
+    target_cash_roi: float
     max_low_case_loss_cents: int
-    min_profit_per_hour_before_labor_cents: int
+    min_cash_profit_per_hour_cents: int
     bankroll_cents: int
 
 
 def constraint_failures(base: Evaluation, low: Evaluation, r: MarginRules) -> list[str]:
     """Names of violated constraints. Each is monotone non-increasing in the
     bid (it only gets harder to satisfy as the bid rises), which is what makes
-    binary search in ``max_bid`` valid."""
+    binary search in ``max_bid`` valid.
+
+    "cash" below is profit_before_labor: cash profit less any risk reserve
+    (the reserve is 0 in the v2 config, so it equals cash profit)."""
     fails = []
-    if base.net_profit_cents < r.min_expected_profit_cents:
-        fails.append("min_expected_profit")
-    # net >= roi * invested, written without division so it is monotone even
+    cash = base.profit_before_labor_cents
+    if cash < r.min_cash_profit_cents:
+        fails.append("min_cash_profit")
+    # cash >= roi * invested, written without division so it is monotone even
     # when invested is tiny
-    if base.net_profit_cents < r.target_roi * base.cash_invested_cents:
-        fails.append("target_roi")
+    if cash < r.target_cash_roi * base.cash_invested_cents:
+        fails.append("target_cash_roi")
     # Downside is measured in cash (before valuing labor): it limits real
     # dollars lost. The value of time is enforced by the base-case rules.
     if low.profit_before_labor_cents < -r.max_low_case_loss_cents:
         fails.append("max_low_case_loss")
-    if base.profit_before_labor_cents < r.min_profit_per_hour_before_labor_cents * base.labor_hours:
-        fails.append("min_profit_per_hour")
+    if cash < r.min_cash_profit_per_hour_cents * base.labor_hours:
+        fails.append("min_cash_profit_per_hour")
     if base.cash_required_cents > r.bankroll_cents:
         fails.append("bankroll")
     return fails

@@ -36,7 +36,7 @@ lockerfox:
   operators: "Unverified roster; integrates with SiteLink, storEDGE, SSM, Yardi Breeze"
   api: "None public"
   automated_collection: prohibited
-  manual_capture: allowed
+  manual_capture: gray_area
   terms_excerpt: >-
     Prohibits using "robots, spiders, or other automatic or manual processes to
     monitor or copy" site pages or data without express written permission, and
@@ -44,7 +44,7 @@ lockerfox:
   buyer_fees: "15% buyer premium, $10 min; facility-set refundable cleaning deposit"
   sold_prices_public: unknown
   next_step: "Request written permission."
-  note: "manual_capture=allowed means viewing and noting auctions you are considering bidding on; systematic copying for monitoring also needs permission."
+  note: "2026-10 audit: v1 marked manual capture 'allowed', but the clause covers MANUAL processes to monitor or copy too. Viewing auctions to bid is fine; keeping a systematic record needs written permission. Used by some U-Haul facilities in Colorado Springs."
 
 storageauctions_com:
   name: StorageAuctions.com
@@ -80,6 +80,26 @@ ibid4storage:
   automated_collection: unknown
   manual_capture: allowed
   sold_prices_public: unknown
+
+publicstorage_notices:
+  name: "Public Storage lien-sale notice site"
+  base_url: https://publicstorageauctions.com
+  api: none
+  automated_collection: unknown
+  manual_capture: allowed
+  note: >-
+    Operator-published notices: property, address, sale date/time, unit numbers,
+    and the auction site (usually StorageTreasures). A legitimate DISCOVERY and
+    universe-count source (these are legal notices). No photos or bids. Terms of
+    use not yet reviewed. Never store occupant names.
+
+cubesmart_schedule:
+  name: "CubeSmart state auction schedule"
+  base_url: https://www.cubesmart.com/storage-auctions/colorado-storage-auctions/
+  api: none
+  automated_collection: unknown
+  manual_capture: allowed
+  note: "Lists Colorado facilities, dates and a StorageTreasures link per auction. Discovery / universe count. Terms not yet reviewed."
 
 public_notice:
   name: "Newspaper / public-notice lien sale ads"

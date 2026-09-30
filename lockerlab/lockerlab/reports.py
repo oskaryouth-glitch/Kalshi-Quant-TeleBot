@@ -102,8 +102,8 @@ def paper_rows(conn: sqlite3.Connection, strategy: str | None = None) -> list[di
         for r in won:
             ec = reevaluate(r["inputs_json"], r["acq_price_conservative_cents"])["base"]
             en = reevaluate(r["inputs_json"], r["acq_price_neutral_cents"])["base"]
-            profits_c.append(ec.net_profit_cents)
-            profits_n.append(en.net_profit_cents)
+            profits_c.append(ec.cash_profit_cents)
+            profits_n.append(en.cash_profit_cents)
             capital += ec.cash_invested_cents
         out.append({
             "strategy": strat,
@@ -118,9 +118,9 @@ def paper_rows(conn: sqlite3.Connection, strategy: str | None = None) -> list[di
             "void": sum(r["result"] == "VOID" for r in rows),
             "win_rate_SIMULATED": len(won) / (len(won) + len(lost)) if (won or lost) else None,
             "capital_committed_SIMULATED_cents": capital,
-            "est_net_profit_conservative_ESTIMATED_cents": sum(profits_c),
-            "est_net_profit_neutral_ESTIMATED_cents": sum(profits_n),
-            "median_est_profit_ESTIMATED_cents": statistics.median(profits_c) if profits_c else None,
+            "est_cash_profit_conservative_ESTIMATED_cents": sum(profits_c),
+            "est_cash_profit_neutral_ESTIMATED_cents": sum(profits_n),
+            "median_est_cash_profit_ESTIMATED_cents": statistics.median(profits_c) if profits_c else None,
             "est_loss_rate_ESTIMATED": (sum(p < 0 for p in profits_c) / len(profits_c)) if profits_c else None,
         })
     return out

@@ -51,7 +51,7 @@ browser before relying on them.*
      9% on paid tiers), $10 minimum, plus a facility purchase deposit of
      0–10% and a cleaning deposit commonly ≥ $100.
    - Lockerfox buyer premium: 15%.
-7. **Disposal may be the decisive cost in Colorado Springs.** The Waste
+7. **[CORRECTED in AUDIT_2026-10.md: the $253 figure is the transfer station's construction & demolition rate, not a household rate. Public self-haul at Woodmen Dump / Peak Disposal is priced by weight with no minimum.]** ~~Disposal may be the decisive cost in Colorado Springs.~~ The Waste
    Connections Colorado Springs Transfer Station lists $126.50/ton with a
    **2-ton minimum ($253)**. If that applies to a small household load, every
    locker that needs one dump run carries a $253 fixed cost. See
@@ -61,8 +61,8 @@ browser before relying on them.*
 
 | Source | Who uses it | Automated collection | Manual capture | Sold prices visible |
 |---|---|---|---|---|
-| StorageTreasures | Extra Space (exclusive online partner since 2019); absorbed SelfStorageAuction.com; claims 20,000+ facilities | **Prohibited** | Gray area: personal bidding research is the intended use, but "collecting … by other means for commercial purposes" is also prohibited | At the auction URL, not searchable (unverified) |
-| Lockerfox | Unverified roster; integrates with SiteLink, storEDGE, SSM, Yardi | **Prohibited** without written permission | Viewing is fine; systematic monitoring needs permission | Unknown |
+| StorageTreasures | CubeSmart and Public Storage (Colorado Springs, per their schedules), Extra Space (exclusive online partner since 2019); absorbed SelfStorageAuction.com; claims 20,000+ facilities | **Prohibited** | Gray area: personal bidding research is the intended use, but "collecting … by other means for commercial purposes" is also prohibited | At the auction URL, not searchable (unverified) |
+| Lockerfox | Some U-Haul facilities in Colorado Springs; integrates with SiteLink, storEDGE, SSM, Yardi | **Prohibited** without written permission | **Gray area**: the clause covers *manual* processes to monitor or copy | Unknown |
 | StorageAuctions.com | Unverified | Prohibited (commercial-use exclusion) | Allowed for buying | Unknown |
 | Bid13 | US + Canada; has a Colorado Springs listings page | Unknown; **API exists by arrangement** | Allowed | Winner gets full bid history by email; public visibility unknown |
 | iBid4Storage | Participating facilities (US/Canada) | Unknown | Allowed | Unknown |
@@ -157,7 +157,7 @@ Seller fees (2026, secondary sources except eBay):
 
 | Item | Colorado Springs | Marin / Bay Area |
 |---|---|---|
-| Landfill / transfer | Waste Connections CS Transfer: $126.50/ton, **2-ton min ($253)**, mattress $86.25, freon-free appliance $7, **no freon appliances** (SOURCED, call to confirm) | Redwood Landfill: mattress $67.64, freon-free appliance $61.38 (Oct 2025 sheet). General self-haul rate not published: call MRRC 415-485-5647 |
+| Landfill / transfer | **[Superseded: see AUDIT_2026-10.md §1]** Waste Connections CS Transfer (C&D rate): $126.50/ton, **2-ton min ($253)**, mattress $86.25, freon-free appliance $7, **no freon appliances** (SOURCED, call to confirm) | Redwood Landfill: mattress $67.64, freon-free appliance $61.38 (Oct 2025 sheet). General self-haul rate not published: call MRRC 415-485-5647 |
 | E-waste | El Paso County HHW: free for residents, ~5 devices/household/year | Marin HHW accepts e-waste |
 | Free options | County cleanup events: one pickup load free (2025 flyer, seasonal) | Bye Bye Mattress program (check locations) |
 | Home Depot Load 'N Go van/pickup | $19 for the first 75 min, unlimited miles, $150 deposit | Same chain pricing |

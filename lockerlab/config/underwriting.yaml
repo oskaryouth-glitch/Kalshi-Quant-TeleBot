@@ -1,33 +1,51 @@
 # Underwriting policy: operator economics and margin-of-safety rules.
 # Same {value, status, source} convention as markets.yaml.
 
+# v2 (2026-10 audit): labor is never treated as cash. Cash profit and economic
+# profit (cash profit - hours x labor value) are reported side by side, at each
+# labor value below. Only the legacy "net profit" field uses this rate.
 labor_rate_cents_per_hour:
   value: 2000
   status: GUESS
-  source: "Opportunity cost of Oskar's time. Profit is reported both before and after labor."
+  source: "Legacy net-profit field only. Not used by any max-bid rule since v2."
+labor_value_scenarios_cents:
+  value: [0, 1500, 2500, 4000]
+  status: VERIFIED
+  source: "Requested reporting grid ($0 / $15 / $25 / $40 per hour)."
+
+# Operator profile. These gate which vehicles and pathways are real options.
+operator_age:
+  value: null
+  status: GUESS
+  source: "UNKNOWN. Matters: Home Depot rentals need 21+, Enterprise trucks 25+, U-Haul 18+. null = no age filter."
+transport_kinds:
+  value: [borrowed, rental]
+  status: GUESS
+  source: "Which vehicle kinds underwriting may choose from."
 
 bankroll_cents:
   value: 100000
   status: VERIFIED
   source: "Hypothetical $1,000 paper bankroll (spec)."
 
-# Margin of safety. Max bid is the highest bid satisfying ALL of these.
-min_expected_profit_cents:
+# Margin of safety. Max bid is the highest bid satisfying ALL of these. All in
+# CASH terms since v2 (v1 used profit after $20/h labor for the first two).
+min_cash_profit_cents:
   value: 15000
   status: GUESS
-  source: "A locker must clear $150 expected profit after labor to be worth the risk."
-target_roi:
+  source: "Base-case cash profit >= $150 to be worth the risk and hassle."
+target_cash_roi:
   value: 0.50
   status: GUESS
-  source: "Base-case net profit >= 50% of cash invested."
+  source: "Base-case cash profit >= 50% of cash invested."
 max_low_case_loss_cents:
   value: 7500
   status: GUESS
   source: "Low-case CASH result (profit before valuing labor) may not be worse than -$75. Time value is enforced by the base-case rules."
-min_profit_per_hour_before_labor_cents:
+min_cash_profit_per_hour_cents:
   value: 2500
   status: GUESS
-  source: "Base-case profit before valuing labor must be >= $25/hour."
+  source: "Base-case cash profit per labor hour >= $25 (unchanged from v1). The explicit value-of-time hurdle."
 valuation_haircut:
   value: 0.85
   status: GUESS
@@ -42,15 +60,28 @@ default_buyer_premium_min_cents: {value: 1000, status: SOURCED, source: "Storage
 default_cleaning_deposit_cents: {value: 10000, status: SOURCED, source: "StorageTreasures facility FAQ: commonly >= $100"}
 
 # Selling-cost defaults (blended across channels; per-item models come later).
+# v2 channel mix: 75% local (FB Marketplace / OfferUp / Craigslist, 0% fee),
+# 25% eBay (13.6% + $0.40/order, SOURCED ebay.com fee page).
+local_sales_share: {value: 0.75, status: GUESS}
 selling_fee_rate:
-  value: 0.07
+  value: 0.034
   status: GUESS
-  source: "Blend: local FB/OfferUp/Craigslist 0%, eBay ~13.6% + $0.40/order, Mercari 10%. Weighted toward local."
-per_order_fee_cents: {value: 20, status: GUESS}
+  source: "0.25 x 13.6% eBay. v1: 7% blended GUESS."
+per_order_fee_cents: {value: 10, status: GUESS, source: "0.25 x $0.40"}
+# Tax regime. licensed_reseller: holds a CO (+ Colorado Springs) sales tax
+# license, buys tax-exempt for resale, and remits sales tax on its own local
+# sales (absorbed in the price, since private sellers charge none); eBay collects
+# its own. informal: pays tax at the auction, remits nothing on sales. A regular
+# reseller is required to be licensed (tax.colorado.gov sales tax guide).
+tax_regime:
+  value: licensed_reseller
+  status: SOURCED
+  source: "tax.colorado.gov sales-tax-guide + marketplace-facilitator pages. Whether each facility accepts the exemption is UNVERIFIED."
 packing_cost_per_shipped_order_cents: {value: 300, status: GUESS}
 shipped_order_share: {value: 0.25, status: GUESS}
 returns_rate: {value: 0.03, status: GUESS, source: "Share of gross lost to returns/refunds/no-shows"}
-risk_reserve_rate: {value: 0.05, status: GUESS, source: "Share of gross held against unmodeled losses"}
+risk_reserve_rate: {value: 0.0, status: VERIFIED, source: "v2: removed. It was a provision, not a cash cost, and double-counted the valuation haircut and low case. Replaced by misc_cash_cost_rate (real outflows)."}
+misc_cash_cost_rate: {value: 0.02, status: GUESS, source: "Supplies, bags, straps, meetup travel, breakage (share of gross)"}
 cleaning_deposit_forfeit_prob: {value: 0.05, status: GUESS}
 storage_cost_per_cuft_month_cents: {value: 0, status: GUESS, source: "Backyard storage assumed free; set >0 if renting space"}
 expected_months_held: {value: 1.5, status: GUESS}

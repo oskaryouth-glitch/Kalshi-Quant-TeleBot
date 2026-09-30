@@ -31,7 +31,7 @@ real outcomes without look-ahead bias.
 cd lockerlab
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-pytest -q                     # 145 tests
+pytest -q                     # 166 tests
 lockerlab --home . init       # creates data/lockerlab.sqlite3 (git-ignored)
 ```
 
@@ -76,7 +76,22 @@ Run commands from `lockerlab/`, or set `LOCKERLAB_HOME` to it.
    lockerlab --home . breakeven --avg-sale 100   # hurdle gross by size and bid
    ```
 
-## Example underwriting output
+## Audit (October 2026)
+
+[docs/AUDIT_2026-10.md](docs/AUDIT_2026-10.md) corrects the Phase-0 model:
+
+- disposal by weight (the $253 figure was a C&D rate)
+- cash vs economic profit
+- borrowed vs rental vehicles
+- sales-tax obligations
+- small-unit sensitivity grids (`lockerlab sensitivity`)
+- top-10 assumption risks
+- a data-acquisition ranking
+- a faster capture workflow
+
+The example below is from v1 and is kept for the record.
+
+## Example underwriting output (v1)
 
 A test fixture: a half-full 5x10 whose owner estimates $2,000 base-case
 resale.

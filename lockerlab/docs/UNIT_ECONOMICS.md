@@ -1,5 +1,10 @@
 # Unit economics and maximum bid
 
+> **Superseded in part by [AUDIT_2026-10.md](AUDIT_2026-10.md).** v2 separates cash
+> profit from economic profit, prices disposal by weight (the $253 figure below
+> was a C&D rate applied in error), models borrowed vs rental vehicles and
+> sales tax on local resale. The v1 results in §7 are kept as a record.
+
 Code: `lockerlab/economics.py` (pure functions, integer cents, costs round
 **up** and proceeds round **down**). Tests: `tests/test_economics.py`
 (hand-computed cases + brute-force check of the max-bid solver).
@@ -87,7 +92,7 @@ hours = fixed (1.0) + trips × 1.0 + occupied cuft × 0.6 min
 All of these are GUESS values. Time the first real tasks you do (even
 photographing and listing your own stuff) to replace them.
 
-## 7. First result: breakeven hurdles (SIMULATED, mostly GUESS inputs)
+## 7. First result: breakeven hurdles (v1, SUPERSEDED; see AUDIT_2026-10.md §4)
 
 `lockerlab breakeven` computes, per unit size, the minimum **base-case gross
 resale** (before haircut) a unit must hold before the rules allow a given bid.

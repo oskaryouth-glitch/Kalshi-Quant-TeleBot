@@ -134,3 +134,58 @@ class TestMoney:
         assert cost_cents(10.01) == 11
         assert proceeds_cents(10.99) == 10
         assert cost_cents(10.0000000001) == 10  # float noise is not a cent
+
+
+WOODMEN = disposal.DisposalRates(
+    per_ton_cents=12650, minimum_charge_cents=25300, mattress_each_cents=5900, appliance_each_cents=5000,
+    ewaste_each_cents=500, lbs_per_cuft=9.0, negligible_trash_cuft=3, mattress_weight_lbs=60,
+    weight_schedule=((30, 700), (100, 2500), (250, 5400), (500, 8600), (1000, 13100), (2000, 17600)),
+)
+
+
+class TestWeightSchedule:
+    @pytest.mark.parametrize("lbs,cents", [
+        (10, 700), (30, 700), (100, 2500), (175, 3950), (500, 8600), (2000, 17600), (3000, 22100),
+    ])
+    def test_interpolation(self, lbs, cents):
+        # 175 lb: 25 + (54-25)*75/150 = 39.50; 3000 lb extrapolates the last segment (+$45/1000 lb)
+        assert WOODMEN.visit_charge_cents(lbs) == cents
+
+    def test_no_minimum_for_small_loads(self):
+        e = disposal.estimate(disposal.DisposalInput(trash_cuft=20), WOODMEN, dump_visits=1)
+        assert e.load_fees_cents == 4047  # 180 lb -> 25 + 29*80/150 = 40.47 (rounded up)
+
+    def test_pathway_a_negligible(self):
+        e = disposal.estimate(disposal.DisposalInput(trash_cuft=2), WOODMEN, dump_visits=1)
+        assert (e.total_cents, e.visits, e.pathways) == (0, 0, ("A_negligible",))
+
+    def test_pathway_b_partial_household(self):
+        e = disposal.estimate(disposal.DisposalInput(trash_cuft=20), WOODMEN, 1, household_allowance_cuft=13)
+        assert e.pathways[0] == "B_household"
+        assert e.weight_lbs == pytest.approx(7 * 9)
+
+    def test_mattress_pays_fee_plus_weight(self):
+        e = disposal.estimate(disposal.DisposalInput(0, mattresses=1), WOODMEN, 1)
+        assert e.total_cents == 5900 + WOODMEN.visit_charge_cents(60)
+
+    def test_schedule_must_ascend(self):
+        with pytest.raises(ValueError):
+            disposal.DisposalRates.from_config({
+                "per_ton_cents": 1, "minimum_charge_cents": 1, "mattress_each_cents": 0,
+                "appliance_each_cents": 0, "ewaste_each_cents": 0, "lbs_per_cuft": 9,
+                "weight_schedule": [[100, 2500], [50, 3000]],
+            })
+
+
+def test_transport_kinds_and_stops():
+    borrowed = transport.Vehicle("suv", 70, 65, 1500, 15, kind="borrowed")
+    rental = transport.Vehicle("van", 245, 115, 1995, 109, kind="rental", min_renter_age=21)
+    load = transport.Load(20, 20, 10)
+    opts = {o.vehicle: o for o in transport.plan(load, [borrowed, rental], 10, 20, 1.0, kinds=("borrowed",),
+                                                 dump_stop_hours=0.5, donation_round_trip_miles=8,
+                                                 donation_stop_hours=0.33)}
+    assert not opts["van"].feasible
+    s = opts["suv"]  # 50 / 45.5 -> 2 trips, 1 dump, 1 donation stop
+    assert (s.trips, s.miles, s.hours) == (2, 2 * 20 + 20 + 8, pytest.approx(2 + 0.5 + 0.33))
+    young = {o.vehicle: o for o in transport.plan(load, [rental], 10, 20, 1.0, operator_age=20)}
+    assert "21+" in young["van"].reason

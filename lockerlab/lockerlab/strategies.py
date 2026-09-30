@@ -13,6 +13,7 @@ human baseline that the Phase-2/3 AI valuation must beat.
 
 from __future__ import annotations
 
+import dataclasses
 import math
 from dataclasses import asdict, dataclass, field
 
@@ -96,16 +97,28 @@ class Underwriting:
     inputs: dict = field(default_factory=dict)
 
 
-def _policy(snap: Snapshot, market: Assumptions, uw: Assumptions) -> CostPolicy:
+def _opt(a: Assumptions, *path: str, default=None):
+    try:
+        return a.get(*path)
+    except KeyError:
+        return default
+
+
+def cost_policy(market: Assumptions, uw: Assumptions, *, buyer_premium_rate: float | None = None,
+                buyer_premium_min_cents: int | None = None, sales_tax_rate: float | None = None,
+                cleaning_deposit_cents: int | None = None) -> CostPolicy:
+    """Cost policy from config, with auction-specific overrides where observed."""
+    tax = sales_tax_rate if sales_tax_rate is not None else market.get("sales_tax_rate")
+    licensed = _opt(uw, "tax_regime", default="informal") == "licensed_reseller"
     return CostPolicy(
-        buyer_premium_rate=snap.buyer_premium_rate if snap.buyer_premium_rate is not None
+        buyer_premium_rate=buyer_premium_rate if buyer_premium_rate is not None
         else uw.get("default_buyer_premium_rate"),
-        buyer_premium_min_cents=snap.buyer_premium_min_cents if snap.buyer_premium_min_cents is not None
+        buyer_premium_min_cents=buyer_premium_min_cents if buyer_premium_min_cents is not None
         else uw.get("default_buyer_premium_min_cents"),
-        sales_tax_rate=snap.sales_tax_rate if snap.sales_tax_rate is not None else market.get("sales_tax_rate"),
+        sales_tax_rate=tax,
         tax_applies_to_premium=True,
-        resale_exempt=False,
-        cleaning_deposit_cents=snap.cleaning_deposit_cents if snap.cleaning_deposit_cents is not None
+        resale_exempt=licensed,
+        cleaning_deposit_cents=cleaning_deposit_cents if cleaning_deposit_cents is not None
         else uw.get("default_cleaning_deposit_cents"),
         cleaning_deposit_forfeit_prob=uw.get("cleaning_deposit_forfeit_prob"),
         selling_fee_rate=uw.get("selling_fee_rate"),
@@ -115,17 +128,127 @@ def _policy(snap: Snapshot, market: Assumptions, uw: Assumptions) -> CostPolicy:
         returns_rate=uw.get("returns_rate"),
         risk_reserve_rate=uw.get("risk_reserve_rate"),
         labor_rate_cents_per_hour=uw.get("labor_rate_cents_per_hour"),
+        misc_cash_cost_rate=_opt(uw, "misc_cash_cost_rate", default=0.0),
+        local_sales_share=_opt(uw, "local_sales_share", default=0.0) if licensed else 0.0,
+        local_sales_tax_rate=tax if licensed else 0.0,
     )
 
 
-def _rules(uw: Assumptions) -> MarginRules:
+def _policy(snap: Snapshot, market: Assumptions, uw: Assumptions) -> CostPolicy:
+    return cost_policy(
+        market, uw, buyer_premium_rate=snap.buyer_premium_rate,
+        buyer_premium_min_cents=snap.buyer_premium_min_cents, sales_tax_rate=snap.sales_tax_rate,
+        cleaning_deposit_cents=snap.cleaning_deposit_cents,
+    )
+
+
+def rules(uw: Assumptions) -> MarginRules:
     return MarginRules(
-        min_expected_profit_cents=uw.get("min_expected_profit_cents"),
-        target_roi=uw.get("target_roi"),
+        min_cash_profit_cents=uw.get("min_cash_profit_cents"),
+        target_cash_roi=uw.get("target_cash_roi"),
         max_low_case_loss_cents=uw.get("max_low_case_loss_cents"),
-        min_profit_per_hour_before_labor_cents=uw.get("min_profit_per_hour_before_labor_cents"),
+        min_cash_profit_per_hour_cents=uw.get("min_cash_profit_per_hour_cents"),
         bankroll_cents=uw.get("bankroll_cents"),
     )
+
+
+_rules = rules
+
+
+@dataclass(frozen=True)
+class Physical:
+    """What physically has to leave the unit, by destination (cubic feet)."""
+
+    retained_cuft: float
+    donate_cuft: float
+    trash_cuft: float
+    longest_item_in: float = 0.0
+    mattresses: int = 0
+    appliances: int = 0
+    ewaste_items: int = 0
+    bulky_items: int = 0
+
+    @property
+    def occupied_cuft(self) -> float:
+        return self.retained_cuft + self.donate_cuft + self.trash_cuft
+
+
+@dataclass
+class BuiltScenario:
+    scenario: Scenario
+    transport: transport.TransportOption
+    options: list[transport.TransportOption]
+    disposal: disposal.DisposalEstimate
+    junk_hauler_cents: int = 0
+
+
+def build_scenario(name: str, gross_cents: int, n_orders: int, n_listings: int, phys: Physical,
+                   market: Assumptions, uw: Assumptions, one_way_miles: float,
+                   kinds: tuple[str, ...] | None = None) -> BuiltScenario:
+    """Turn a physical load + sales volume into a costed Scenario, choosing the
+    cheapest feasible combination of vehicle and disposal pathways.
+
+    Shared by manual_v1 and the sensitivity analysis so both use one model."""
+    lab = uw.section("labor")
+    vehicles = [transport.Vehicle.from_config(k, v) for k, v in market.section("vehicles").plain().items()]
+    rates = disposal.DisposalRates.from_config(market.section("disposal").plain())
+    allowance = _opt(market, "disposal", "free_household_trash_cuft", default=0.0)
+    kinds = kinds or tuple(_opt(uw, "transport_kinds", default=None) or ()) or None
+    plan_kw = dict(
+        kinds=kinds, operator_age=_opt(uw, "operator_age"),
+        dump_stop_hours=_opt(market, "dump_stop_hours", default=0.0),
+        donation_round_trip_miles=_opt(market, "donation_round_trip_miles", default=0.0),
+        donation_stop_hours=_opt(market, "donation_stop_hours", default=0.0),
+    )
+
+    # Trash that leaves as household garbage (pathways A/B) rides home with the
+    # kept goods; only the rest needs a dump detour.
+    home_trash, dump_trash, _ = disposal.split_trash(phys.trash_cuft, rates, allowance)
+
+    def cheapest(longest: float):
+        load = transport.Load(phys.retained_cuft + home_trash, phys.donate_cuft, dump_trash, longest)
+        options = transport.plan(load, vehicles, one_way_miles, market.get("dump_round_trip_miles"),
+                                 lab.get("hours_per_vehicle_trip"), **plan_kw)
+
+        def disposal_for(opt: transport.TransportOption) -> disposal.DisposalEstimate:
+            return disposal.estimate(
+                disposal.DisposalInput(phys.trash_cuft, phys.mattresses, phys.appliances,
+                                       phys.ewaste_items, phys.bulky_items),
+                rates, opt.dump_trips, household_allowance_cuft=allowance,
+            )
+
+        # Choose by transport + disposal: dump visits depend on the vehicle.
+        feasible = [(o, disposal_for(o)) for o in options if o.feasible]
+        best = min(feasible, key=lambda od: (od[0].cost_cents + od[1].total_cents, od[0].trips), default=None)
+        return best, options
+
+    best, options = cheapest(phys.longest_item_in)
+    hauler = 0
+    if best is None and phys.bulky_items:
+        # Pathway G: a junk hauler takes the bulky items (one minimum pickup per
+        # two items); the rest is planned without them.
+        best, options = cheapest(0.0)
+        if best is not None:
+            hauler = market.get("disposal", "junk_hauler_min_cents") * math.ceil(phys.bulky_items / 2)
+    if best is None:
+        raise UnderwritingError(
+            "no available vehicle can clear this unit: " + "; ".join(f"{o.vehicle}: {o.reason}" for o in options)
+        )
+    pick, disp = best
+    if hauler:
+        disp = dataclasses.replace(disp, item_fees_cents=disp.item_fees_cents + hauler,
+                                   pathways=disp.pathways + ("G_junk_hauler",))
+    if phys.donate_cuft > 0:
+        disp = dataclasses.replace(disp, pathways=("C_donate_recycle",) + disp.pathways)
+    hours = (
+        lab.get("fixed_hours") + pick.hours + phys.occupied_cuft * lab.get("minutes_per_cuft_handled") / 60
+        + n_listings * lab.get("minutes_per_listing") / 60 + n_orders * lab.get("minutes_per_sale") / 60
+    )
+    storage = math.ceil(phys.retained_cuft * uw.get("storage_cost_per_cuft_month_cents")
+                        * uw.get("expected_months_held"))
+    s = Scenario(name, gross_cents, n_orders, pick.cost_cents, disp.total_cents, round(hours, 2),
+                 phys.retained_cuft, storage_cost_cents=storage)
+    return BuiltScenario(s, pick, options, disp, hauler)
 
 
 def _density_label(gross_per_cuft_cents: float | None) -> str:
@@ -156,49 +279,16 @@ def manual_v1(snap: Snapshot, est: OperatorEstimate, market: Assumptions, uw: As
     retained = occupied * est.keep_fraction
     trash = occupied * est.trash_fraction
     donate = max(0.0, occupied - retained - trash)
-
-    lab = uw.section("labor")
-    hours_per_trip = lab.get("hours_per_vehicle_trip")
-    vehicles = [transport.Vehicle.from_config(k, v) for k, v in market.section("vehicles").plain().items()]
     one_way = snap.distance_miles if snap.distance_miles is not None else market.get("home_to_unit_miles_default")
-    rates = disposal.DisposalRates.from_config(market.section("disposal").plain())
-    free_cuft = market.get("disposal", "free_household_trash_cuft")
 
     def scenario(name: str, gross_cents: int, trash_cuft: float, donate_cuft: float):
-        load = transport.Load(retained, donate_cuft, trash_cuft, est.longest_item_in)
-        options = transport.plan(load, vehicles, one_way, market.get("dump_round_trip_miles"), hours_per_trip)
-        # Trash within the free allowance (household bins over a few weeks)
-        # skips the dump; only the remainder pays gate fees.
-        dump_cuft = max(0.0, trash_cuft - free_cuft)
-
-        def disposal_for(opt: transport.TransportOption) -> disposal.DisposalEstimate:
-            visits = opt.dump_trips if dump_cuft > 0 or est.mattresses or est.appliances else 0
-            return disposal.estimate(
-                disposal.DisposalInput(dump_cuft, est.mattresses, est.appliances, est.ewaste_items,
-                                       est.bulky_items),
-                rates, visits,
-            )
-
-        # Pick the vehicle by transport + disposal: each dump visit pays the
-        # gate minimum, so a bigger vehicle can be cheaper overall.
-        feasible = [(o, disposal_for(o)) for o in options if o.feasible]
-        if not feasible:
-            raise UnderwritingError(
-                "no available vehicle can clear this unit: "
-                + "; ".join(f"{o.vehicle}: {o.reason}" for o in options)
-            )
-        pick, disp = min(feasible, key=lambda od: (od[0].cost_cents + od[1].total_cents, od[0].trips))
         # Orders scale with how much actually sells in this scenario.
         orders = est.n_orders if est.gross_base_cents == 0 else math.ceil(
             est.n_orders * gross_cents / max(est.gross_base_cents * haircut, 1))
-        hours = (
-            lab.get("fixed_hours") + pick.hours + occupied * lab.get("minutes_per_cuft_handled") / 60
-            + est.n_listings * lab.get("minutes_per_listing") / 60 + orders * lab.get("minutes_per_sale") / 60
-        )
-        storage = math.ceil(retained * uw.get("storage_cost_per_cuft_month_cents") * uw.get("expected_months_held"))
-        s = Scenario(name, gross_cents, orders, pick.cost_cents, disp.total_cents, round(hours, 2), retained,
-                     storage_cost_cents=storage)
-        return s, pick, options, disp
+        phys = Physical(retained, donate_cuft, trash_cuft, est.longest_item_in, est.mattresses,
+                        est.appliances, est.ewaste_items, est.bulky_items)
+        b = build_scenario(name, gross_cents, orders, est.n_listings, phys, market, uw, one_way)
+        return b.scenario, b.transport, b.options, b.disposal
 
     # Haircut applies to every case: it corrects systematic optimism in the
     # estimates themselves, not just the middle case.
@@ -247,9 +337,13 @@ def manual_v1(snap: Snapshot, est: OperatorEstimate, market: Assumptions, uw: As
             "burden_level": _disposal_level(base_disp, base_eval.gross_proceeds_cents),
         },
         "value_density": _density_label(base_eval.gross_per_retained_cuft_cents),
-        "net_profit_per_vehicle_trip_cents": (
-            base_eval.net_profit_cents / base_pick.trips if base_pick.trips else None
+        "cash_profit_per_vehicle_trip_cents": (
+            base_eval.cash_profit_cents / base_pick.trips if base_pick.trips else None
         ),
+        "economic_profit_cents_by_labor_value": {
+            k: {str(v): e.economic_profit_cents(v) for v in _opt(uw, "labor_value_scenarios_cents", default=[])}
+            for k, e in evals.items()
+        },
     }
     inputs = {
         "snapshot": snap.to_dict(),
@@ -263,5 +357,7 @@ def manual_v1(snap: Snapshot, est: OperatorEstimate, market: Assumptions, uw: As
 
 
 STRATEGIES = {
-    "manual_v1": {"fn": manual_v1, "version": "1", "automatic": False},
+    # version 2 = 2026-10 audit model (cash rules, weight-based disposal,
+    # borrowed/rental vehicles). Code/config hashes distinguish it anyway.
+    "manual_v1": {"fn": manual_v1, "version": "2", "automatic": False},
 }

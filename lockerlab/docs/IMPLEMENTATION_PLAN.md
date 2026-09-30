@@ -1,5 +1,8 @@
 # Implementation plan
 
+> **Revised Phase 1 plan: [AUDIT_2026-10.md](AUDIT_2026-10.md) §10.** The next-steps
+> and kill criteria below are refined by the audit's §9 evidence threshold.
+
 Each phase has an **exit criterion** (what must be true to move on) and a
 **kill criterion** (evidence that should stop or redirect the project).
 Phases 7–9 happen **only if** Phase 6 justifies them.

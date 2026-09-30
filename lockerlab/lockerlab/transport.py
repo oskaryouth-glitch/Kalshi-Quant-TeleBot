@@ -30,6 +30,8 @@ class Vehicle:
     included_hours: float = 0.0
     insurance_cents: int = 0
     available: bool = True
+    kind: str = "unknown"  # "borrowed" (a friend's car) | "rental"
+    min_renter_age: int = 0
 
     @classmethod
     def from_config(cls, key: str, d: dict) -> "Vehicle":
@@ -43,6 +45,8 @@ class Vehicle:
             included_hours=float(d.get("included_hours", 0.0)),
             insurance_cents=int(d.get("insurance_cents", 0)),
             available=bool(d.get("available", True)),
+            kind=str(d.get("kind", "unknown")),
+            min_renter_age=int(d.get("min_renter_age", 0)),
         )
 
 
@@ -78,8 +82,17 @@ def plan(
     hours_per_trip: float,
     packing_efficiency: float = DEFAULT_PACKING_EFFICIENCY,
     max_trips: int = DEFAULT_MAX_TRIPS,
+    kinds: tuple[str, ...] | None = None,
+    operator_age: int | None = None,
+    dump_stop_hours: float = 0.0,
+    donation_round_trip_miles: float = 0.0,
+    donation_stop_hours: float = 0.0,
 ) -> list[TransportOption]:
-    """All vehicle options, cheapest feasible first."""
+    """All vehicle options, cheapest feasible first.
+
+    ``kinds`` restricts to e.g. ("borrowed",) or ("rental",); ``operator_age``
+    rules out rentals the operator is too young for (Home Depot 21+,
+    Enterprise trucks 25+, U-Haul 18+)."""
     if not 0 < packing_efficiency <= 1:
         raise ValueError("packing_efficiency must be in (0, 1]")
     out = []
@@ -87,14 +100,20 @@ def plan(
         cap = v.usable_cuft * packing_efficiency
         trips = max(1, math.ceil(load.total_cuft / cap)) if load.total_cuft > 0 else 0
         dump_trips = math.ceil(load.trash_cuft / cap) if load.trash_cuft > 0 else 0
-        miles = trips * 2 * one_way_miles + dump_trips * dump_round_trip_miles
-        hours = trips * hours_per_trip
+        donation_stops = 1 if load.donate_cuft > 0 and trips else 0
+        miles = (trips * 2 * one_way_miles + dump_trips * dump_round_trip_miles
+                 + donation_stops * donation_round_trip_miles)
+        hours = trips * hours_per_trip + dump_trips * dump_stop_hours + donation_stops * donation_stop_hours
         billable_hours = max(0.0, hours - v.included_hours)
         cost = (
             v.fixed_cents + v.insurance_cents + cost_cents(miles * v.per_mile_cents)
             + cost_cents(billable_hours * v.per_hour_cents)
         ) if trips else 0
-        if not v.available:
+        if kinds is not None and v.kind not in kinds:
+            feasible, reason = False, f"excluded: {v.kind} (scenario allows {'/'.join(kinds)})"
+        elif operator_age is not None and operator_age < v.min_renter_age:
+            feasible, reason = False, f"renter must be {v.min_renter_age}+"
+        elif not v.available:
             feasible, reason = False, "not available"
         elif load.longest_item_in > v.max_item_length_in:
             feasible, reason = False, f"longest item {load.longest_item_in:.0f}in > {v.max_item_length_in:.0f}in"

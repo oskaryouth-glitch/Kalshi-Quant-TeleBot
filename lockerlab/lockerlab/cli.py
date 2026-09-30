@@ -165,7 +165,7 @@ def render_underwriting(res: paper.DecisionResult, recorded: bool) -> str:
     t = uw.outputs["transport"]["choice"]
     d = uw.outputs["disposal"]
     size = f"{snap['width_ft']:g}x{snap['length_ft']:g}" if snap["width_ft"] else "?"
-    pph = b["profit_per_hour_before_labor_cents"]
+    pph = b.get("cash_profit_per_hour_cents")
     lines = [
         f"AUCTION: {snap['source_key']}/{snap['external_id']}  {size} ({snap['size_bucket']})  "
         f"{snap.get('city') or ''}  ends {snap['ends_at'] or 'unknown'} UTC",
@@ -177,19 +177,23 @@ def render_underwriting(res: paper.DecisionResult, recorded: bool) -> str:
         f"EXPECTED GROSS REVENUE: {fmt(b['gross_proceeds_cents'])} "
         f"(low {fmt(lo['gross_proceeds_cents'])}, high {fmt(hi['gross_proceeds_cents'])}; "
         f"after {uw.inputs['valuation_haircut']:.0%} haircut)",
-        f"EXPECTED ALL-IN COST (incl. labor): {fmt(b['all_in_cost_cents'])}",
-        f"EXPECTED NET PROFIT: {fmt(b['net_profit_cents'])} "
-        f"(low {fmt(lo['net_profit_cents'])}, high {fmt(hi['net_profit_cents'])})",
-        f"EXPECTED ROI: {b['roi']:.0%}" if b["roi"] is not None else "EXPECTED ROI: n/a",
+        f"EXPECTED CASH COSTS: {fmt(b['cash_expenses_cents'])}",
+        f"EXPECTED CASH PROFIT: {fmt(b['cash_profit_cents'])} "
+        f"(low {fmt(lo['cash_profit_cents'])}, high {fmt(hi['cash_profit_cents'])})",
+        "EXPECTED ECONOMIC PROFIT (cash - hours x value of time): " + ", ".join(
+            f"{fmt(v)} at ${int(k) // 100}/h"
+            for k, v in uw.outputs.get("economic_profit_cents_by_labor_value", {}).get("base", {}).items()),
+        f"EXPECTED CASH ROI: {b['cash_roi']:.0%}" if b.get("cash_roi") is not None else "EXPECTED CASH ROI: n/a",
         f"CASH REQUIRED UP FRONT: {fmt(b['cash_required_cents'])}",
         f"EXPECTED LABOR: {b['labor_hours']:.1f} hours",
-        f"EXPECTED PROFIT/HOUR (before valuing labor): {fmt(round(pph)) if pph is not None else 'n/a'}",
+        f"EXPECTED CASH PROFIT/HOUR: {fmt(round(pph)) if pph is not None else 'n/a'}",
         f"VALUE DENSITY: {uw.outputs['value_density']} "
         f"({fmt(round(b['gross_per_retained_cuft_cents'] or 0))}/kept cuft, "
-        f"net {fmt(round(b['net_profit_per_retained_cuft_cents'] or 0))}/kept cuft)",
+        f"cash profit {fmt(round(b['cash_profit_cents'] / b['retained_cuft'])) if b['retained_cuft'] else 'n/a'}/kept cuft)",
         f"DISPOSAL: {d['burden_level']} ({fmt(d['total_cents'])}, {d['visits']} dump visit(s), "
         f"{uw.outputs['volumes_cuft']['trash']:.0f} cuft trash)",
         f"TRANSPORT: {t['trips']} trip(s) by {t['vehicle']} ({fmt(t['cost_cents'])})",
+        f"DISPOSAL ROUTE: {', '.join(d.get('pathways', [])) or 'none'}",
         f"CONFIDENCE: {uw.confidence:.0%}",
         f"DECISION: {uw.decision}" + (f"  paper bid {fmt(uw.paper_bid_cents)}" if uw.paper_bid_cents else ""),
         "REASONS:",
@@ -264,6 +268,27 @@ def cmd_breakeven(args) -> int:
     return 0
 
 
+def cmd_sensitivity(args) -> int:
+    import csv as _csv
+
+    _, cfg, _ = _ctx(args)
+    data = analysis.sensitivity(args.market, cfg.market(args.market), cfg.underwriting,
+                                avg_sale_cents=int(args.avg_sale * 100))
+    out = Path(args.out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    stem = f"sensitivity_{args.market}_avg{int(args.avg_sale)}"
+    (out / f"{stem}.json").write_text(json.dumps(data, indent=1))
+    with open(out / f"{stem}.csv", "w", newline="") as f:
+        cols = [k for k in data["cells"][0] if k != "pathways"] + ["pathways"]
+        w = _csv.DictWriter(f, fieldnames=cols)
+        w.writeheader()
+        for c in data["cells"]:
+            w.writerow(c | {"pathways": " ".join(c["pathways"])})
+    (out / f"{stem}.md").write_text(analysis.render_sensitivity_md(data))
+    print(f"wrote {out}/{stem}.{{json,csv,md}} ({len(data['cells'])} cells). All figures SIMULATED.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="lockerlab", description="Paper-only storage auction research system")
     p.add_argument("--home", help="project dir holding config/ and data/ (default: $LOCKERLAB_HOME or cwd)")
@@ -321,6 +346,12 @@ def main(argv: list[str] | None = None) -> int:
     be.add_argument("--avg-sale", type=float, default=40.0, help="average $ per sale")
     be.add_argument("--longest", type=float, default=48.0, help="longest item, inches")
     be.set_defaults(fn=cmd_breakeven)
+
+    se = sub.add_parser("sensitivity", help="5x5/5x10 profit grids by bid, realized gross, disposal, vehicle")
+    se.add_argument("--market", default="colorado_springs")
+    se.add_argument("--avg-sale", type=float, default=50.0, help="average $ per sale (drives labor)")
+    se.add_argument("--out-dir", default="docs/generated")
+    se.set_defaults(fn=cmd_sensitivity)
 
     args = p.parse_args(argv)
     return args.fn(args)

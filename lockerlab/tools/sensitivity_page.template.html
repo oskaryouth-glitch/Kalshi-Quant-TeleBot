@@ -1,0 +1,295 @@
+<title>Small Locker Profit Grid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one working column. Controls strip, then the bid x resale grid with a
+   cost-breakdown panel beside it (stacks on phones), then break-evens and the
+   load profiles. The grid is the page; everything else explains a cell. */
+:root {
+  --bg: #f5f5f2;
+  --surface: #fcfcfb;
+  --ink: #121417;
+  --ink-2: #4b4f55;
+  --muted: #767a80;
+  --line: #e1e0d9;
+  --accent: #34485c;
+  --accent-ink: #ffffff;
+  --pos: #2a78d6;
+  --neg: #e34948;
+  --mid: #f0efec;
+  --seq: #34485c;
+  --on-strong: #ffffff;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1113; --surface: #1a1a19; --ink: #f3f3f1; --ink-2: #c3c2b7; --muted: #8d9095;
+    --line: #2c2c2a; --accent: #a9bccf; --accent-ink: #0f1113; --pos: #3987e5; --neg: #e66767;
+    --mid: #383835; --seq: #a9bccf; --on-strong: #ffffff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1113; --surface: #1a1a19; --ink: #f3f3f1; --ink-2: #c3c2b7; --muted: #8d9095;
+  --line: #2c2c2a; --accent: #a9bccf; --accent-ink: #0f1113; --pos: #3987e5; --neg: #e66767;
+  --mid: #383835; --seq: #a9bccf; --on-strong: #ffffff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px;
+  line-height: 1.5; padding-inline: 16px; padding-block: 28px 56px;
+}
+main { max-width: 1120px; margin-inline: auto; display: grid; gap: 28px; }
+h1, h2 { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.01em; text-wrap: balance; margin: 0; }
+h1 { font-size: 2.4rem; line-height: 1.05; }
+h2 { font-size: 1.45rem; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--ink-2); }
+.tag {
+  display: inline-block; font-family: var(--font-data); font-size: 0.72rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent); border-radius: 3px;
+  padding: 1px 6px; margin-bottom: 10px; justify-self: start;
+}
+header { display: grid; gap: 8px; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: flex-end; }
+.group { display: grid; gap: 6px; min-width: 0; }
+.label { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.seg button {
+  font: inherit; font-size: 0.86rem; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 4px; padding: 6px 11px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.seg button:focus-visible, select:focus-visible, td.cell:focus-visible { outline: 2px solid var(--pos); outline-offset: 2px; }
+.seg svg rect { fill: none; stroke: currentColor; stroke-width: 1.5; }
+select {
+  font: inherit; font-size: 0.86rem; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; max-width: 100%;
+}
+
+.work { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+@media (max-width: 860px) { .work { grid-template-columns: minmax(0, 1fr); } }
+.gridwrap { min-width: 0; display: grid; gap: 10px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: separate; border-spacing: 2px; font-variant-numeric: tabular-nums; }
+.heat th { font-weight: 500; font-size: 0.78rem; color: var(--muted); padding: 4px 6px; white-space: nowrap; }
+.heat thead th { text-align: center; }
+.heat tbody th { text-align: right; font-family: var(--font-data); }
+.heat thead th { font-family: var(--font-data); }
+td.cell {
+  font-family: var(--font-data); font-size: 0.8rem; text-align: center; min-width: 74px; height: 42px;
+  border-radius: 4px; cursor: pointer; color: var(--ink); padding: 0 4px;
+}
+td.cell.strong { color: var(--on-strong); }
+td.cell.sel { box-shadow: 0 0 0 2px var(--ink); }
+.axis-note { font-size: 0.78rem; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.legend { display: flex; align-items: center; gap: 10px; font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); flex-wrap: wrap; }
+.legend .bar { width: 180px; max-width: 50vw; height: 10px; border-radius: 2px; }
+
+aside.detail {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px;
+  display: grid; gap: 12px; min-width: 0;
+}
+.detail h3 { font-family: var(--font-display); font-size: 1.15rem; margin: 0; font-weight: 600; }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 0.86rem; }
+.kv dt { color: var(--ink-2); }
+.kv dd { margin: 0; text-align: right; font-family: var(--font-data); }
+.kv .total { border-top: 1px solid var(--line); padding-top: 4px; font-weight: 600; color: var(--ink); }
+.note { font-size: 0.8rem; color: var(--muted); }
+
+section { display: grid; gap: 12px; }
+.plain { font-size: 0.85rem; }
+.plain th, .plain td { padding: 6px 10px; text-align: right; white-space: nowrap; }
+.plain th:first-child, .plain td:first-child { text-align: left; }
+.plain thead th { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); }
+.plain td { font-family: var(--font-data); border-bottom: 1px solid var(--line); }
+.plain td:first-child { font-family: var(--font-body); }
+.findings { display: grid; gap: 8px; padding-left: 1.1em; margin: 0; max-width: 72ch; }
+footer { font-size: 0.8rem; color: var(--muted); max-width: 80ch; }
+@media (prefers-reduced-motion: no-preference) { td.cell { transition: background-color 160ms ease; } }
+</style>
+
+<main>
+  <header>
+    <span class="tag">Simulated · Colorado Springs · audit model v2</span>
+    <h1>Small Locker Profit Grid</h1>
+    <p class="lede">What a 5x5 or 5x10 locker would earn at each winning bid and each amount of <em>realized</em> resale, after buyer premium, sales tax, transport, dump fees and selling costs. Every input is an assumption from the model's config; most are still guesses. The grid shows how outcomes move, not what any real locker will do.</p>
+  </header>
+
+  <div class="controls" role="group" aria-label="Scenario">
+    <div class="group"><span class="label">Unit</span><div class="seg" id="size"></div></div>
+    <div class="group"><span class="label">Average sale price</span><div class="seg" id="avg"></div></div>
+    <div class="group"><span class="label" id="metric-l">Show</span>
+      <select id="metric" aria-labelledby="metric-l"></select></div>
+    <div class="group" style="flex-basis:100%"><span class="label">Disposal load and vehicle</span><div class="seg" id="scen"></div></div>
+  </div>
+
+  <div class="work">
+    <div class="gridwrap">
+      <div class="axis-note"><span>Rows: winning bid</span><span>Columns: realized resale (gross sales)</span></div>
+      <div class="scroll"><table class="heat" id="heat" aria-describedby="metric-l"></table></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <aside class="detail" id="detail" aria-live="polite"></aside>
+  </div>
+
+  <section>
+    <h2>Break-even resale</h2>
+    <p class="plain lede">The realized resale a locker needs before it stops losing money, at each bid. "Cash" counts only money; the other columns also pay you for your hours.</p>
+    <div class="seg" id="be-lv"></div>
+    <div class="scroll"><table class="plain" id="be"></table></div>
+  </section>
+
+  <section>
+    <h2>What the three disposal loads contain</h2>
+    <div class="scroll"><table class="plain" id="profiles"></table></div>
+  </section>
+
+  <section>
+    <h2>Reading it</h2>
+    <ul class="findings">
+      <li>Cash risk on a small locker is modest. With a borrowed SUV and a light load, a $100 winning bid breaks even in cash at roughly $180 of resale.</li>
+      <li>Your time decides the answer. Selling is about 80% of the labor: roughly 44 minutes per sale in this model. At a $25 average sale, paying yourself $40 an hour never breaks even.</li>
+      <li>Heavy disposal hurts the 5x10 far more than the 5x5, through dump weight, mattresses and extra trips.</li>
+      <li>None of this says lockers contain this much value. Only real purchases can show that.</li>
+    </ul>
+  </section>
+
+  <footer>Assumptions: 18% buyer premium (StorageTreasures Basic), licensed reseller buying tax-exempt and remitting 8.2% on local sales (75% local, 25% eBay at 13.6% + $0.40), Woodmen Dump weight pricing, U-Haul 18+ / Home Depot 21+ rentals, $100 cleaning deposit, 10-mile trips, 15 min per listing and 25 min per sale. Generated by <code>lockerlab sensitivity</code> and <code>tools/sensitivity_page.py</code>.</footer>
+</main>
+
+<script>
+const DATA = /*__DATA__*/null;
+const METRICS = [
+  ["cash_profit_cents", "Cash profit", "money", "div"],
+  ["economic_profit_at_15_cents", "Economic profit at $15/h", "money", "div"],
+  ["economic_profit_at_25_cents", "Economic profit at $25/h", "money", "div"],
+  ["economic_profit_at_40_cents", "Economic profit at $40/h", "money", "div"],
+  ["cash_roi", "Cash ROI", "pct", "div"],
+  ["cash_profit_per_hour_cents", "Cash profit per hour", "money", "div"],
+  ["labor_hours", "Labor hours", "hours", "seq"],
+];
+const SCEN = ["LOW disposal / borrowed SUV", "LOW disposal / rental van", "MEDIUM disposal / borrowed vehicle",
+              "MEDIUM disposal / rental vehicle", "HIGH disposal / rental vehicle"];
+const VEH = { friend_suv: "friend's SUV", friend_pickup: "friend's pickup", friend_sedan: "friend's sedan",
+  uhaul_cargo_van: "U-Haul cargo van", uhaul_pickup: "U-Haul pickup", uhaul_10ft_truck: "U-Haul 10ft truck",
+  homedepot_cargo_van: "Home Depot van (21+)" };
+const PATH = { A_negligible: "negligible trash", B_household: "household bins", C_donate_recycle: "donate / recycle",
+  D_small_paid: "small paid dump", E_dump_run: "dump run", F_special_items: "special items", G_junk_hauler: "junk hauler" };
+const LV = [["0", "Cash"], ["15", "$15/h"], ["25", "$25/h"], ["40", "$40/h"]];
+
+const state = { size: "5x5", avg: "50", metric: "cash_profit_cents", scen: SCEN[0], bid: 10000, gross: 100000, lv: "25" };
+try { Object.assign(state, JSON.parse(localStorage.getItem("lockergrid") || "{}")); } catch (e) {}
+const save = () => { try { localStorage.setItem("lockergrid", JSON.stringify(state)); } catch (e) {} };
+
+const $ = (id) => document.getElementById(id);
+const money = (c) => c == null ? "n/a" : (c < 0 ? "−$" : "$") + Math.round(Math.abs(c) / 100).toLocaleString();
+const neg = (c) => c === 0 ? "$0" : "−" + money(c);
+const fmt = (v, kind) => v == null ? "n/a" : kind === "money" ? money(v) : kind === "pct" ? Math.round(v * 100) + "%" : v.toFixed(1) + " h";
+const scenLabel = (s) => s.replace(" disposal", "").replace(" / ", " · ");
+
+function seg(el, items, key, onPick) {
+  el.innerHTML = "";
+  for (const [val, html] of items) {
+    const b = document.createElement("button");
+    b.type = "button"; b.innerHTML = html; b.setAttribute("aria-pressed", String(state[key] === val));
+    b.addEventListener("click", () => { state[key] = val; save(); onPick(); });
+    el.appendChild(b);
+  }
+}
+const footprint = (w, l) => `<svg width="${l * 2.4 + 4}" height="${w * 2.4 + 4}" aria-hidden="true"><rect x="2" y="2" width="${l * 2.4}" height="${w * 2.4}" rx="1"/></svg>`;
+
+function cellsFor(size, avg) { return DATA[avg].cells.filter((c) => c.size === size); }
+
+function color(v, max, mode) {
+  if (v == null) return "var(--mid)";
+  const t = Math.min(1, Math.abs(v) / (max || 1));
+  const pct = Math.round(t * 100);
+  if (mode === "seq") return `color-mix(in oklab, var(--seq) ${pct}%, var(--mid))`;
+  return `color-mix(in oklab, ${v >= 0 ? "var(--pos)" : "var(--neg)"} ${pct}%, var(--mid))`;
+}
+
+function render() {
+  seg($("size"), [["5x5", footprint(5, 5) + "5x5"], ["5x10", footprint(5, 10) + "5x10"]], "size", render);
+  seg($("avg"), Object.keys(DATA).map((a) => [a, "$" + a]), "avg", render);
+  seg($("scen"), SCEN.map((s) => [s, scenLabel(s)]), "scen", render);
+  const sel = $("metric");
+  if (!sel.options.length) {
+    for (const [k, label] of METRICS) sel.add(new Option(label, k));
+    sel.addEventListener("change", () => { state.metric = sel.value; save(); render(); });
+  }
+  sel.value = state.metric;
+  const [mk, mlabel, kind, mode] = METRICS.find((m) => m[0] === state.metric);
+  const d = DATA[state.avg];
+  const all = cellsFor(state.size, state.avg);
+  const max = Math.max(...all.map((c) => Math.abs(c[mk] ?? 0)));  // one scale across all five scenarios
+  const idx = new Map(all.filter((c) => c.scenario === state.scen).map((c) => [c.bid_cents + ":" + c.gross_cents, c]));
+
+  let h = "<thead><tr><th scope=\"col\"><span class=\"sr\"></span></th>" + d.grosses.map((g) => `<th scope="col">$${g.toLocaleString()}</th>`).join("") + "</tr></thead><tbody>";
+  for (const b of d.bids) {
+    h += `<tr><th scope="row">$${b}</th>`;
+    for (const g of d.grosses) {
+      const c = idx.get(b * 100 + ":" + g * 100);
+      const v = c[mk];
+      const t = Math.min(1, Math.abs(v ?? 0) / (max || 1));
+      const cls = ["cell", t > 0.55 ? "strong" : "", b * 100 === state.bid && g * 100 === state.gross ? "sel" : ""].join(" ");
+      h += `<td class="${cls}" tabindex="0" data-b="${b * 100}" data-g="${g * 100}" style="background:${color(v, max, mode)}" aria-label="bid $${b}, resale $${g}: ${fmt(v, kind)}">${fmt(v, kind)}</td>`;
+    }
+    h += "</tr>";
+  }
+  $("heat").innerHTML = h + "</tbody>";
+  $("heat").querySelectorAll("td.cell").forEach((td) => {
+    const pick = () => { state.bid = +td.dataset.b; state.gross = +td.dataset.g; save(); render(); };
+    td.addEventListener("click", pick);
+    td.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+  });
+  $("legend").innerHTML = mode === "seq"
+    ? `<span>0</span><span class="bar" style="background:linear-gradient(90deg,var(--mid),var(--seq))"></span><span>${fmt(max, kind)}</span><span>· ${mlabel}</span>`
+    : `<span>−${fmt(max, kind)}</span><span class="bar" style="background:linear-gradient(90deg,var(--neg),var(--mid),var(--pos))"></span><span>${fmt(max, kind)}</span><span>· ${mlabel}, loss red, profit blue</span>`;
+
+  const c = idx.get(state.bid + ":" + state.gross);
+  const other = c.gross_cents - c.acquisition_cents - c.transport_cents - c.disposal_cents - c.selling_and_tax_cents - c.cash_profit_cents;
+  $("detail").innerHTML = `
+    <h3>Bid ${money(c.bid_cents)}, resale ${money(c.gross_cents)}</h3>
+    <dl class="kv">
+      <dt>Realized resale</dt><dd>${money(c.gross_cents)}</dd>
+      <dt>Winning bid + 18% premium</dt><dd>${neg(c.acquisition_cents)}</dd>
+      <dt>Vehicle (${VEH[c.vehicle] || c.vehicle}, ${c.trips} trip${c.trips === 1 ? "" : "s"})</dt><dd>${neg(c.transport_cents)}</dd>
+      <dt>Disposal</dt><dd>${neg(c.disposal_cents)}</dd>
+      <dt>Selling fees, returns, sales tax</dt><dd>${neg(c.selling_and_tax_cents)}</dd>
+      <dt>Packing, deposit risk, misc</dt><dd>${neg(other)}</dd>
+      <dt class="total">Cash profit</dt><dd class="total">${money(c.cash_profit_cents)}</dd>
+    </dl>
+    <dl class="kv">
+      <dt>Labor</dt><dd>${c.labor_hours.toFixed(1)} h</dd>
+      <dt>Cash profit per hour</dt><dd>${money(c.cash_profit_per_hour_cents)}</dd>
+      <dt>Economic profit, time at $15/h</dt><dd>${money(c.economic_profit_at_15_cents)}</dd>
+      <dt>Economic profit, time at $25/h</dt><dd>${money(c.economic_profit_at_25_cents)}</dd>
+      <dt>Economic profit, time at $40/h</dt><dd>${money(c.economic_profit_at_40_cents)}</dd>
+      <dt>Cash ROI</dt><dd>${fmt(c.cash_roi, "pct")}</dd>
+      <dt>Cash needed in first 72 h</dt><dd>${money(c.cash_required_cents)}</dd>
+    </dl>
+    <p class="note">Disposal route: ${c.pathways.map((p) => PATH[p] || p).join(", ")}. Select any cell to see its breakdown.</p>`;
+
+  seg($("be-lv"), LV.map(([v, l]) => [v, l]), "lv", render);
+  const bes = d.breakevens.filter((r) => r.size === state.size);
+  const key = `breakeven_gross_at_${state.lv}_per_hour_cents`;
+  $("be").innerHTML = "<thead><tr><th>Disposal · vehicle</th>" + d.bids.map((b) => `<th>Bid $${b}</th>`).join("") + "</tr></thead><tbody>" +
+    SCEN.map((s) => `<tr><td>${scenLabel(s)}</td>` + d.bids.map((b) => {
+      const r = bes.find((x) => x.scenario === s && x.bid_cents === b * 100);
+      return `<td>${r[key] == null ? "over $20k" : money(r[key])}</td>`;
+    }).join("") + "</tr>").join("") + "</tbody>";
+
+  const prof = d.profiles[state.size];
+  const rows = [["Kept to sell (cuft)", "retained_cuft"], ["Donated (cuft)", "donate_cuft"], ["Trash (cuft)", "trash_cuft"],
+    ["Longest item (in)", "longest_item_in"], ["Mattresses", "mattresses"], ["Appliances", "appliances"],
+    ["E-waste items", "ewaste_items"], ["Bulky furniture", "bulky_items"]];
+  $("profiles").innerHTML = `<thead><tr><th>${state.size}</th><th>Low</th><th>Medium</th><th>High</th></tr></thead><tbody>` +
+    rows.map(([l, k]) => `<tr><td>${l}</td><td>${prof.LOW[k]}</td><td>${prof.MEDIUM[k]}</td><td>${prof.HIGH[k]}</td></tr>`).join("") + "</tbody>";
+}
+render();
+</script>

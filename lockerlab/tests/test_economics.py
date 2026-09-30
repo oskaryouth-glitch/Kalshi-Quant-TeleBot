@@ -42,10 +42,10 @@ HIGH = dataclasses.replace(BASE, name="high", gross_proceeds_cents=180000, n_ord
 SCEN = {"low": LOW, "base": BASE, "high": HIGH}
 
 RULES = MarginRules(
-    min_expected_profit_cents=15000,
-    target_roi=0.5,
+    min_cash_profit_cents=15000,
+    target_cash_roi=0.5,
     max_low_case_loss_cents=7500,
-    min_profit_per_hour_before_labor_cents=2500,
+    min_cash_profit_per_hour_cents=2500,
     bankroll_cents=100000,
 )
 
@@ -164,7 +164,7 @@ class TestMaxBid:
         scen = {"low": dataclasses.replace(tiny, name="low"), "base": tiny, "high": dataclasses.replace(tiny, name="high")}
         r = max_bid(scen, POLICY, RULES)
         assert r.max_bid_cents is None
-        assert "min_expected_profit" in r.binding_constraints
+        assert "min_cash_profit" in r.binding_constraints
 
     def test_more_value_never_lowers_max_bid(self):
         prev = -1
@@ -186,14 +186,13 @@ class TestMaxBid:
             prev = m
 
     def test_max_bid_below_breakeven(self):
-        """Margin of safety: the max bid must leave the required profit, so it
-        is strictly below the bid at which base-case net profit is zero."""
+        """Margin of safety: the max bid must leave the required cash profit."""
         r = max_bid(SCEN, POLICY, RULES)
-        assert evaluate(r.max_bid_cents, BASE, POLICY).net_profit_cents >= RULES.min_expected_profit_cents
+        assert evaluate(r.max_bid_cents, BASE, POLICY).profit_before_labor_cents >= RULES.min_cash_profit_cents
 
     def test_low_case_loss_binds(self):
-        rules = dataclasses.replace(RULES, max_low_case_loss_cents=0, target_roi=0.0,
-                                    min_expected_profit_cents=0, min_profit_per_hour_before_labor_cents=0)
+        rules = dataclasses.replace(RULES, max_low_case_loss_cents=0, target_cash_roi=0.0,
+                                    min_cash_profit_cents=0, min_cash_profit_per_hour_cents=0)
         r = max_bid(SCEN, POLICY, rules)
         assert r.binding_constraints == ["max_low_case_loss"]
         assert r.low_at_max.profit_before_labor_cents >= 0
@@ -217,3 +216,37 @@ class TestIncrements:
     def test_schedule_must_be_open_ended(self):
         with pytest.raises(ValueError):
             increment_for(10**7, [[10000, 500]])
+
+
+class TestCashVsEconomic:
+    def test_cash_profit_excludes_labor_and_reserve(self):
+        e = evaluate(20000, BASE, POLICY)
+        # cash profit = 1000 - 340.90 out of pocket - 72 fees - 30 returns (no $50 reserve, no labor)
+        assert e.cash_profit_cents == 100000 - 34090 - 7200 - 3000
+        assert e.cash_profit_cents == e.profit_before_labor_cents + e.risk_reserve_cents
+        assert e.economic_profit_cents(0) == e.cash_profit_cents
+        assert e.economic_profit_cents(2500) == e.cash_profit_cents - 8 * 2500
+        assert e.cash_roi == pytest.approx(e.cash_profit_cents / e.cash_invested_cents)
+        assert e.cash_profit_per_hour_cents == pytest.approx(e.cash_profit_cents / 8)
+
+    def test_labor_rate_does_not_change_cash_or_max_bid(self):
+        cheap = dataclasses.replace(POLICY, labor_rate_cents_per_hour=0)
+        dear = dataclasses.replace(POLICY, labor_rate_cents_per_hour=10000)
+        assert evaluate(20000, BASE, cheap).cash_profit_cents == evaluate(20000, BASE, dear).cash_profit_cents
+        assert max_bid(SCEN, cheap, RULES).max_bid_cents == max_bid(SCEN, dear, RULES).max_bid_cents
+
+    def test_local_sales_tax_absorbed_in_price(self):
+        p = dataclasses.replace(POLICY, local_sales_share=0.75, local_sales_tax_rate=0.082, misc_cash_cost_rate=0.02)
+        e = evaluate(20000, BASE, p)
+        # $1000 gross, $750 local, tax inside price: 75000c * .082 / 1.082 = 5683.9 -> 5684 (rounded up)
+        assert e.sales_tax_remitted_cents == 5684
+        assert e.misc_cash_cents == 2000
+        assert e.cash_profit_cents == evaluate(20000, BASE, POLICY).cash_profit_cents - 5684 - 2000
+
+    def test_v1_policy_json_reevaluates_identically(self):
+        """A decision stored under v1 (policy dict without v2 fields) must give the
+        same numbers after the v2 change."""
+        v1_policy = {k: v for k, v in dataclasses.asdict(POLICY).items()
+                     if k not in ("misc_cash_cost_rate", "local_sales_share", "local_sales_tax_rate")}
+        e = evaluate(20000, BASE, CostPolicy(**v1_policy))
+        assert (e.profit_before_labor_cents, e.net_profit_cents) == (50710, 34710)  # TestEvaluate values
