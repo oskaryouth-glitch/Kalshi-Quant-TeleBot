@@ -1,0 +1,136 @@
+# Market-level cost assumptions. Every number is {value, status, source}.
+#
+# status:
+#   VERIFIED    confirmed first-hand by the operator (phone call, receipt, quote)
+#   SOURCED     from a cited public source, not yet confirmed first-hand
+#   UNVERIFIED  secondary/illustrative source, or from a different city
+#   GUESS       placeholder judgement; replace with data ASAP
+#
+# Decisions store the full config plus the list of non-VERIFIED assumptions they
+# used, so we can later see how much each unverified number mattered.
+# Money is in cents. Volumes are cubic feet.
+
+colorado_springs:
+  timezone: America/Denver
+  sales_tax_rate:
+    value: 0.0825
+    status: UNVERIFIED
+    source: "Approximate combined state+county+city+PPRTA rate; confirm at tax.colorado.gov. A resale certificate may exempt purchases for resale; confirm with CDOR and the facility."
+  home_to_unit_miles_default:
+    value: 10
+    status: GUESS
+    source: "Typical one-way distance within Colorado Springs; override per auction with distance_miles."
+  dump_round_trip_miles:
+    value: 20
+    status: GUESS
+  disposal:
+    per_ton_cents:
+      value: 12650
+      status: SOURCED
+      source: "Waste Connections Colorado Springs Transfer Station gate rate (C&D), per wasteconnections.com/colorado-springs-transfer, page dated 2026-09-22, via web research. CALL TO CONFIRM applicability to household loads."
+    minimum_charge_cents:
+      value: 25300
+      status: SOURCED
+      source: "Same page: 2-ton minimum ($253). If true, this minimum dominates small-unit disposal cost. CALL TO CONFIRM; also price WM Colorado Springs Landfill and junk-hauler alternatives."
+    mattress_each_cents:
+      value: 8625
+      status: SOURCED
+      source: "Waste Connections CS transfer, mattress/box spring each"
+    appliance_each_cents:
+      value: 700
+      status: SOURCED
+      source: "Waste Connections CS transfer, white goods without freon. Freon appliances NOT accepted."
+    ewaste_each_cents:
+      value: 0
+      status: SOURCED
+      source: "El Paso County HHW: free for El Paso/Teller households with proof of residency, ~5 devices/household/year (2023 flyer). Cap limits volume use."
+    donation_each_trip_cents:
+      value: 0
+      status: GUESS
+    free_household_trash_cuft:
+      value: 0
+      status: GUESS
+      source: "Trash that can go out in ordinary household bins over a few weeks at no marginal cost. 0 = conservative. A 96-gal cart is ~12.8 cuft."
+    lbs_per_cuft:
+      value: 9.0
+      status: GUESS
+      source: "Mixed bulky household waste ~250 lb/yd3 = ~9 lb/ft3. Weigh real loads to replace."
+  vehicles: &default_vehicles
+    friend_sedan:
+      usable_cuft: {value: 25, status: GUESS}
+      max_item_length_in: {value: 40, status: GUESS}
+      fixed_cents: {value: 2000, status: GUESS, source: "gas money / thank-you"}
+      per_mile_cents: {value: 20, status: GUESS}
+      per_hour_cents: {value: 0, status: GUESS}
+      available: {value: true, status: GUESS}
+    friend_suv:
+      usable_cuft: {value: 60, status: GUESS}
+      max_item_length_in: {value: 70, status: GUESS}
+      fixed_cents: {value: 2500, status: GUESS}
+      per_mile_cents: {value: 25, status: GUESS}
+      per_hour_cents: {value: 0, status: GUESS}
+      available: {value: true, status: GUESS}
+    friend_pickup:
+      usable_cuft: {value: 70, status: GUESS, source: "6.5ft bed loaded to rail height; more if strapped higher"}
+      max_item_length_in: {value: 96, status: GUESS}
+      fixed_cents: {value: 3000, status: GUESS}
+      per_mile_cents: {value: 30, status: GUESS}
+      per_hour_cents: {value: 0, status: GUESS}
+      available: {value: true, status: GUESS}
+    homedepot_cargo_van:
+      usable_cuft: {value: 240, status: GUESS}
+      max_item_length_in: {value: 120, status: GUESS}
+      fixed_cents: {value: 1900, status: SOURCED, source: "Home Depot Load 'N Go: $19 first 75 min, unlimited miles, $150 deposit"}
+      included_hours: {value: 1.25, status: SOURCED}
+      per_hour_cents: {value: 2000, status: GUESS, source: "rate after first 75 min not verified"}
+      per_mile_cents: {value: 15, status: GUESS, source: "fuel only"}
+      insurance_cents: {value: 1500, status: GUESS}
+      available: {value: true, status: GUESS}
+    uhaul_cargo_van:
+      usable_cuft: {value: 245, status: UNVERIFIED, source: "U-Haul published cargo van capacity (not re-checked)"}
+      max_item_length_in: {value: 115, status: UNVERIFIED}
+      fixed_cents: {value: 1995, status: SOURCED, source: "U-Haul in-town from $19.95/day plus mileage"}
+      per_mile_cents: {value: 119, status: UNVERIFIED, source: "U-Haul example $0.89/mi (Dallas) + ~$0.30 fuel; Colorado Springs rate not verified"}
+      per_hour_cents: {value: 0, status: GUESS}
+      insurance_cents: {value: 2000, status: GUESS}
+      available: {value: true, status: GUESS}
+    uhaul_10ft_truck:
+      usable_cuft: {value: 402, status: UNVERIFIED, source: "U-Haul published 10' truck capacity (not re-checked)"}
+      max_item_length_in: {value: 115, status: UNVERIFIED}
+      fixed_cents: {value: 1995, status: SOURCED}
+      per_mile_cents: {value: 179, status: UNVERIFIED, source: "U-Haul example $1.39/mi (Dallas) + ~$0.40 fuel"}
+      per_hour_cents: {value: 0, status: GUESS}
+      insurance_cents: {value: 2000, status: GUESS}
+      available: {value: true, status: GUESS}
+
+marin:
+  timezone: America/Los_Angeles
+  sales_tax_rate:
+    value: 0.0925
+    status: UNVERIFIED
+    source: "Approximate Mill Valley combined rate; confirm at cdtfa.ca.gov. CA resale certificate exempts genuine resale purchases."
+  home_to_unit_miles_default: {value: 12, status: GUESS}
+  dump_round_trip_miles: {value: 20, status: GUESS}
+  legal_notes:
+    value: "CA B&P 21710: buyer must remove property within 24 hours of sale. B&P 21712: operator must return personal papers/photos/records to occupant on request."
+    status: SOURCED
+    source: "leginfo.legislature.ca.gov BPC 21700-21716 via web research"
+  disposal:
+    per_ton_cents:
+      value: 15000
+      status: GUESS
+      source: "Redwood Landfill (Novato) / Marin Resource Recovery Center general self-haul rates not published; call MRRC 415-485-5647"
+    minimum_charge_cents: {value: 8000, status: GUESS}
+    mattress_each_cents:
+      value: 6764
+      status: SOURCED
+      source: "Redwood Landfill gate rates effective Oct 2025. Bye Bye Mattress free drop-off may apply; check."
+    appliance_each_cents:
+      value: 6138
+      status: SOURCED
+      source: "Redwood Landfill, appliance without freon, effective Oct 2025"
+    ewaste_each_cents: {value: 0, status: UNVERIFIED, source: "Marin HHW accepts e-waste"}
+    donation_each_trip_cents: {value: 0, status: GUESS}
+    free_household_trash_cuft: {value: 0, status: GUESS}
+    lbs_per_cuft: {value: 9.0, status: GUESS}
+  vehicles: *default_vehicles

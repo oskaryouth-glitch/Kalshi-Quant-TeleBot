@@ -1,0 +1,99 @@
+# Auction source registry and access-compliance status.
+#
+# This file is the gate for any automated collection: lockerlab.collectors
+# refuses to make a network request to a source unless
+# automated_collection == "authorized" (i.e. we hold an API key or written
+# permission). Git history of this file is the audit trail of reviews.
+#
+# automated_collection: prohibited | unknown | authorized
+# manual_capture:       allowed | gray_area | prohibited
+#
+# Reviewed 2026-09-30 via web research (the dev sandbox could not load these
+# sites directly; see docs/PHASE0_RESEARCH.md). Re-verify terms yourself before
+# relying on this: terms change.
+
+storagetreasures:
+  name: StorageTreasures
+  base_url: https://www.storagetreasures.com
+  terms_url: https://www.storagetreasures.com/terms
+  operators: "Extra Space (exclusive online partner since 2019); absorbed SelfStorageAuction.com; claims 20,000+ facilities"
+  api: "Operator-side import APIs only (OpenTech, SiteLink/Storable). No public data API found."
+  automated_collection: prohibited
+  manual_capture: gray_area
+  terms_excerpt: >-
+    License "expressly excludes ... any data extraction or data mining whatsoever";
+    prohibited use includes "collecting auction dates or unit counts, by electronic
+    or other means, for commercial or competitive purposes"; "any automated use of
+    the system". Services are "for the personal use of Members only".
+  buyer_fees: "Buyer premium 18% Basic / 15% ProBidder / 12% ProBidder Max / 9% ProBusiness, $10 min; facility purchase deposit 0-10%; cleaning deposit commonly >= $100"
+  sold_prices_public: "Sold auctions stay online but are not searchable (per support reply quoted on Sitejabber). Unverified."
+  next_step: "Email for written permission to record auctions for personal bidding research (draft in docs/PERMISSION_REQUESTS.md)."
+
+lockerfox:
+  name: Lockerfox
+  base_url: https://www.lockerfox.com
+  terms_url: https://www.lockerfox.com/terms-of-service/
+  operators: "Unverified roster; integrates with SiteLink, storEDGE, SSM, Yardi Breeze"
+  api: "None public"
+  automated_collection: prohibited
+  manual_capture: allowed
+  terms_excerpt: >-
+    Prohibits using "robots, spiders, or other automatic or manual processes to
+    monitor or copy" site pages or data without express written permission, and
+    automated harvesting for commercial use.
+  buyer_fees: "15% buyer premium, $10 min; facility-set refundable cleaning deposit"
+  sold_prices_public: unknown
+  next_step: "Request written permission."
+  note: "manual_capture=allowed means viewing and noting auctions you are considering bidding on; systematic copying for monitoring also needs permission."
+
+storageauctions_com:
+  name: StorageAuctions.com
+  base_url: https://www.storageauctions.com
+  terms_url: https://www.storageauctions.com/page/tos
+  api: "None public"
+  automated_collection: prohibited
+  manual_capture: allowed
+  terms_excerpt: >-
+    License excludes "any reproduction, duplication, sale, resale or other commercial
+    use of the Site and the Services (other than the buying and selling of items)".
+    Full automated-access clause not verified.
+  sold_prices_public: unknown
+  next_step: "Read full ToS in a browser; request permission."
+
+bid13:
+  name: Bid13
+  base_url: https://bid13.com
+  terms_url: https://bid13.com/terms-of-service
+  operators: "US + Canada; has a Colorado Springs listings page"
+  api: "Bid13 states it offers an API for programmatic integrations (scope for buyers unclear)."
+  automated_collection: unknown
+  manual_capture: allowed
+  terms_excerpt: "Automated-access clause not verified."
+  sold_prices_public: "Winning bidder gets full bid history by email; public visibility unverified."
+  next_step: "Best candidate for an authorized feed: ask Bid13 for API access (draft in docs/PERMISSION_REQUESTS.md)."
+
+ibid4storage:
+  name: iBid4Storage
+  base_url: https://www.ibid4storage.com
+  terms_url: https://www.ibid4storage.com/terms_of_use
+  api: "None found"
+  automated_collection: unknown
+  manual_capture: allowed
+  sold_prices_public: unknown
+
+public_notice:
+  name: "Newspaper / public-notice lien sale ads"
+  base_url: null
+  api: "Varies by publisher (e.g. publicnoticecolorado.com, Marin IJ legals)"
+  automated_collection: unknown
+  manual_capture: allowed
+  note: >-
+    Lien-sale notices give facility, sale date and platform, which helps count
+    the universe of auctions (so we can measure coverage), but they carry
+    occupant names. Never store occupant names.
+
+manual_other:
+  name: "Other / in-person auctions recorded manually"
+  base_url: null
+  automated_collection: prohibited
+  manual_capture: allowed

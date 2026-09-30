@@ -1,0 +1,32 @@
+# Paper-decision estimate for ONE auction. Fill this in from the photos
+# BEFORE the auction ends, then run: lockerlab decide <this file>
+auction:
+  source: storagetreasures
+  external_id: "EXAMPLE-123456"
+strategy: manual_v1
+
+# What would the things that actually SELL bring in, in total, before fees?
+# Think sold prices, not asking prices. Include the hidden boxes at a
+# pessimistic guess. low = hidden stuff is junk; high = pleasant surprise.
+gross_proceeds: {low: 150, base: 400, high: 900}
+confidence: 0.4   # 0-1: how much do the photos really show?
+
+volume:
+  fill_fraction: 0.5    # share of the unit's volume that is full
+  keep_fraction: 0.3    # share of the contents worth selling
+  trash_fraction: 0.4   # share of the contents that goes to the dump (rest: donate)
+longest_item_in: 48     # longest single item you'd have to move, inches
+
+counts:
+  listings: 12     # separate listings you would create (bundles count once)
+  orders: 10       # separate sales you expect
+  mattresses: 0
+  appliances: 0
+  ewaste_items: 0
+  bulky_items: 0   # couches, dressers, anything two-person
+
+categories: [tools, outdoor]
+reasons:
+  - "visible DeWalt tool bag (possible)"
+  - "organized totes"
+notes: ""

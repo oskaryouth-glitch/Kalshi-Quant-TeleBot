@@ -1,0 +1,74 @@
+# Underwriting policy: operator economics and margin-of-safety rules.
+# Same {value, status, source} convention as markets.yaml.
+
+labor_rate_cents_per_hour:
+  value: 2000
+  status: GUESS
+  source: "Opportunity cost of Oskar's time. Profit is reported both before and after labor."
+
+bankroll_cents:
+  value: 100000
+  status: VERIFIED
+  source: "Hypothetical $1,000 paper bankroll (spec)."
+
+# Margin of safety. Max bid is the highest bid satisfying ALL of these.
+min_expected_profit_cents:
+  value: 15000
+  status: GUESS
+  source: "A locker must clear $150 expected profit after labor to be worth the risk."
+target_roi:
+  value: 0.50
+  status: GUESS
+  source: "Base-case net profit >= 50% of cash invested."
+max_low_case_loss_cents:
+  value: 7500
+  status: GUESS
+  source: "Low-case CASH result (profit before valuing labor) may not be worse than -$75. Time value is enforced by the base-case rules."
+min_profit_per_hour_before_labor_cents:
+  value: 2500
+  status: GUESS
+  source: "Base-case profit before valuing labor must be >= $25/hour."
+valuation_haircut:
+  value: 0.85
+  status: GUESS
+  source: "Base-case gross is multiplied by this before underwriting, until calibration shows how biased our estimates are."
+
+# Acquisition-fee defaults, used only when the auction page did not show them.
+default_buyer_premium_rate:
+  value: 0.18
+  status: SOURCED
+  source: "StorageTreasures Basic tier (highest known), help.storagetreasures.com fees article. Lockerfox 15%."
+default_buyer_premium_min_cents: {value: 1000, status: SOURCED, source: "StorageTreasures/Lockerfox $10 minimum"}
+default_cleaning_deposit_cents: {value: 10000, status: SOURCED, source: "StorageTreasures facility FAQ: commonly >= $100"}
+
+# Selling-cost defaults (blended across channels; per-item models come later).
+selling_fee_rate:
+  value: 0.07
+  status: GUESS
+  source: "Blend: local FB/OfferUp/Craigslist 0%, eBay ~13.6% + $0.40/order, Mercari 10%. Weighted toward local."
+per_order_fee_cents: {value: 20, status: GUESS}
+packing_cost_per_shipped_order_cents: {value: 300, status: GUESS}
+shipped_order_share: {value: 0.25, status: GUESS}
+returns_rate: {value: 0.03, status: GUESS, source: "Share of gross lost to returns/refunds/no-shows"}
+risk_reserve_rate: {value: 0.05, status: GUESS, source: "Share of gross held against unmodeled losses"}
+cleaning_deposit_forfeit_prob: {value: 0.05, status: GUESS}
+storage_cost_per_cuft_month_cents: {value: 0, status: GUESS, source: "Backyard storage assumed free; set >0 if renting space"}
+expected_months_held: {value: 1.5, status: GUESS}
+
+# Labor model (hours). All GUESS until timed on real work.
+labor:
+  fixed_hours: {value: 1.0, status: GUESS, source: "travel to facility, paperwork, lock, sweep"}
+  hours_per_vehicle_trip: {value: 1.0, status: GUESS}
+  minutes_per_cuft_handled: {value: 0.6, status: GUESS, source: "loading, sorting, unloading"}
+  minutes_per_listing: {value: 15, status: GUESS, source: "clean, photograph, research price, write listing"}
+  minutes_per_sale: {value: 25, status: GUESS, source: "messages + meetup or packing"}
+
+# Decision thresholds
+min_confidence_for_paper_bid: {value: 0.5, status: GUESS}
+
+# Bid increment schedule when a platform's own schedule is unknown.
+# [upper_bound_cents_exclusive, increment_cents]; last bound null = infinity.
+bid_increments:
+  value: [[10000, 500], [50000, 1000], [100000, 2500], [null, 5000]]
+  status: GUESS
+  source: "Platform increment tables not verified; record them from auction pages."
