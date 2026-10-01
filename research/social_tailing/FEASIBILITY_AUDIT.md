@@ -184,7 +184,7 @@ Raw rows are never rewritten. Later knowledge (an outcome, an edit) is added as 
 ## Decisions needed from you before any build or freeze
 
 1. The social-access route: (A) person-operated read-only capture, (B) seek Kalshi permission or an endpoint, or (C) a third party after terms-of-service review.
-2. Confirm H040 in the external registry.
+2. ~~Confirm H040 in the external registry~~ (resolved: H042).
 3. Approve, or amend, the fill rule (stake, latency L, price ceiling), the control, the horizon/minimum n and the decision rule.
 4. Combos: logged and reported descriptively only (recommended), or excluded entirely.
 
