@@ -1,7 +1,7 @@
-# Kalshi Social Tailing Audit: read-only feasibility audit (NOT STARTED)
+# H042, Kalshi Social Prospective Tailing: read-only feasibility audit (NOT STARTED)
 
 - **Workstream:** Kalshi Social Tailing Audit. Is there a follower edge from copying public posts at post-detection prices?
-- **Provisional ID: H040.** See §1.
+- **ID: H042 (Kalshi Social Prospective Tailing).** Relabelled 2026-10-01: the owner reserved H040 elsewhere and H041 is closed. The ID check is in `ACCESS_AUDIT.md` §1.
 - **Isolation:** fully separate from H022/H038/H039, M6 and structural_arb. Nothing was collected, no account was used, and no order or quote request was made.
 - **Status:** feasibility only. No prospective collection, no candidate freeze. Your approval is needed before either.
 - **Date:** 2026-10-01.
@@ -18,12 +18,12 @@
 
 **A scientifically valid follower-ROI test therefore needs one of the social-access routes in §2.** Until then, nothing about the three accounts can be verified.
 
-## 1. Next unused hypothesis ID: **H040** (provisional)
+## 1. Hypothesis ID (superseded: now **H042**; see `ACCESS_AUDIT.md` §1)
 
 - On every branch of this repository (`main`, `claude/kalshi-pricing-scanner-wbdav0`, `claude/kind-carson-3dra5i`), the only H-IDs referenced are H022, H024, H029, H031, H038 and H039.
-- H040 and above appear nowhere.
+- H040 and above appeared nowhere. *(Superseded: the owner reports H040 is reserved and H041 closed in the external registry.)*
 - `edge_search/MECHANISMS.md` already notes that **the H0xx registry itself is not in this repository**.
-- **Please confirm H040 is unused in the external registry** (the older Kalshi Bot workstream) before the freeze.
+- ~~Please confirm H040 is unused in the external registry~~. Resolved by the owner: use H042.
 
 ## 2. Kalshi Social information I can access
 
