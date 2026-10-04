@@ -3,15 +3,17 @@
 Experiments are never advanced automatically. Each gate ends with an explicit recommendation:
 **PASS**, **CONTINUE COLLECTING**, **FAIL** or **REDESIGN**, and the evidence behind it.
 
-| ID   | Question                                                    | Status                                                      | Recommendation |
-| ---- | ----------------------------------------------------------- | ----------------------------------------------------------- | -------------- |
-| E001 | Can a pre-launch company obtain adequate legitimate supply? | Not started (shell built to support applications)           | —              |
-| E002 | Do the unit economics work?                                 | Blocked on E001 credentials                                 | —              |
-| E003 | How reliable is tracking, per network × game?               | Blocked                                                     | —              |
-| E004 | Does acquisition / landing-page conversion work?            | Instrumented minimally (waitlist platform + `?ref=` source) | —              |
-| E005 | First-offer contribution margin                             | Blocked                                                     | —              |
-| E006 | Second offer / retention                                    | Blocked                                                     | —              |
-| E007 | Scaling CAC                                                 | Blocked                                                     | —              |
+| ID   | Question                                                                                                                         | Status                                                          | Recommendation |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | -------------- |
+| E001 | Can a pre-launch company obtain adequate legitimate supply?                                                                      | Not started (shell built to support applications)               | —              |
+| E002 | Do the unit economics work?                                                                                                      | Blocked on E001 credentials                                     | —              |
+| E003 | How reliable is tracking, per network × game?                                                                                    | Blocked                                                         | —              |
+| E004 | Does acquisition / landing-page conversion work?                                                                                 | Instrumented minimally (waitlist platform + `?ref=` source)     | —              |
+| E005 | First-offer contribution margin                                                                                                  | Blocked                                                         | —              |
+| E006 | Second offer / retention                                                                                                         | Blocked                                                         | —              |
+| E007 | Scaling CAC                                                                                                                      | Blocked                                                         | —              |
+| E008 | Can voluntary campus ambassadors reach qualified early-access users cheaply? (pre-launch)                                        | Ready to design; measurement exists (`npm run waitlist:report`) | —              |
+| E009 | Do conversion-qualified referrals beat other channels on CAC per qualified user, without worse fraud or reversals? (post-launch) | Blocked: launch, provider permission (Q27–29), counsel          | —              |
 
 ---
 
@@ -20,16 +22,16 @@ Experiments are never advanced automatically. Each gate ends with an explicit re
 All money is in integer minor units (US cents). "Period" means conversions _approved_ in the period
 unless stated otherwise.
 
-| Term                              | Definition                                                                                                                                                      |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Gross publisher revenue (GPR)** | Sum of network payouts for conversions approved in the period.                                                                                                  |
-| **Reversals**                     | Network payouts clawed back in the period (by approval-period cohort when analyzing).                                                                           |
-| **Net publisher revenue (NPR)**   | GPR − reversals.                                                                                                                                                |
-| **User rewards cost**             | Rewards credited to users for those conversions, net of user rewards reversed.                                                                                  |
-| **Gross spread**                  | NPR − user rewards cost. **Gross spread %** = gross spread ÷ NPR.                                                                                               |
-| **Contribution profit**           | Gross spread − payout processing fees − fraud losses (rewards paid out and later unrecoverable) − variable support cost − allocated CAC − working-capital cost. |
-| **Contribution margin %**         | Contribution profit ÷ NPR.                                                                                                                                      |
-| **Net profit**                    | Contribution profit − fixed costs. Not an experiment metric.                                                                                                    |
+| Term                              | Definition                                                                                                                                                                                                                                                                                                 |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Gross publisher revenue (GPR)** | Sum of network payouts for conversions approved in the period.                                                                                                                                                                                                                                             |
+| **Reversals**                     | Network payouts clawed back in the period (by approval-period cohort when analyzing).                                                                                                                                                                                                                      |
+| **Net publisher revenue (NPR)**   | GPR − reversals.                                                                                                                                                                                                                                                                                           |
+| **User rewards cost**             | Rewards credited to users for those conversions, net of user rewards reversed.                                                                                                                                                                                                                             |
+| **Gross spread**                  | NPR − user rewards cost. **Gross spread %** = gross spread ÷ NPR.                                                                                                                                                                                                                                          |
+| **Contribution profit**           | Gross spread − payout processing fees − fraud losses (rewards paid out and later unrecoverable) − variable support cost − allocated CAC − working-capital cost. **CAC includes** paid media, referral rewards, referred-user welcome bonuses and ambassador stipends, attributed by `acquisition_channel`. |
+| **Contribution margin %**         | Contribution profit ÷ NPR.                                                                                                                                                                                                                                                                                 |
+| **Net profit**                    | Contribution profit − fixed costs. Not an experiment metric.                                                                                                                                                                                                                                               |
 
 Never call gross spread "margin" or "profit". Never mix cohorts (approval month versus conversion
 month) within one table.
@@ -81,6 +83,14 @@ Measure:
 depends on milestone completion rates, which only E003/E005 can measure. Report E002 results as
 "per completed milestone", not "per user".
 
+### Game desirability dimension (see docs/research/GAME_DESIRABILITY.md)
+
+E002 also records, per eligible game: store ID (and iOS ID where matchable), genre, publisher,
+release/update recency, content rating, a simulated-gambling flag, and any **legitimately obtainable**
+external popularity and rating signals (with source, retrieval date and license; no scraping).
+Report signal coverage, the payout-vs-popularity relationship at matched milestone depth (H-GD3),
+and the share of the catalog that is social casino (input to D-023). **No composite "fun score".**
+
 ### Working-capital model
 
 Working capital is modeled separately from profitability.
@@ -125,6 +135,61 @@ analytics; D-011). Use distinct `ref` values per channel (e.g. `?ref=tiktok_bio`
 upper bounds until double opt-in exists (D-008).
 
 ---
+
+## E008 — Campus ambassador reach test (pre-launch)
+
+**Question:** Can a small number of voluntary student ambassadors generate early-access signups from
+our target audience (US, Android-heavy) at a lower cost per signup than other channels, without
+harming trust?
+
+**Design (no new infrastructure):**
+
+- 5–10 ambassadors across 2–3 campuses, recruited individually (founder networks). All 18+, written
+  terms, code of conduct, FTC disclosure training (docs/research/REFERRAL_AND_AMBASSADORS.md §7–8).
+- Each gets a unique code with a shared prefix: `amb_<campus>_<id>` (fits the waitlist's
+  `[a-z0-9_-]{1,64}` rule). Measure with `npm run waitlist:report -- --prefix=amb_`.
+- Compensation: none, or a **flat stipend for time**. **Never per signup** (that pays for
+  non-economic activity and invites junk).
+- Run 3–4 weeks. Same landing page for everyone. No paid amplification.
+
+**Measure:** signups per ambassador per week; Android share; cost per signup (stipends ÷ signups);
+later, once launched: activation of the ambassador cohort (started an offer, first approved
+conversion) versus other sources; complaint and conduct incidents.
+
+**Decision:** thresholds must be set **before** the test starts, against a comparison channel (e.g.
+an organic-social baseline from E004). Without a baseline the result is descriptive only:
+CONTINUE COLLECTING rather than PASS. Any conduct or coercion incident → stop and REDESIGN.
+
+## E009 — Conversion-qualified referral pilot (post-launch)
+
+**Preconditions:** launched product; written provider permission for referral traffic (Q27–29) for
+every provider whose offers referred users can see; counsel review; referral ledger and states
+implemented (ARCHITECTURE 2.10).
+
+**Design:** invite-only, capped number of referrers and per-referrer caps, manual review of every
+referral payout for the first cohort, policy amount set from the affordability constraint in the
+referral research doc (not hard-coded). Optionally A/B two reward levels.
+
+**Measure:** q (share of referred signups whose referral reward is actually paid), referred-cohort
+gross spread and reversal rate vs organic, fraud and void rate, provider rejection rate for the
+referred cohort, CAC per _qualified_ user vs other channels, contribution per referred signup.
+
+**Decision rule:** PASS only if CAC per qualified user beats the comparison channel **and** referred
+cohort reversal and fraud rates are not materially worse. Worse provider rejection rates → FAIL
+regardless of CAC (supply risk outweighs it).
+
+## Hypothesis register (cross-experiment)
+
+| ID     | Hypothesis                                                                                  | Where tested                                                  |
+| ------ | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| H-GD1  | Better-rated, higher-volume games have higher activation at similar first-milestone reward  | E003/E005                                                     |
+| H-GD2  | Users trade reward for game quality (lower reward + better game preferred)                  | Pre-launch stated-preference survey, then revealed preference |
+| H-GD3  | Popular games pay less per milestone                                                        | E002                                                          |
+| H-GD4  | External signals predict completion well enough as a cold-start prior                       | Post-launch                                                   |
+| H-GD5  | Recently updated games have fewer missing-credit claims                                     | Post-launch                                                   |
+| H-ACQ1 | High-intent "already downloading" traffic converts at low CAC **where campaigns permit it** | Post-launch, permitted campaigns only                         |
+| H-REF1 | Campus ambassadors reach Android-heavy, high-intent users cheaply                           | E008                                                          |
+| H-REF2 | Conversion-qualified referrals have lower CAC per qualified user than paid channels         | E009                                                          |
 
 ## Methodology rules for any outcome estimate shown to users
 

@@ -246,3 +246,70 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
   not chosen. Competitors lead with these phrases, and we cannot yet say them truthfully.
 - **Revisit when:** A provider is `cash_reward_allowed: YES` with stored evidence **and** a payout
   method is contracted. Then remove the pattern in `src/lib/copy-guard.ts`.
+
+## D-021 — Game desirability is measured from raw, sourced signals; no composite "fun score"
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED
+- **Decision:** Desirability is a first-class research dimension for E002 onward
+  (docs/research/GAME_DESIRABILITY.md). Signals are stored individually with source, scale, sample
+  size, retrieval date and license. Any combining model is internal, versioned and validated
+  against outcomes before it affects ranking. In ranking, desirability is expressed through
+  **measured completion probabilities**, i.e. expected earnings. A $30 offer on a well-liked game
+  outranks a $50 grind only when completion data shows users actually earn more on it.
+- **Alternatives:** an editorial or algorithmic fun score (rejected: unfalsifiable, invites
+  fabricated precision); ignoring the game (rejected: likely the main driver of completion).
+- **Revisit when:** Enough completion data exists to test H-GD1 and H-GD4.
+
+## D-022 — Discovery categories are defined filters with data gates
+
+- **Date:** 2026-10-04 · **Status:** PROPOSED (_needs founder sign-off_)
+- **Decision:** "No purchase needed" can ship at launch. "Popular games that pay" needs a licensed,
+  named popularity source. "Quick wins" needs measured time-to-first-reward (the only pre-data
+  variant is the structural "First reward at install or tutorial"). The founders' "Best rewards"
+  becomes **"Biggest rewards (without purchases)"**, an opt-in sort that is never the default.
+- **Reason:** "Best" implies a quality judgment we cannot support. A default max-reward sort would
+  contradict the Trust page. If the opt-in sort ships, the Trust page copy must be updated to
+  describe it.
+
+## D-023 — Exclude simulated-gambling (social casino) games from the consumer catalog
+
+- **Date:** 2026-10-04 · **Status:** PROPOSED (_needs founder sign-off_)
+- **Reason:** Our public positioning says "not gambling", and competitors' casino offers are part
+  of what makes the category look scammy. Many CPE offers are social casino games (INFERENCE), so
+  exclusion has a supply cost that E002 must measure (share of catalog and of payout volume).
+- **Revisit when:** E002 shows the exclusion makes supply inadequate.
+
+## D-024 — Referral rewards: single-level, conversion-qualified, policy-versioned, counted as CAC
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED (as design constraints; nothing built)
+- **Decision:** A referrer earns only when a directly referred user produces a provider-approved
+  qualifying conversion that clears the reversal window. One level. No buy-in. No rewards for
+  recruiting recruiters. Amounts come from a versioned `referral_policy` frozen at link time,
+  capped per referrer. Referral rewards and welcome bonuses are acquisition cost in contribution
+  margin. Correction to the founders' illustration: gross spread is $12 and the $2 referral reward
+  is CAC (docs/research/REFERRAL_AND_AMBASSADORS.md §2).
+- **Gate:** no referral feature before launch, written provider permission (Q27–29) and counsel
+  review. Offers from providers that disallow referral traffic are hidden from referral-acquired
+  users (`acquisition_channel` × `allowed_traffic_sources`).
+
+## D-025 — Campus ambassadors: voluntary individuals only; no organization payouts; never paid per signup pre-launch
+
+- **Date:** 2026-10-04 · **Status:** PROPOSED (_needs founder sign-off_)
+- **Decision:** Ambassadors participate as individuals (18+, written terms, code of conduct, FTC
+  disclosure). We do not pay fraternities, sororities, clubs, teams or dorms based on member
+  participation. No quotas, leaderboards or group competitions. Pre-launch ambassadors are unpaid
+  or receive a flat stipend for time, never a per-signup bounty. They link only to our site.
+- **Reason:** Organization-level incentives create pressure on members (coercion and hazing
+  adjacency). Per-signup pay rewards non-economic activity and junk signups. Direct provider links
+  risk sub-publisher violations.
+- **Test:** EXPERIMENTS E008.
+
+## D-026 — "Already downloading this game?" acquisition is gated per campaign
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED
+- **Decision:** No branded or search-intent acquisition (per-game pages or ads naming the game)
+  except on campaigns whose terms explicitly permit it in writing (Q11, Q31). The schema carries
+  per-campaign `allowed_traffic_sources`. Per-game pages must be data-driven and say immediately
+  when an offer has ended.
+- **Reason:** Advertisers pay for incremental players. Intercepting users who would install anyway
+  is commonly restricted (INFERENCE), and violations risk rejected conversions and account loss.

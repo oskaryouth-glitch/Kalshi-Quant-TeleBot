@@ -45,8 +45,17 @@ business email, privacy policy, terms and contact details.
 
 ## Decisions awaiting founder sign-off
 
+Added 2026-10-04: D-022 (discovery categories, "Biggest" not "Best"), D-023 (exclude social casino),
+D-025 (campus program guardrails).
+
 D-004 (name), D-015 (time = elapsed days), D-017 (disclosing multi-network
 intent on the partner page). See DECISIONS.md.
+
+## Research areas opened (2026-10-04)
+
+- Game desirability: `docs/research/GAME_DESIRABILITY.md` (feeds E002; hypotheses H-GD1–5).
+- Referral and campus ambassadors: `docs/research/REFERRAL_AND_AMBASSADORS.md` (E008 can run
+  pre-launch with `npm run waitlist:report`; E009 is post-launch and gated).
 
 ## Next phase candidates (in order)
 

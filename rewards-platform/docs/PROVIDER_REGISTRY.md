@@ -16,29 +16,31 @@ Evidence levels used below:
 
 ## Registry fields (per provider)
 
-| Field                                              | Values / notes                                                                               |
-| -------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `cash_reward_allowed`                              | YES / NO / WRITTEN_APPROVAL_REQUIRED / UNKNOWN                                               |
-| `gift_card_allowed`                                | YES / NO / WRITTEN_APPROVAL_REQUIRED / UNKNOWN                                               |
-| `custom_ui_allowed`                                | Can we render their catalog in our own UI?                                                   |
-| `independent_ranking_allowed`                      | Can we sort and rank offers ourselves?                                                       |
-| `multi_network_allowed`                            | Can competing networks be integrated at the same time?                                       |
-| `cross_provider_comparison_allowed`                | Can we compare duplicate offers internally?                                                  |
-| `pre_start_routing_allowed`                        | Can we choose the provider for a new user before they start?                                 |
-| `traffic_sources`                                  | organic social / paid social / SEO / brand bidding — each allowed, prohibited or conditional |
-| `reversal_policy`, `max_reversal_window_days`      | Text + number                                                                                |
-| `payment_terms`, `minimum_payout`, `reserve_terms` | e.g. Net-30, $50 min                                                                         |
-| `api_rate_limits`                                  |                                                                                              |
-| `catalog_endpoint_complete`                        | Full catalog or paginated subset                                                             |
-| `exposes_milestone_payouts`                        | Per-goal publisher payout                                                                    |
-| `exposes_store_ids`                                | Package name / App Store ID                                                                  |
-| `exposes_epc_cr`                                   | Provider-claimed performance metrics                                                         |
-| `exposes_expiration`, `exposes_attribution_window` |                                                                                              |
-| `signed_conversion_postback`                       | Scheme: HMAC / secret / IP allowlist                                                         |
-| `reversal_postback`                                | Yes / report-only / no                                                                       |
-| `accepts_prelaunch_publishers`                     | Q26                                                                                          |
-| `application_status`                               | not-applied / applied / approved / rejected (+dates)                                         |
-| `evidence`                                         | List of {claim, source URL or file, retrieved/received date, quote ≤ 25 words}               |
+| Field                                              | Values / notes                                                                                                                   |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `cash_reward_allowed`                              | YES / NO / WRITTEN_APPROVAL_REQUIRED / UNKNOWN                                                                                   |
+| `gift_card_allowed`                                | YES / NO / WRITTEN_APPROVAL_REQUIRED / UNKNOWN                                                                                   |
+| `custom_ui_allowed`                                | Can we render their catalog in our own UI?                                                                                       |
+| `independent_ranking_allowed`                      | Can we sort and rank offers ourselves?                                                                                           |
+| `multi_network_allowed`                            | Can competing networks be integrated at the same time?                                                                           |
+| `cross_provider_comparison_allowed`                | Can we compare duplicate offers internally?                                                                                      |
+| `pre_start_routing_allowed`                        | Can we choose the provider for a new user before they start?                                                                     |
+| `traffic_sources`                                  | organic social / paid social / SEO / brand bidding — each allowed, prohibited or conditional                                     |
+| `reversal_policy`, `max_reversal_window_days`      | Text + number                                                                                                                    |
+| `payment_terms`, `minimum_payout`, `reserve_terms` | e.g. Net-30, $50 min                                                                                                             |
+| `api_rate_limits`                                  |                                                                                                                                  |
+| `catalog_endpoint_complete`                        | Full catalog or paginated subset                                                                                                 |
+| `exposes_milestone_payouts`                        | Per-goal publisher payout                                                                                                        |
+| `exposes_store_ids`                                | Package name / App Store ID                                                                                                      |
+| `exposes_epc_cr`                                   | Provider-claimed performance metrics                                                                                             |
+| `exposes_expiration`, `exposes_attribution_window` |                                                                                                                                  |
+| `signed_conversion_postback`                       | Scheme: HMAC / secret / IP allowlist                                                                                             |
+| `reversal_postback`                                | Yes / report-only / no                                                                                                           |
+| `accepts_prelaunch_publishers`                     | Q26                                                                                                                              |
+| `allowed_traffic_sources`                          | Per provider and, where needed, per campaign: organic, SEO, branded/search, referral, ambassador, paid social (Q8–11, 27–28, 31) |
+| `exposes_desirability_signals`                     | Ratings, installs, genre, publisher; display rights (Q30)                                                                        |
+| `application_status`                               | not-applied / applied / approved / rejected (+dates)                                                                             |
+| `evidence`                                         | List of {claim, source URL or file, retrieved/received date, quote ≤ 25 words}                                                   |
 
 ## Current candidates
 
@@ -93,6 +95,11 @@ Evidence levels used below:
 24. Signed conversion postback available?
 25. Reversal postback available?
 26. Will you approve a legitimate pre-launch US startup without significant existing traffic?
+27. Are users acquired through a referral program (incentivized to sign up by a referral bonus) permitted traffic?
+28. Are campus or brand-ambassador programs permitted, and would ambassadors be treated as sub-publishers? (Ambassadors would link only to our site, never to your tracking links.)
+29. Are there restrictions on funding referral bonuses or welcome bonuses from your payouts?
+30. Do you expose store ratings, rating counts, install ranges, genre or publisher in the catalog, and may we display them?
+31. Which campaigns restrict branded or search traffic (e.g. pages or ads naming the game), and is that exposed per campaign?
 
 ## Suggested next research step
 

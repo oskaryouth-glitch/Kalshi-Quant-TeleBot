@@ -15,7 +15,8 @@
     "test:e2e": "playwright test",
     "check:launch": "node scripts/launch-check.ts",
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build",
-    "db:migrate": "node scripts/db-migrate.ts"
+    "db:migrate": "node scripts/db-migrate.ts",
+    "waitlist:report": "node scripts/waitlist-report.ts"
   },
   "dependencies": {
     "next": "16.3.8",

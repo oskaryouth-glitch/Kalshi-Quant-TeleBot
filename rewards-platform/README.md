@@ -11,17 +11,18 @@ This directory is self-contained and lives inside an unrelated repository for no
 
 ## Start here
 
-| If you want to…                                    | Read                        |
-| -------------------------------------------------- | --------------------------- |
-| Understand the business and thesis                 | `docs/PRODUCT_VISION.md`    |
-| Know what's built and what's blocking launch       | `docs/CURRENT_PHASE.md`     |
-| See why things are the way they are                | `docs/DECISIONS.md`         |
-| Review risks                                       | `docs/RISK_REGISTER.md`     |
-| Review experiment design and metric definitions    | `docs/EXPERIMENTS.md`       |
-| Check provider status (all UNKNOWN today)          | `docs/PROVIDER_REGISTRY.md` |
-| Check claim rules and legal open questions         | `docs/COMPLIANCE_NOTES.md`  |
-| Understand the code and the future platform design | `docs/ARCHITECTURE.md`      |
-| Work on UI or copy                                 | `docs/DESIGN_SYSTEM.md`     |
+| If you want to…                                                 | Read                        |
+| --------------------------------------------------------------- | --------------------------- |
+| Understand the business and thesis                              | `docs/PRODUCT_VISION.md`    |
+| Know what's built and what's blocking launch                    | `docs/CURRENT_PHASE.md`     |
+| See why things are the way they are                             | `docs/DECISIONS.md`         |
+| Review risks                                                    | `docs/RISK_REGISTER.md`     |
+| Review experiment design and metric definitions                 | `docs/EXPERIMENTS.md`       |
+| Check provider status (all UNKNOWN today)                       | `docs/PROVIDER_REGISTRY.md` |
+| Check claim rules and legal open questions                      | `docs/COMPLIANCE_NOTES.md`  |
+| Understand the code and the future platform design              | `docs/ARCHITECTURE.md`      |
+| Work on UI or copy                                              | `docs/DESIGN_SYSTEM.md`     |
+| Read research areas (competitors, game desirability, referrals) | `docs/research/`            |
 
 ## Develop
 
@@ -38,6 +39,7 @@ npm run dev                     # http://localhost:3000 (waitlist uses an in-mem
 ```bash
 npm run verify          # format check, lint, typecheck, unit tests, production build
 npm run check:launch    # fails until launch blockers are resolved (expected to fail today)
+DATABASE_URL=… npm run waitlist:report -- --prefix=amb_   # signups by ref code and platform (no PII)
 
 # Postgres integration test
 TEST_DATABASE_URL=postgres://… npm test

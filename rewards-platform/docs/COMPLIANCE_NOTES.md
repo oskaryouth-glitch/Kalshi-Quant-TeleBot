@@ -71,6 +71,21 @@ reward-program terms.
 11. **Reward-program terms.** Holds, reversals (including after withdrawal), negative balances,
     account closure, dispute process, chargeback-like recovery.
 
+## Referral, ambassador and game-data questions (added 2026-10-04)
+
+12. **Endorsements:** referrer and ambassador disclosure requirements (FTC Endorsement Guides:
+    material connection includes "the possibility of being paid", disclosed with the endorsement;
+    a bare "ambassador" is insufficient; CONFIRMED from ftc.gov). Our monitoring obligations.
+13. **Pyramid/MLM:** confirm that single-level, no-buy-in, conversion-qualified referral rewards
+    are clear of pyramid characteristics under federal and state law.
+14. **Ambassadors:** contractor agreements, worker classification, tax reporting for stipends and
+    referral rewards; NIL rules if student-athletes participate.
+15. **Campus rules:** per-campus solicitation and trademark policies before any on-campus activity.
+16. **Store data:** terms for Apple's iTunes Search/Lookup API and any licensed vendor; display
+    rights for third-party ratings; no scraping of Google Play.
+17. **Game names in marketing:** nominative use of game titles on landing pages vs provider and
+    advertiser restrictions on branded traffic.
+
 ## Launch blockers (from `npm run check:launch`)
 
 Working brand name; legal entity; entity jurisdiction; mailing address; partners, support and

@@ -180,3 +180,36 @@ Table `estimate`: `app_id`, `provider?`, `snapshot_id?`, `metric`, `value`, `int
 Postback ingestion should not depend on a single serverless invocation succeeding. Accept → persist
 raw → 200 quickly, then process from a durable queue with idempotent workers and a dead-letter
 queue. Catalog polling runs as scheduled jobs that respect provider rate limits.
+
+### 2.9 Game signals and traffic permissions
+
+- **`app_signal`**: `app_id`, `source` (e.g. `itunes_lookup`, `vendor:<name>`, `provider:<id>`),
+  `metric` (rating_avg, rating_count, install_bucket, genre, publisher, content_rating,
+  simulated_gambling, last_updated), `value`, `scale`, `retrieved_at`, `license_ref`,
+  `raw_payload_id`. Append-only snapshots, so trends are reconstructable. **No derived "fun score"
+  column** (D-021).
+- **Traffic permissions**: `provider.allowed_traffic_sources` and optional
+  `campaign.allowed_traffic_sources` (organic, seo, branded_search, referral, ambassador,
+  paid_social). Each holds a reference to the written evidence in PROVIDER_REGISTRY.
+- **`user.acquisition_channel`** (+ `acquisition_ref`, e.g. a referral code ID), set at signup and
+  immutable.
+- **Eligibility filter**: an offer is shown and routable only if the user's acquisition channel is
+  allowed by both the provider and the campaign. Route selection (2.4) applies the same filter.
+
+### 2.10 Referrals (conceptual; gated by D-024)
+
+- **`referral_policy`**: `version`, `kind` (friend / ambassador), `reward_minor`, `currency`,
+  `qualifying_rule` (e.g. cumulative approved NPR ≥ X within N days), `hold_rule` (≥ longest
+  relevant reversal window), `caps` (per referrer per period), `active_from/to`.
+- **`referral_code`**: `owner_user_id`, `code` (unique), `kind`, `policy_version`, `status`.
+- **`referral_attribution`**: `referred_user_id` (**unique**: one attribution per user),
+  `code_id`, `captured_at`, `capture_method` (link / manual), `policy_version` (frozen), and risk
+  references (hashed signals only).
+- **`referral_reward`**: `attribution_id` (**unique**), `qualifying_conversion_ids`,
+  `amount_minor`, `status` (LINKED → QUALIFIED → AVAILABLE → PAID; EXPIRED, VOIDED, REVERSED,
+  REVERSED_AFTER_PAYOUT), `status_history` (append-only), `void_reason`.
+- **Ledger**: referral payouts post to `acquisition_expense:referral`, and to the referrer's
+  pending/available accounts. Provider reversals of qualifying conversions propagate automatically.
+- **Structural single-level guarantee**: rewards are computed only from `referral_attribution`
+  rows whose `code.owner_user_id` is the referrer. There is no traversal of referral chains anywhere
+  in reward logic. Add an invariant test for this when it is built.
