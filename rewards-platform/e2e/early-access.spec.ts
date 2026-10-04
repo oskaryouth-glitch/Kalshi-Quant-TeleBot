@@ -75,7 +75,7 @@ test.describe("early access form", () => {
     const email = unique("nojs");
     await page.goto("/early-access");
     await page.getByLabel("Email address").fill(email);
-    await page.getByLabel("Other / not sure").check();
+    await page.getByLabel("Other", { exact: true }).check();
     await page.getByLabel(/I am 18 or older/).check();
     await page.getByRole("button", { name: "Join early access" }).click();
     await expect(page.getByText("You’re on the list")).toBeVisible();

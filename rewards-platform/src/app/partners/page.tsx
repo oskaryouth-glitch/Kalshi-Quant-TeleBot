@@ -156,6 +156,7 @@ export default function PartnersPage() {
       <Section id="integration" tone="surface" labelledBy="integration-heading">
         <div className="grid gap-10 lg:grid-cols-[0.75fr_1.25fr]">
           <SectionHeading
+            className="lg:sticky lg:top-24 lg:self-start"
             id="integration-heading"
             eyebrow="Integration and attribution"
             title="Clean data in, clean data out."
@@ -168,6 +169,7 @@ export default function PartnersPage() {
       <Section labelledBy="quality-heading">
         <div className="grid gap-10 lg:grid-cols-[0.75fr_1.25fr]">
           <SectionHeading
+            className="lg:sticky lg:top-24 lg:self-start"
             id="quality-heading"
             eyebrow="Traffic quality"
             title="We would rather lose a conversion than send you a bad one."
@@ -180,10 +182,11 @@ export default function PartnersPage() {
       <Section tone="surface" labelledBy="presentation-heading">
         <div className="grid gap-10 lg:grid-cols-[0.75fr_1.25fr]">
           <SectionHeading
+            className="lg:sticky lg:top-24 lg:self-start"
             id="presentation-heading"
             eyebrow="Consumer presentation"
             title="Your offers, described accurately."
-            intro="Users who understand an offer before they start are more likely to finish it and less likely to dispute it."
+            intro="Our working hypothesis: people who understand an offer before they start finish more often and dispute less. We intend to measure whether that holds."
           />
           <StatusList items={presentation} />
         </div>
@@ -192,6 +195,7 @@ export default function PartnersPage() {
       <Section labelledBy="questions-heading">
         <div className="grid gap-10 lg:grid-cols-[0.75fr_1.25fr]">
           <SectionHeading
+            className="lg:sticky lg:top-24 lg:self-start"
             id="questions-heading"
             eyebrow="Before we integrate"
             title="What we will ask you in writing."

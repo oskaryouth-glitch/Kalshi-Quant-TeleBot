@@ -12,7 +12,7 @@ const initialState: WaitlistState = { status: "idle" };
 const platformOptions = [
   { value: "android", label: "Android" },
   { value: "iphone", label: "iPhone" },
-  { value: "other", label: "Other / not sure" },
+  { value: "other", label: "Other" },
 ] as const;
 
 export function WaitlistForm() {
@@ -66,7 +66,7 @@ export function WaitlistForm() {
         tabIndex={-1}
         aria-live="polite"
         className={cn(
-          "rounded-xl text-[0.9375rem] leading-relaxed outline-none",
+          "rounded-xl text-[0.9375rem] leading-relaxed outline-none empty:hidden",
           (hasErrors ||
             state.status === "rate-limited" ||
             state.status === "error" ||

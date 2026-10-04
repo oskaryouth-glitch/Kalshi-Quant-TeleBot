@@ -1,0 +1,62 @@
+name: rewards-platform
+
+on:
+  push:
+    paths: ["rewards-platform/**", ".github/workflows/rewards-platform.yml"]
+  pull_request:
+    paths: ["rewards-platform/**", ".github/workflows/rewards-platform.yml"]
+
+defaults:
+  run:
+    working-directory: rewards-platform
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: rp
+          POSTGRES_PASSWORD: rp
+          POSTGRES_DB: rp
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U rp" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DB_URL: postgres://rp:rp@localhost:5432/rp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: rewards-platform/package-lock.json
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: Unit + Postgres integration tests
+        run: npm test
+        env:
+          TEST_DATABASE_URL: ${{ env.DB_URL }}
+      - name: Migrate and build (with DB so the waitlist form is open)
+        run: npm run db:migrate && npm run build
+        env:
+          DATABASE_URL: ${{ env.DB_URL }}
+      - run: npx playwright install --with-deps chromium
+      - name: End-to-end tests
+        run: npm run test:e2e
+        env:
+          E2E_DATABASE_URL: ${{ env.DB_URL }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-report
+          path: |
+            rewards-platform/playwright-report
+            rewards-platform/e2e/.artifacts
+          retention-days: 7
+      - name: Launch readiness (informational until launch blockers are resolved)
+        run: npm run check:launch || echo "::warning::Launch blockers remain (expected pre-launch)."

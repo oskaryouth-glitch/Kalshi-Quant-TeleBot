@@ -56,12 +56,13 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/early-access"
-            className={buttonClasses("primary", "hidden min-h-10 px-4 sm:inline-flex")}
-          >
-            Get early access
-          </Link>
+          {/* Wrapper controls visibility: buttonClasses sets display:inline-flex, which would
+              otherwise override a `hidden` utility on the link itself. */}
+          <span className="hidden min-[400px]:block">
+            <Link href="/early-access" className={buttonClasses("primary", "min-h-10 px-4")}>
+              Get early access
+            </Link>
+          </span>
           <button
             type="button"
             className="inline-flex size-11 items-center justify-center rounded-full text-ink hover:bg-paper-deep md:hidden"

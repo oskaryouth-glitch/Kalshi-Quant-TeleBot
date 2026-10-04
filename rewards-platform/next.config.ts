@@ -42,6 +42,10 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  async redirects() {
+    // Browsers and crawlers request /favicon.ico regardless of <link rel="icon">.
+    return [{ source: "/favicon.ico", destination: "/icon.svg", permanent: false }];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

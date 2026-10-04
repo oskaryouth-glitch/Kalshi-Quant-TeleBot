@@ -28,8 +28,9 @@ export default function EarlyAccessPage() {
 
   return (
     <div className="border-b border-line">
-      <Container className="grid gap-12 py-14 sm:py-20 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
-        <div>
+      <Container className="grid gap-10 py-14 sm:py-20 lg:grid-cols-[0.9fr_1.1fr] lg:gap-x-20 lg:gap-y-10">
+        {/* Mobile order: intro, form, disclosure. Desktop: intro + disclosure left, form right. */}
+        <div className="lg:col-start-1 lg:row-start-1">
           <Eyebrow>Early access</Eyebrow>
           <h1 className="mt-4 font-display text-4xl font-semibold tracking-[-0.03em] text-balance sm:text-5xl">
             Be first to try it.
@@ -39,27 +40,9 @@ export default function EarlyAccessPage() {
             and we will email you when early access opens. Joining does not create an account, and
             nothing is being offered or paid yet.
           </p>
-
-          <div className="mt-10 rounded-[var(--radius-card)] border border-line bg-surface p-6">
-            <h2 className="font-semibold">What we collect, and why</h2>
-            <dl className="mt-4 space-y-3 text-[0.9375rem]">
-              {collected.map(([term, why]) => (
-                <div key={term}>
-                  <dt className="font-medium text-ink">{term}</dt>
-                  <dd className="text-ink-2">{why}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="mt-5 text-sm leading-relaxed text-ink-3">
-              No tracking cookies, no ad pixels and no selling your information.{" "}
-              <Link href="/privacy" className="text-accent underline underline-offset-4">
-                Privacy policy
-              </Link>
-            </p>
-          </div>
         </div>
 
-        <div className="rounded-[var(--radius-card)] border border-line bg-surface p-6 shadow-[var(--shadow-card)] sm:p-9">
+        <div className="rounded-[var(--radius-card)] border border-line bg-surface p-6 shadow-[var(--shadow-card)] sm:p-9 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
           {open ? (
             <WaitlistForm />
           ) : (
@@ -73,6 +56,23 @@ export default function EarlyAccessPage() {
               </p>
             </div>
           )}
+        </div>
+        <div className="rounded-[var(--radius-card)] border border-line bg-surface p-6 lg:col-start-1 lg:row-start-2 lg:self-start">
+          <h2 className="font-semibold">What we collect, and why</h2>
+          <dl className="mt-4 space-y-3 text-[0.9375rem]">
+            {collected.map(([term, why]) => (
+              <div key={term}>
+                <dt className="font-medium text-ink">{term}</dt>
+                <dd className="text-ink-2">{why}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-5 text-sm leading-relaxed text-ink-3">
+            No tracking cookies, no ad pixels and no selling your information.{" "}
+            <Link href="/privacy" className="text-accent underline underline-offset-4">
+              Privacy policy
+            </Link>
+          </p>
         </div>
       </Container>
     </div>

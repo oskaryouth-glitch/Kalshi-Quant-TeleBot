@@ -46,8 +46,6 @@ next-env.d.ts
 /playwright-report/
 /e2e/.artifacts/
 
-# local helper scripts
-/.shot.mjs
 
 # The repository root .gitignore excludes Python "lib/" dirs; re-include ours.
 !/src/lib/

@@ -91,3 +91,20 @@ test("metadata routes respond", async ({ request }) => {
   const sitemap = await (await request.get("/sitemap.xml")).text();
   for (const route of publicRoutes) expect(sitemap).toContain(`<loc>${new URL(route, site.url)}`);
 });
+
+test("no horizontal overflow at 320px on any page", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 320, height: 640 } });
+  const page = await context.newPage();
+  for (const route of publicRoutes) {
+    await page.goto(route);
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, `overflow on ${route}`).toBeLessThanOrEqual(0);
+    // The menu button must be fully on-screen.
+    const button = page.getByRole("button", { name: "Open menu" });
+    const box = await button.boundingBox();
+    expect(box && box.x + box.width <= 320, `menu button clipped on ${route}`).toBe(true);
+  }
+  await context.close();
+});

@@ -10,8 +10,8 @@ export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-line bg-paper">
       <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
-          <div className="max-w-xs">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+          <div className="col-span-2 max-w-xs md:col-span-1">
             <div className="flex items-center gap-2.5">
               <LogoMark />
               <span className="font-display text-lg font-semibold tracking-[-0.02em]">

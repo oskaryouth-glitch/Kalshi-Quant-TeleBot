@@ -49,7 +49,7 @@ const wontDo = [
 const measurement: Array<[string, string]> = [
   [
     "Typical earnings",
-    "The middle outcome (median) among people who started the offer through us, not just those who finished. Shown with the number of people it is based on.",
+    "What people who started the offer through us actually earned, including those who stopped early, not just those who finished. Shown with the number of people it is based on.",
   ],
   [
     "Typical days to reach a milestone",

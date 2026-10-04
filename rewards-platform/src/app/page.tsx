@@ -48,7 +48,7 @@ const faqs = [
   },
   {
     q: "How would you make money?",
-    a: "Game publishers pay offer networks for new players, and those networks pay sites like ours when a milestone is verified. We pass a share of that to you as your reward and keep the rest. We plan to explain this on every offer rather than hide it.",
+    a: "Game publishers pay offer networks for new players, and those networks pay sites like ours when a milestone is verified. We pass a share of that to you as your reward and keep the rest. Using the product will be free, and we plan to explain how rewards are set rather than hide it.",
   },
   {
     q: "Will I have to spend money?",
@@ -175,7 +175,7 @@ export default function HomePage() {
           Get involved
         </h2>
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="flex flex-col rounded-[var(--radius-card)] bg-ink p-7 text-white sm:p-9">
+          <div className="flex flex-col rounded-[var(--radius-card)] bg-ink p-6 text-white sm:p-9">
             <p className="text-sm font-semibold tracking-[0.14em] text-white/70 uppercase">
               For players
             </p>
@@ -183,8 +183,8 @@ export default function HomePage() {
               Hear when we open.
             </h3>
             <p className="mt-3 leading-relaxed text-white/80">
-              Leave your email and phone type. That is all we ask for. No spam, and you can leave
-              the list at any time.
+              We ask for your email, your phone type and a quick age check. No spam, and you can
+              leave the list at any time.
             </p>
             <div className="mt-auto pt-7">
               <ButtonLink href="/early-access" variant="secondary" className="border-transparent">
@@ -192,7 +192,7 @@ export default function HomePage() {
               </ButtonLink>
             </div>
           </div>
-          <div className="flex flex-col rounded-[var(--radius-card)] border border-line bg-paper p-7 sm:p-9">
+          <div className="flex flex-col rounded-[var(--radius-card)] border border-line bg-paper p-6 sm:p-9">
             <p className="text-sm font-semibold tracking-[0.14em] text-accent uppercase">
               For offer networks
             </p>

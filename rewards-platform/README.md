@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# rewards-platform
 
-## Getting Started
+Pre-approval company shell for a US consumer product that makes rewarded mobile-game offers easier
+to evaluate: standardized up-front disclosure now, measured outcomes once real data exists.
 
-First, run the development server:
+> **Working name:** "Worthplay" (not trademark-cleared; see `docs/DECISIONS.md` D-004).
+> **Status:** pre-launch. No offers, balances or payouts exist. Nothing here integrates with any
+> offer network yet.
+
+This directory is self-contained and lives inside an unrelated repository for now (D-001).
+
+## Start here
+
+| If you want to…                                    | Read                        |
+| -------------------------------------------------- | --------------------------- |
+| Understand the business and thesis                 | `docs/PRODUCT_VISION.md`    |
+| Know what's built and what's blocking launch       | `docs/CURRENT_PHASE.md`     |
+| See why things are the way they are                | `docs/DECISIONS.md`         |
+| Review risks                                       | `docs/RISK_REGISTER.md`     |
+| Review experiment design and metric definitions    | `docs/EXPERIMENTS.md`       |
+| Check provider status (all UNKNOWN today)          | `docs/PROVIDER_REGISTRY.md` |
+| Check claim rules and legal open questions         | `docs/COMPLIANCE_NOTES.md`  |
+| Understand the code and the future platform design | `docs/ARCHITECTURE.md`      |
+| Work on UI or copy                                 | `docs/DESIGN_SYSTEM.md`     |
+
+## Develop
+
+Requires Node ≥ 22.18 (scripts use native TypeScript type-stripping; the Next app itself needs ≥ 20.9).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm ci
+cp .env.example .env.local      # optional; the dev server works with nothing set
+npm run dev                     # http://localhost:3000 (waitlist uses an in-memory store in dev)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Checks
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run verify          # format check, lint, typecheck, unit tests, production build
+npm run check:launch    # fails until launch blockers are resolved (expected to fail today)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Postgres integration test
+TEST_DATABASE_URL=postgres://… npm test
 
-## Learn More
+# End-to-end (production build + real Postgres)
+DATABASE_URL=postgres://… npm run db:migrate
+DATABASE_URL=postgres://… npm run build
+E2E_DATABASE_URL=postgres://… npm run test:e2e
+# In sandboxes with a preinstalled Chromium:
+#   PLAYWRIGHT_CHROMIUM_PATH=/path/to/chrome PLAYWRIGHT_NO_PROXY=1 npm run test:e2e
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Rules that the build enforces
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **No fake claims.** `src/lib/copy-guard.ts` fails the build on hype, implied partnerships,
+  network or competitor names, user counts, payout totals, hourly rates and ratings.
+- **No fabricated offer data.** The only offer data is a typed, visibly labeled illustration.
+- **No placeholder company facts.** Missing facts render as "not yet published"; `check:launch` blocks.
+- **Money is integer cents.**
+- **WCAG AA contrast** for design tokens; axe runs on every page in e2e.

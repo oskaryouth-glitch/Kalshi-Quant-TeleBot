@@ -5,7 +5,7 @@ type Variant = "primary" | "secondary" | "ghost";
 
 const base =
   "inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors duration-150 " +
-  "min-h-11 px-5 text-[0.9375rem] whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-60";
+  "min-h-11 px-5 py-2 text-center text-[0.9375rem] disabled:cursor-not-allowed disabled:opacity-60";
 
 const variants: Record<Variant, string> = {
   primary: "bg-ink text-white hover:bg-ink-2",
