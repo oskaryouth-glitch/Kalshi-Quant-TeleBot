@@ -14,6 +14,18 @@ retention, social accountability and organic distribution. **Unproven.**
 Groups must not be campus-specific. The mechanic is for any friend group, roommates, Discord
 communities, coworkers or online communities (D-032).
 
+### Founder review (2026-10-04, second round): what is approved vs open
+
+| Item                                                                     | Status                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MODIFY assessment                                                        | Agreed                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Progress unit                                                            | **Open.** Candidates: qualifying approved events, approved reward dollars, weighted qualifying activity, or another normalized unit from E002. Criteria: understandable to users; correlates with legitimate advertiser and company value; resists farming; doesn't pressure purchases; works across very different milestone structures. The dollar-based recommendation below is the engineering _lead hypothesis_, not a decision. |
+| Required-purchase milestones excluded from clan **monetary** progression | **Approved as the default hypothesis**                                                                                                                                                                                                                                                                                                                                                                                                |
+| Weekly **visible/social** progress with delayed **financial** settlement | Preserved                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Social/non-cash clan before cash                                         | **Approved**, conditional on enough scale for a meaningful experiment                                                                                                                                                                                                                                                                                                                                                                 |
+| Size 3–10                                                                | **Initial test hypothesis**, not a product limit                                                                                                                                                                                                                                                                                                                                                                                      |
+| Marginal-tier rewards                                                    | **Candidate**, not final                                                                                                                                                                                                                                                                                                                                                                                                              |
+
 ### Assessment: MODIFY
 
 Worth testing, with these structural changes:
@@ -161,7 +173,73 @@ m = 8 members and ρ = 0.2 (ASSUMPTION), that is 2.4, so about **940 users (abou
 arm**. Conclusion: clan and monetary-progression experiments are **post-scale**. The first cohort
 can only produce qualitative signals.
 
-## 10. The flywheel (hypothesis, not a moat)
+## 10. Lifetime account progression (hypothesis; D-039)
+
+Concept only: qualifying-offer counts (e.g. 10 / 25 / 50 / 100) unlock lifetime milestones that
+**never reset**. A milestone might grant status, an account level, a perk, or possibly a monetary
+bonus. No numbers or rewards are approved.
+
+**Purpose A, retention:** a user approaching a milestone may return for another profitable offer.
+Testable inside E011 (lifetime milestone arm vs control).
+
+**Purpose B, account stickiness / anti-abuse: likely overestimated.**
+
+- It deters **restarting**: ban evasion and cycling new accounts to re-farm welcome bonuses, since
+  progress would be lost.
+- It does **not** deter **parallel** accounts. In the "A refers B" attack both accounts are kept
+  and both accumulate.
+- **Monetary** lifetime bonuses can _increase_ the payoff of account farms: every account earns its
+  own milestones.
+- So: lean on status and perks; gate any cash milestone behind identity verification; key milestone
+  eligibility to the verified person (D-041). **Never described as fraud prevention.**
+
+**Counting rule (hypothesis):** count provider-approved, post-hold qualifying offers, so milestones
+can't be reached with reversed or shallow activity. Whether purchase milestones count follows the
+same purchase-pressure reasoning as clans.
+
+## 11. Lifetime vs seasonal progression (kept separate)
+
+|           | Lifetime                                     | Seasonal                                                            |
+| --------- | -------------------------------------------- | ------------------------------------------------------------------- |
+| Resets    | Never                                        | Yes, per season                                                     |
+| Rewards   | Maintaining one legitimate account over time | Recurring goals within a period                                     |
+| Supports  | Status, trust, loyalty                       | Quests, progression, battle-pass-style mechanics                    |
+| Main risk | Monetary milestones multiply farm payoffs    | Dark-pattern exposure (deadlines, streaks, loss framing; LEGAL L13) |
+
+A user could eventually have both. Neither is built. Both draw on the same per-conversion incentive
+budget (D-034).
+
+## 12. Principle: one account should become more valuable over time (D-040)
+
+Using one legitimate account should generally beat starting over, through **positive** accumulated
+value: lifetime progression, reputation and trust (e.g. faster payout holds for accounts with a
+clean history, if risk data supports it), historical tracking record and evidence for claims,
+personalized recommendations, clan and social relationships, referral history, earned status.
+
+**No punitive lock-in.** Users can leave at any time, close their account and withdraw available
+balances under the published terms. Forfeiture of accrued value only for fraud or terms violations,
+with a stated process and appeal (LEGAL L31). No artificial switching barriers.
+
+## 13. Combined fraud vector: referrals + lifetime progression + clans
+
+**The "self-contained household".** One person or a small ring runs a referrer account plus several
+alternate accounts, referred into the referrer's own clan. Referral rewards pay per referred
+account; clan targets that ease with size reward padding; lifetime milestones pay per account.
+Every layer multiplies with the account count, so the combination is worse than the sum of its
+parts.
+
+**Required mitigations before any of these layers carries money:**
+
+1. Incentives, caps and milestone eligibility keyed to a **verified person**, not an account
+   (D-041).
+2. One relationship graph across referrer, referee, clan co-membership, devices, phones and payout
+   destinations.
+3. Only provider-approved, post-hold activity counts for anything.
+4. Identity verification before monetary incentives above small thresholds.
+5. Clan size and target rules evaluated against padding (size-independent targets as the safer
+   variant; LEGAL L12).
+
+## 14. The flywheel (hypothesis, not a moat)
 
 desirable games + good rewards → users join → users earn → progression encourages another offer →
 users refer friends → friends join groups → group incentives create more activity → more legitimate

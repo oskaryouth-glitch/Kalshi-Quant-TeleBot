@@ -38,7 +38,8 @@ Use PROVIDER_REGISTRY questions 1–36. The critical subset for the first conver
 1. Cash-equivalent rewards (PayPal/ACH/gift cards) to users: Q1–2 (BitLabs: confirm that our
    specific model fits the public terms).
 2. Custom UI on the API, our own ranking, and showing their offers alongside competitors': Q3–6.
-3. Pre-start routing between networks: Q7 (relates to D-017's partner-page disclosure).
+3. Multiple networks, ranking, duplicate campaigns and pre-start routing: Q4–7. Ask privately and
+   in writing; the public site stays general (D-017 as modified).
 4. Traffic sources, including referral, ambassador and game-intent pages: Q8–11, Q27–29, Q31, Q33.
 5. Additional bonus layers on top of offer rewards (group/progression): Q34.
 6. Reversal windows, payment terms, reserves; full catalog with milestone payouts and store IDs:
@@ -130,6 +131,9 @@ reverse (INFERENCE).
 > **Fraud prevention (planned):** US adults (18+) only; verification before first withdrawal; one
 > account per person; device and network risk signals; withdrawal holds and manual review;
 > monitoring of your rejection rates as a quality signal.
-> **Multi-network:** We may integrate more than one network. Each user's attempt at an offer is
-> attributed to exactly one network, chosen before they start, and never switched afterward.
+> **Attribution:** Each user's attempt at an offer is attributed to exactly one network and never
+> switched afterward.
+> _(Private, per D-017: in the conversation, not on the public site, ask and get written answers
+> on integrating multiple networks, independent ranking, duplicate campaigns and pre-start route
+> selection: Q4–7.)_
 > **Questions for you:** [paste the critical subset from §C].

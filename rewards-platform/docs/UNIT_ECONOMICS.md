@@ -8,19 +8,19 @@ experiments.
 
 All amounts are integer minor units (cents). Definitions match EXPERIMENTS.md.
 
-| Term                              | Definition                                                                                                                              |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **Gross publisher revenue (GPR)** | Network payouts for conversions approved in the period.                                                                                 |
-| **Reversals**                     | Network payouts clawed back.                                                                                                            |
-| **Net publisher revenue (NPR)**   | GPR − reversals. _Use NPR or GPR minus expected reversals, never both_ (see §3).                                                        |
-| **User offer rewards**            | Rewards credited to users for offer milestones, net of user rewards reversed.                                                           |
-| **Gross spread**                  | NPR − user offer rewards. A property of the offer and the reward policy only.                                                           |
-| **Acquisition cost (CAC)**        | Paid media; referral rewards; referred-user welcome bonuses; ambassador pay and stipends. Attributed by `acquisition_channel`.          |
-| **Engagement incentives**         | Clan/group bonuses; progression, quest or streak bonuses; any other non-offer reward to existing users.                                 |
-| **Variable costs**                | Payment processing and payout fees; fraud loss (rewards paid out that are later unrecoverable); variable support; working-capital cost. |
-| **Contribution**                  | Gross spread − CAC − engagement incentives − variable costs.                                                                            |
-| **Contribution margin**           | Contribution ÷ NPR. Always report absolute dollars and n next to it.                                                                    |
-| **Net profit**                    | Contribution − fixed costs. Not an experiment metric.                                                                                   |
+| Term                              | Definition                                                                                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Gross publisher revenue (GPR)** | Network payouts for conversions approved in the period.                                                                                     |
+| **Reversals**                     | Network payouts clawed back.                                                                                                                |
+| **Net publisher revenue (NPR)**   | GPR − reversals. _Use NPR or GPR minus expected reversals, never both_ (see §3).                                                            |
+| **User offer rewards**            | Rewards credited to users for offer milestones, net of user rewards reversed.                                                               |
+| **Gross spread**                  | NPR − user offer rewards. A property of the offer and the reward policy only.                                                               |
+| **Acquisition cost (CAC)**        | Paid media; referral rewards; referred-user welcome bonuses; ambassador pay and stipends. Attributed by `acquisition_channel`.              |
+| **Engagement incentives**         | Clan/group bonuses; progression, quest or streak bonuses; lifetime/loyalty milestone bonuses; any other non-offer reward to existing users. |
+| **Variable costs**                | Payment processing and payout fees; fraud loss (rewards paid out that are later unrecoverable); variable support; working-capital cost.     |
+| **Contribution**                  | Gross spread − CAC − engagement incentives − variable costs.                                                                                |
+| **Contribution margin**           | Contribution ÷ NPR. Always report absolute dollars and n next to it.                                                                        |
+| **Net profit**                    | Contribution − fixed costs. Not an experiment metric.                                                                                       |
 
 **Gross revenue ≠ gross spread ≠ contribution ≠ net profit.** A document or dashboard that labels
 gross spread as "profit" or "margin" is wrong and should be corrected.
@@ -127,3 +127,18 @@ eligible, desirable offers, not by motivation alone. Incentives that push volume
 inventory push users into grinds they dislike, which lowers completion and advertiser quality
 signals. E002 measures inventory depth and refresh rate (offers available per eligible user over
 time) before any engagement incentive is designed.
+
+## 8. Additions from the second founder round (2026-10-04)
+
+- **D-034 strongly approved by founders.** Referral, clan, progression and loyalty incentives may
+  never independently claim the same incremental conversion. There is one combined budget,
+  constrained by real contribution economics, with consistent gross/net revenue definitions (§3).
+- **Per verified person (D-041).** Budgets, caps and eligibility resolve to a verified person, not
+  an account. Otherwise self-referral and account clusters let one human collect acquisition and
+  engagement incentives that no incremental person justified.
+- **Non-incremental referrals are a cost, not fraud.** Paying $2 for a user who would have joined
+  organically did not acquire that user for $2; it gave away $2. Referral incrementality is measured
+  with holdouts where volume allows (EXPERIMENTS "Channel cohort comparison").
+- **Provider-side quality is an economic term.** Incentive designs that inflate shallow
+  completions can lower future payouts and inventory. Those effects belong in long-run
+  contribution, not just in fraud monitoring (EXPERIMENTS E002 "Provider-side user quality").

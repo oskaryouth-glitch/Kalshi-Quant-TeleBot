@@ -13,7 +13,7 @@ The three things that matter now:
 
 ## Founder actions, in order (unblock E001)
 
-1. **Choose and clear the brand name, then buy the domain** (D-004). Do this before applying:
+1. **Choose and clear the brand name, then buy the domain** (D-004; process in docs/NAMING_PROCESS.md). Do this before applying:
    rebranding after approval means re-approval with every network.
 2. **Form the legal entity; get an EIN; set a mailing address** (needed for tax forms, contracts,
    CAN-SPAM). Set `NEXT_PUBLIC_LEGAL_ENTITY`, `NEXT_PUBLIC_ENTITY_JURISDICTION`,
@@ -45,16 +45,24 @@ Waitlist on Postgres (works without JS; fails closed without a DB). Guardrails: 
 (including no cash or payout-method claims until confirmed), launch check, CSP, contrast tests.
 Tests: unit, Postgres integration, Playwright + axe e2e at 320/390/desktop.
 
-## Decisions recorded this round
+## Decisions recorded (latest round, 2026-10-04)
 
-D-022 (re-confirmed; "Recommended" ranking only with data), D-027 (social casino segmented), D-028
-(conversion-based ambassador pay; organization per-member payouts stay prohibited for now), D-029,
-D-030, D-031, and new D-032 (college is a wedge, not the product), D-033 (leaderboards gated, no cash
-for rank), D-034 (per-conversion incentive budget), D-035 (clans/progression: hypotheses with design
-changes), D-036 (LEGAL-001), D-037 (scope freeze).
+Final hypothesis round before the freeze: D-035 amended (clan unit left open; required-purchase
+exclusion approved as default; 3–10 is a test hypothesis), D-038 (referral pay follows quality, not
+declining volume; no personal-play requirement; affiliate track), D-039 (lifetime vs seasonal
+progression), D-040 (one account gains value over time, no lock-in), D-041 (incentives per verified
+person), **D-042 (resolves D-015: no effort or play-time implication from elapsed days)**, **D-043
+(supersedes D-017: public routing language stays general; specifics asked privately)**. D-034
+strongly approved.
 
-Still awaiting founder input: D-004 (name), D-015 (time = elapsed days), D-017 (multi-network
-disclosure on the partner page).
+Earlier this day: D-022, D-027–D-037 (see DECISIONS.md).
+
+**Still open:** D-004 (name; process in docs/NAMING_PROCESS.md).
+
+## Product ideation: FROZEN
+
+After this round, no new major mechanics unless E001, LEGAL-001 or E002 evidence forces it. The next
+answers come from providers, counsel and real catalog data.
 
 ## Research areas (documented; no build)
 

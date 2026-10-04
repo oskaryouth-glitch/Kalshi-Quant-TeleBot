@@ -27,6 +27,7 @@ This directory is self-contained and lives inside an unrelated repository for no
 | Legal issue register (nothing cleared)                                  | `docs/LEGAL-001.md`                  |
 | Provider application readiness                                          | `docs/E001_APPLICATION_READINESS.md` |
 | Moving to a standalone repository                                       | `docs/REPO_MIGRATION.md`             |
+| Choosing and clearing the brand name                                    | `docs/NAMING_PROCESS.md`             |
 
 ## Develop
 

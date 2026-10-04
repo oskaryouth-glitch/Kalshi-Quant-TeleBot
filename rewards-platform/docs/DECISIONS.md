@@ -56,7 +56,7 @@ were made only to the degree required to ship the pre-approval shell.
 
 ## D-004 — Working brand name "Worthplay"
 
-- **Date:** 2026-10-04 · **Status:** PROPOSED (_needs founder sign-off_)
+- **Date:** 2026-10-04 · **Status:** OPEN (founders, 2026-10-04: do not lock "Worthplay" because it is in the implementation; run the naming process in docs/NAMING_PROCESS.md)
 - **Decision:** A real-sounding working name so the site can be evaluated. It is defined once in
   `src/lib/site-config.ts` with `nameStatus: "working"`, and `npm run check:launch` fails until it is
   set to `"cleared"`.
@@ -158,7 +158,7 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
 
 ## D-015 — Define "time" metrics as elapsed calendar time, not play time
 
-- **Date:** 2026-10-04 · **Status:** PROPOSED (_needs founder sign-off_)
+- **Date:** 2026-10-04 · **Status:** RESOLVED by D-042 (founder direction: elapsed days must not substitute for play effort or time)
 - **Problem:** The brief's "$/hour" and "estimated effort: 5.2 hours" assume we can measure active
   play time. A web product cannot. Games run in separate apps. We observe click-out time and
   provider-reported milestone timestamps only.
@@ -179,7 +179,7 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
 
 ## D-017 — Partner page discloses multi-network intent and the attribution lock
 
-- **Date:** 2026-10-04 · **Status:** ADOPTED (_needs founder sign-off_)
+- **Date:** 2026-10-04 · **Status:** SUPERSEDED by D-043 (founder modification: public copy stays general; routing questions go private)
 - **Decision:** The partner page says "If we work with more than one network, each user's attempt
   at an offer is attributed to exactly one network, chosen before they start."
 - **Alternatives:** Say nothing about multi-network routing.
@@ -397,7 +397,7 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
 
 ## D-034 — Per-conversion incentive budget across all stacked incentives
 
-- **Date:** 2026-10-04 · **Status:** ADOPTED (design constraint)
+- **Date:** 2026-10-04 · **Status:** ADOPTED (design constraint; **strongly approved by founders**, second round 2026-10-04)
 - **Decision:** Offer reward + referral share + clan share + progression share ≤ NPR − expected
   variable costs − minimum contribution, enforced at policy-design time and monitored from the
   ledger (`incentive_type` on every entry). Incentives are evaluated jointly, not one layer at a
@@ -407,7 +407,7 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
 
 ## D-035 — Clans/groups and progression are hypotheses with required design changes
 
-- **Date:** 2026-10-04 · **Status:** ADOPTED as research direction; **nothing built** (D-031)
+- **Date:** 2026-10-04 · **Status:** ADOPTED as research direction; **nothing built** (D-031). Amended 2026-10-04: progress unit left **open** (events / reward dollars / weighted activity / E002-derived unit); dollar-based is the lead hypothesis only; required-purchase exclusion approved as default; 3–10 is an initial test hypothesis, not a limit; marginal tiers are a candidate.
 - **Clan assessment: MODIFY.** Targets in approved, non-purchase **qualifying dollars**, not
   completion counts. **Purchase milestones excluded** from group progress. Approval-date
   accounting over monthly or rolling four-week periods (weekly visibility), paid after the hold.
@@ -436,3 +436,69 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
   work is limited to: launch-readiness items founders request, application support, the repository
   migration, and (once credentials exist) raw-payload capture and catalog analysis for E002.
 - **Revisit when:** E001 passes and E002 reports real unit economics.
+
+## D-038 — Referral compensation follows quality, not a declining volume schedule
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED as direction (founder); nothing designed or built
+- **Decision:** No permanently declining per-referral rate. Direction: standard rate → measured
+  quality → trusted/performance tiers → higher sustainable pay for economically valuable
+  acquisition. Signup never qualifies. The qualifying event is chosen after E002, with "cumulative
+  approved value within a window, after the hold" as the lead hypothesis and a time-bounded spread
+  share as the follow-on candidate. Upgrades use mature, credibility-weighted cohorts. Suspicious
+  traffic gets holds and review, not silent cuts. **No personal-play requirement.** High-volume
+  referrers move to an affiliate track (contract, tax, disclosure, provider sub-publisher check).
+  An internal referrer-quality model may be built later with **no arbitrary weights**, inputs
+  validated on real cohorts, and is never shown publicly as a score.
+- **Docs:** docs/research/REFERRAL_AND_AMBASSADORS.md §9–13. **Legal:** L29, L30.
+
+## D-039 — Lifetime and seasonal progression are separate hypotheses
+
+- **Date:** 2026-10-04 · **Status:** HYPOTHESIS (founder); nothing built
+- **Decision:** Lifetime progression never resets and rewards maintaining one legitimate account.
+  Seasonal progression may reset and carries quests and battle-pass-style mechanics. Both are
+  tested in E011, use the D-034 budget, and count only provider-approved, post-hold activity.
+- **Engineering assessment:** the anti-abuse effect is modest. It deters restarting (ban evasion,
+  bonus cycling), not parallel accounts, and monetary milestones can raise farm payoffs. Lean on
+  status and perks; identity-gate any cash milestone. Never represented as fraud prevention.
+
+## D-040 — Principle: one legitimate account should become more valuable over time, without lock-in
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED as principle (founder)
+- **Decision:** Accumulated value through progression, trust and reputation, tracking history,
+  personalization, social ties, referral history and status. **No punitive lock-in:** users can leave
+  and withdraw available balances under published terms. Forfeiture only for fraud or terms
+  violations, with process and appeal (LEGAL L31).
+
+## D-041 — Incentives are accounted per verified person, not per account
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED (design constraint, when monetary incentives exist)
+- **Decision:** Referral eligibility, incentive caps, lifetime milestones and clan membership
+  counts resolve to a verified-person entity linking that person's accounts (ARCHITECTURE 2.10).
+  Two accounts resolving to one person cannot refer each other. Signals (device, phone, payout
+  destination, network, behavior, graph, provider reversals) are combined; no single signal proves
+  fraud. Privacy and legal constraints apply (L20, L32, L33).
+- **Reason:** the "A refers B" self-referral and the "self-contained household" across
+  referrals, clans and lifetime progression both exploit per-account incentives.
+
+## D-042 — Time metrics: no effort or play-time implication from elapsed days (resolves D-015)
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED (founder direction)
+- **Decision:** We do not present elapsed calendar days as a measure of effort or play time, and we
+  show no play-time estimates or earnings per hour unless play time can be measured defensibly.
+  Elapsed time may be used internally (analytics, deadline feasibility). Any consumer display needs a
+  separate decision with wording that cannot be read as effort.
+- **Applied:** the Trust page row "Typical days to reach a milestone" was replaced with "Time and
+  effort: we will not show play-time estimates or earnings per hour unless we can measure play time
+  reliably." The "Quick wins" category (D-022) stays gated: its name implies low effort, so it needs
+  a play-time measure or a non-effort definition and name.
+
+## D-043 — Public routing disclosure stays general; specifics go private (supersedes D-017)
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED (founder modification)
+- **Decision:** Don't misrepresent how the product works, but the public site doesn't advertise our
+  competitive or routing strategy. Partner page: "We integrate approved rewarded inventory through
+  API-driven publisher partnerships"; the attribution promise is kept ("each attempt is attributed to
+  exactly one network, never switched after the user begins") without describing network selection.
+  The Trust page now says each offer is tracked through one network recorded at start. Questions on
+  multiple providers, ranking, routing, duplicate campaigns and route selection are asked privately
+  and answered in writing (Q4–7; application packet note).

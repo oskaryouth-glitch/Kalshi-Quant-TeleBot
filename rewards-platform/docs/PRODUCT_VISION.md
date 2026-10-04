@@ -10,7 +10,7 @@ We intend to be the intelligence and trust layer above multiple networks. That m
 
 1. **Complete pre-start disclosure** of every offer's requirements: milestone ladder, time limit,
    purchases, eligibility. It sits one click behind an attractive offer card (D-019).
-2. **Measured outcomes** (typical earnings, elapsed time, tracking record) shown only when the data
+2. **Measured outcomes** (typical earnings, tracking record) shown only when the data
    supports them, with sample sizes.
 3. **Reliability**: one locked network per attempt, evidence-backed disputes, a clear reward status.
 4. Later, **optimization**: choosing the best eligible network before the user starts, and helping
@@ -31,7 +31,8 @@ gambling" claims. It is not dark-pattern engagement and not maximum-payout marke
 
 The UI can be copied. These are harder to copy:
 
-- **The outcome dataset:** completion probabilities, elapsed time per milestone, tracking
+- **The outcome dataset:** completion probabilities, milestone timing (internal; never presented as
+  effort, D-042), tracking
   reliability and reversal rates per game × network × terms version, built from day one.
 - **Missing-credit evidence and resolution history:** reduces support cost and shows which networks
   pay.
@@ -42,8 +43,8 @@ The UI can be copied. These are harder to copy:
 ## Initial market (hypothesis)
 
 US, Android, mobile games, web-first. It is narrow on purpose, for cleaner attribution and data.
-The waitlist measures iPhone demand. D-015 records the main tension: web-first cannot measure play
-time.
+The waitlist measures iPhone demand. Web-first cannot measure play time, so we show no effort or $/hour figures unless play time
+becomes measurable (D-042).
 
 ## Not in scope now
 

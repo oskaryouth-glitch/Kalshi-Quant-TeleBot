@@ -15,7 +15,10 @@ const snapshot: Array<[string, string]> = [
   ["Stage", "Pre-launch. No live traffic and no live integrations yet."],
   ["Market", `${site.market} only. Adults ${site.minimumAge}+.`],
   ["Initial focus", "Android mobile game offers, including multi-milestone (CPE) offers."],
-  ["Integration model", "Offer catalog API feeding our own interface. Server-to-server postbacks."],
+  [
+    "Integration model",
+    "We integrate approved rewarded inventory through API-driven publisher partnerships, with server-to-server postbacks.",
+  ],
   [
     "User rewards",
     "Cash-equivalent and/or gift card rewards, only where a network's terms permit them in writing.",
@@ -44,7 +47,7 @@ const integration: Commitment[] = [
   },
   {
     title: "Single attribution per attempt",
-    body: "If we work with more than one network, each user's attempt at an offer is attributed to exactly one network, chosen before they start. We never switch attribution after a user begins.",
+    body: "Each user's attempt at an offer is attributed to exactly one network, and attribution is never switched after the user begins.",
     status: "planned",
   },
   {

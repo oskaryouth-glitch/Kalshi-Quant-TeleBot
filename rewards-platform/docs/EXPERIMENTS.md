@@ -121,6 +121,28 @@ week** (refresh rate); median offer lifetime; offers available to a single user 
 after excluding games they have started; and **provider concentration** (share of eligible games and
 of payout value from the top provider). These bound any later progression or clan design.
 
+**User-level effective inventory (critical; founder emphasis 2026-10-04).** Total catalog size is
+not the metric. Report what a typical eligible US Android user can actually do:
+
+- unique eligible games per typical user (after geo, device and OS targeting)
+- desirable eligible games (using legitimately obtained desirability signals; D-021)
+- no-purchase eligible games
+- social-casino share
+- duplicate games across providers, and the **genuinely incremental unique supply** each additional
+  provider adds (marginal unique store IDs, not offer rows)
+- share of offers restricted to new players
+- offer expiration and churn; catalog refresh rate
+- realistic offers per user per month before inventory exhaustion (a simulation over the snapshot
+  series that removes games a user has started)
+
+These numbers bound retention, LTV, progression and clan design. If effective inventory is shallow,
+engagement mechanics cannot fix it.
+
+**Provider-side user quality.** Maximizing our conversion count is not the same as maximizing
+advertiser value. Where data permits (Q35, Q38), track per provider: rejection and reversal reasons,
+payout changes, campaign removals or caps applied to us, and any post-install quality feedback. Treat
+deterioration as an economic cost (future inventory and payouts), not only a fraud signal.
+
 For the social-casino segment (D-027), report separately: inventory share; publisher payouts;
 user-reward potential at candidate reward policies; milestone structure (depth, time limits);
 purchase requirements; provider concentration; and later completion, reversal rate and contribution.
@@ -217,6 +239,11 @@ per acquired and per activated user; CAC per qualified user; q (share of referre
 reward is actually paid); 30/60/90-day retention; second-offer rate; reversal, void, claim and
 provider-rejection rates. Each is reported for referral, ambassador, paid and organic.
 
+**Compensation variants to compare (D-038; not designed yet):** fixed amount per qualifying event
+(lead qualifying event: cumulative approved value within a window, after the hold) vs a
+time-bounded gross-spread share. Quality-based upgrades are evaluated only on mature cohorts. No
+declining-by-volume schedules.
+
 **Decision rule:** PASS only if, at maturity, referral (or ambassador) channel contribution per
 acquired user beats **paid acquisition**, **and** retention and second-offer rate are not materially
 worse than organic, **and** reversal and fraud rates are not materially worse. Worse provider
@@ -297,6 +324,9 @@ arm for clan tests. These are post-scale experiments.
 | H-CLAN2 | A cash clan bonus adds lift beyond social-only clans, by more than its cost                                                    | E010                                                          |
 | H-PROG1 | Non-monetary progression increases second-offer rate                                                                           | E011                                                          |
 | H-PROG2 | Monetary progression adds lift beyond non-monetary, by more than its cost                                                      | E011                                                          |
+| H-REF3  | Quality-based referral pay (upgrades on mature cohorts) yields higher contribution per referred user than a flat rate          | E009 extension                                                |
+| H-LIFE1 | Users near a lifetime milestone are more likely to complete another profitable offer                                           | E011 (lifetime arm)                                           |
+| H-LIFE2 | Lifetime progression reduces restart abuse (ban evasion, bonus cycling); it is not expected to reduce parallel-account abuse   | E011 + fraud review                                           |
 
 ## Methodology rules for any outcome estimate shown to users
 

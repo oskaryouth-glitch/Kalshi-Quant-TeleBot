@@ -52,8 +52,8 @@ const measurement: Array<[string, string]> = [
     "What people who started the offer through us actually earned, including those who stopped early, not just those who finished. Shown with the number of people it is based on.",
   ],
   [
-    "Typical days to reach a milestone",
-    "Calendar days from starting to the milestone being reported by the network. We cannot see inside games, so this is elapsed time, not minutes of play, and we will label it that way.",
+    "Time and effort",
+    "We cannot see inside games, so we cannot measure how long an offer takes to play. We will not show play-time estimates or earnings per hour unless we can measure play time reliably.",
   ],
   [
     "Tracking record",
@@ -111,8 +111,8 @@ export default function TrustPage() {
               reversals, and support. We do not charge you anything to use the product.
             </p>
             <p className="text-base text-ink-3">
-              Some offers are available through more than one network. When that happens, we pick
-              one before you start and record which one, so your progress is tracked in one place.
+              Each offer you start is tracked through one network, recorded when you start, so your
+              progress is tracked in one place.
             </p>
           </div>
         </div>

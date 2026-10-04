@@ -216,6 +216,17 @@ queue. Catalog polling runs as scheduled jobs that respect provider rate limits.
   `qualifying_rule` (e.g. cumulative approved NPR ≥ X within N days), `hold_rule` (≥ longest
   relevant reversal window), `caps` (per referrer per period), `active_from/to`.
 - **`referral_code`**: `owner_user_id`, `code` (unique), `kind`, `policy_version`, `status`.
+- **`person`** (verified-person entity; D-041): links the accounts believed to belong to one
+  human, with `verification_level`, the linking evidence (signal types and references, not raw
+  biometrics) and `linked_at`/`unlinked_at` history. Referral eligibility, incentive caps, lifetime
+  milestones and clan size counts resolve through `person`, so two accounts of one person can never
+  refer each other.
+- **`referrer_quality_snapshot`** (internal only; D-038): `referrer_id`, cohort window, n, maturity
+  flag, raw input metrics (activation, first approved event, contribution per referred user,
+  second-offer, retention, reversal, rejection, fraud/void, support), `model_version`. **No weights
+  stored until validated.** Never exposed publicly.
+- **`referral_policy` variants**: fixed amount per qualifying event, or a time-bounded spread share
+  (rate, duration, cap). Tier upgrades reference a documented criteria version.
 - **`referral_attribution`**: `referred_user_id` (**unique**: one attribution per user),
   `code_id`, `captured_at`, `capture_method` (link / manual), `policy_version` (frozen), and risk
   references (hashed signals only).

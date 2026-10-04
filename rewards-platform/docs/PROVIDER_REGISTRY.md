@@ -107,6 +107,8 @@ Evidence levels used below:
 34. Are additional bonus layers tied to offer completion permitted (e.g. group/clan bonuses, progression or quest bonuses), beyond the per-offer user reward?
 35. Do you share post-install quality feedback (retention, ROAS, rejection reasons), and what quality thresholds trigger payout changes or campaign removal for a publisher?
 36. How many new eligible US Android game campaigns appear per week, and what is a typical campaign lifetime?
+37. Would an affiliate or creator who sends traffic to our website (never to your tracking links) be considered a sub-publisher under your terms, and what notice or approval is required?
+38. Do you provide per-transaction rejection and reversal reason codes (e.g. fraud, duplicate user, requirement not met) via postback or reporting?
 
 ## Suggested next research step
 
