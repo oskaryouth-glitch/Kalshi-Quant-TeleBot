@@ -139,12 +139,13 @@ function Row({
   strong?: boolean;
 }) {
   return (
-    <div className="border-b border-line py-2 last:border-b-0">
-      <div className="flex items-baseline justify-between gap-4">
-        <dt className={cn(strong ? "font-semibold text-ink" : "text-ink-2")}>{term}</dt>
-        <dd className="text-right">{detail}</dd>
-      </div>
-      {note ? <p className="mt-0.5 text-xs text-ink-3">{note}</p> : null}
+    // dt/dd must be direct children of the row div for valid <dl> markup.
+    <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-4 border-b border-line py-2 last:border-b-0">
+      <dt className={cn(strong ? "font-semibold text-ink" : "text-ink-2")}>
+        {term}
+        {note ? <span className="mt-0.5 block text-xs font-normal text-ink-3">{note}</span> : null}
+      </dt>
+      <dd className="text-right">{detail}</dd>
     </div>
   );
 }
