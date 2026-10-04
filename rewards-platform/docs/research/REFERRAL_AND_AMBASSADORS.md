@@ -1,4 +1,9 @@
-# Research area: referral and campus ambassador engine
+# Research area: referral and ambassador engine
+
+> **College is not the product (D-032).** The founder's college networks are an unusually cheap
+> _initial distribution wedge_. Everything here must work equally well for friend groups,
+> roommates, Discord communities, coworkers, gaming groups, family and other eligible networks.
+> Nothing campus-specific belongs in product architecture, branding or progression.
 
 **Status:** research and conceptual design (2026-10-04). **Nothing is built.** No referral feature
 ships before launch, before provider permission (approval questions 27–31) and before counsel
@@ -23,7 +28,7 @@ review. **Decision refs:** D-024, D-028, D-030, D-031.
    measured as **Referral Contribution Margin** and compared directly with paid and organic cohorts
    (EXPERIMENTS "Channel cohort comparison").
 7. **Performance-based compensation is allowed, and is the intended model (D-028).**
-   Referrers and campus ambassadors may be paid per directly referred user who produces an
+   Referrers and ambassadors may be paid per directly referred user who produces an
    eligible, provider-approved economic conversion. This is gated on provider permission (Q27–29,
    Q33) and legal review.
 
@@ -134,7 +139,7 @@ users' identities or activity.
 Before enabling referral or ambassador traffic for **any** provider's offers:
 
 - Q27: Are referral-program users (incentivized to sign up by a referral bonus) permitted traffic?
-- Q28: Are campus or ambassador programs permitted? Are they considered sub-publishers?
+- Q28: Are ambassador programs (including student/campus ambassadors) permitted? Are they considered sub-publishers?
 - Q29: Are referral bonuses funded from your payouts acceptable, or are any restrictions placed on
   how payouts may be used?
 
@@ -161,7 +166,7 @@ traffic simply never shows its offers to referral-acquired users. Routing must r
   Sharing is the referrer's own link in their own words.
 - **Age:** referrers and referred users must be 18+. Some college freshmen are 17.
 
-## 8. Campus ambassador program
+## 8. Ambassador program (initial wedge: the founder's college networks)
 
 ### Why it could work (hypotheses, not facts)
 
@@ -171,7 +176,7 @@ traffic simply never shows its offers to referral-acquired users. Routing must r
   takes" fits our transparency positioning better than ads do.
 - Possibly much lower CAC than paid social (to be measured against the E004 baseline).
 
-### Guardrails specific to campus
+### Guardrails (all communities; campus-specific notes marked)
 
 - **Compensation model:** an ambassador earns per **directly referred** user who produces an
   eligible, provider-approved conversion that clears the reversal window, under the same policy,
@@ -188,12 +193,13 @@ traffic simply never shows its offers to referral-acquired users. Routing must r
   pledging or initiation, no hazing contexts, no messaging people who have not opted in, no use of
   university names or marks, no posting where campus rules prohibit it, and disclosure every time.
   Breach ends the relationship and voids pending rewards.
-- **Campus rules:** universities commonly restrict commercial solicitation in residence halls and
+- **Campus rules (campus pilots only):** universities commonly restrict commercial solicitation in residence halls and
   the use of their marks (INFERENCE; verify per campus before any activity there).
 - **Student-athletes:** NIL compensation rules and school/state disclosure requirements apply.
   Recommend excluding student-athlete status from pilot recruiting to avoid that complexity, or
   requiring their own compliance confirmation.
-- **No leaderboards or competitions** between people or groups.
+- **Leaderboards:** no campus-specific leaderboards and no cash prizes for rank (D-033). Friend- or
+  clan-scoped boards are a separate hypothesis (docs/research/SOCIAL_AND_PROGRESSION.md §8).
 
 ### Testing before building infrastructure
 

@@ -16,7 +16,9 @@ We intend to be the intelligence and trust layer above multiple networks. That m
 4. Later, **optimization**: choosing the best eligible network before the user starts, and helping
    users judge how far through an offer to go.
 
-It is not gambling, not dark-pattern engagement, and not maximum-payout marketing.
+Rewards never depend on chance (no spins, raffles or prize draws), and real-money gambling is out
+of scope. The catalog may include social-casino games (D-027), so we avoid blanket "this is not
+gambling" claims. It is not dark-pattern engagement and not maximum-payout marketing.
 
 ## Positioning
 
@@ -47,3 +49,21 @@ time.
 
 Surveys / quick-earnings lane, iOS, native apps, social or referral mechanics, any chance-based
 feature.
+
+## Possible flywheel (HYPOTHESIS, not an established moat)
+
+desirable games + good rewards → users join → users earn → progression encourages another offer →
+users refer friends → friends join groups → group incentives create more activity → more legitimate
+conversions → more revenue → some incremental revenue funds incentives → retention and organic
+acquisition.
+
+Each arrow has an experiment (EXPERIMENTS E002–E011). If it works, the _potential_ moat is the
+combination of multi-provider supply, routing, trustworthy tracking, proprietary completion and
+desirability data, expected earnings, referral distribution, group retention loops and provider
+reliability data. **Unproven.** The near-term priority is real-world evidence: E001, LEGAL-001,
+E002 (D-037).
+
+## Distribution vs product
+
+College networks are the founder's initial distribution wedge (D-032), not the market. The product
+must work for any eligible social network.

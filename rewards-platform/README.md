@@ -11,18 +11,22 @@ This directory is self-contained and lives inside an unrelated repository for no
 
 ## Start here
 
-| If you want to…                                                 | Read                        |
-| --------------------------------------------------------------- | --------------------------- |
-| Understand the business and thesis                              | `docs/PRODUCT_VISION.md`    |
-| Know what's built and what's blocking launch                    | `docs/CURRENT_PHASE.md`     |
-| See why things are the way they are                             | `docs/DECISIONS.md`         |
-| Review risks                                                    | `docs/RISK_REGISTER.md`     |
-| Review experiment design and metric definitions                 | `docs/EXPERIMENTS.md`       |
-| Check provider status (all UNKNOWN today)                       | `docs/PROVIDER_REGISTRY.md` |
-| Check claim rules and legal open questions                      | `docs/COMPLIANCE_NOTES.md`  |
-| Understand the code and the future platform design              | `docs/ARCHITECTURE.md`      |
-| Work on UI or copy                                              | `docs/DESIGN_SYSTEM.md`     |
-| Read research areas (competitors, game desirability, referrals) | `docs/research/`            |
+| If you want to…                                                         | Read                                 |
+| ----------------------------------------------------------------------- | ------------------------------------ |
+| Understand the business and thesis                                      | `docs/PRODUCT_VISION.md`             |
+| Know the current priorities (evidence phase) and what's blocking launch | `docs/CURRENT_PHASE.md`              |
+| See why things are the way they are                                     | `docs/DECISIONS.md`                  |
+| Review risks                                                            | `docs/RISK_REGISTER.md`              |
+| Review experiment design and metric definitions                         | `docs/EXPERIMENTS.md`                |
+| Check provider status (all UNKNOWN today)                               | `docs/PROVIDER_REGISTRY.md`          |
+| Check claim rules and legal open questions                              | `docs/COMPLIANCE_NOTES.md`           |
+| Understand the code and the future platform design                      | `docs/ARCHITECTURE.md`               |
+| Work on UI or copy                                                      | `docs/DESIGN_SYSTEM.md`              |
+| Read research areas (competitors, game desirability, referrals)         | `docs/research/`                     |
+| Unit economics and the full incentive stack                             | `docs/UNIT_ECONOMICS.md`             |
+| Legal issue register (nothing cleared)                                  | `docs/LEGAL-001.md`                  |
+| Provider application readiness                                          | `docs/E001_APPLICATION_READINESS.md` |
+| Moving to a standalone repository                                       | `docs/REPO_MIGRATION.md`             |
 
 ## Develop
 

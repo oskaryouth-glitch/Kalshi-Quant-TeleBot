@@ -1,5 +1,8 @@
 # Compliance notes
 
+> **Canonical legal issue register: docs/LEGAL-001.md** (D-036). This file keeps the public-claim
+> rules and what the shell does with data. Open legal questions are tracked in LEGAL-001.
+
 **This is not legal advice.** It is an engineering and product list of questions for counsel, plus
 the rules the codebase enforces. Labels: **CONFIRMED** (true of this codebase today), **ASSUMPTION**,
 **UNKNOWN — needs counsel**.
@@ -54,8 +57,8 @@ reward-program terms.
 3. **Unclaimed property (escheat).** Treatment of dormant balances; permissible expiry and dormancy
    terms.
 4. **Tax reporting.** 1099 obligations for user rewards, TIN collection thresholds, and whether a
-   payout provider can handle them. (Engineering note: the federal 1099-MISC/NEC threshold may have
-   changed for payments made in 2026. **Unverified**, so confirm with tax counsel.)
+   payout provider can handle them. (CONFIRMED: the federal threshold is $2,000 for payments made after Dec 31, 2025, per IRS
+   IRB 2026-19; application to our payment types still needs counsel; LEGAL-001 L22.)
 5. **Age.** Age-assurance standard before first payout; state laws on minors and online services;
    COPPA posture (we target 18+ and do not knowingly collect from under-13s).
 6. **FTC.** Earnings representations once we show outcome-based figures; "typical" language;

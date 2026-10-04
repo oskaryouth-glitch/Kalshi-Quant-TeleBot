@@ -227,3 +227,20 @@ queue. Catalog polling runs as scheduled jobs that respect provider rate limits.
 - **Structural single-level guarantee**: rewards are computed only from `referral_attribution`
   rows whose `code.owner_user_id` is the referrer. There is no traversal of referral chains anywhere
   in reward logic. Add an invariant test for this when it is built.
+
+### 2.11 Preserving optionality for incentives and experiments (planning only; D-034, D-037)
+
+Three small structures are worth having from the **first** launched ledger, because they are hard to
+retrofit and every later incentive or incrementality analysis depends on them. Nothing else for
+clans, progression or leaderboards should be built now.
+
+- **Typed ledger entries.** Every ledger entry carries `incentive_type` (offer_reward, referral,
+  ambassador, welcome_bonus, clan, progression, adjustment, payout, reversal, fee) and a `cause_ref`
+  (conversion event, referral reward, clan period, etc.). This lets the per-conversion incentive
+  budget (UNIT_ECONOMICS §2) and channel cohort economics be computed from facts, not estimates.
+- **`experiment_assignment`**: `experiment_id`, `unit_type` (user / clan), `unit_id`, `arm`,
+  `assigned_at`, `assignment_version`. Append-only. Randomized holdouts (referral incrementality,
+  E010/E011) are impossible to reconstruct after the fact, so assignment must be logged when it
+  happens.
+- **`group_membership_history`** (only once groups exist): `group_id`, `user_id`, `joined_at`,
+  `left_at`. Append-only intervals, so period eligibility and membership locks are auditable.

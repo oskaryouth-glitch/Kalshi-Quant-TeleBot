@@ -73,8 +73,8 @@ const faqs = [
     a: "Starting narrow keeps tracking reliable while we learn. iPhone support depends on demand, so early access asks which phone you use.",
   },
   {
-    q: "Is this gambling?",
-    a: "No. There are no chance-based prizes, spins or raffles. You earn by reaching clearly stated milestones in games.",
+    q: "Do rewards depend on luck?",
+    a: "No. Rewards are paid for reaching clearly stated milestones in games, not by chance. We do not run spins, raffles or prize draws.",
   },
 ];
 

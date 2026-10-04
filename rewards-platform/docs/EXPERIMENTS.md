@@ -3,17 +3,20 @@
 Experiments are never advanced automatically. Each gate ends with an explicit recommendation:
 **PASS**, **CONTINUE COLLECTING**, **FAIL** or **REDESIGN**, and the evidence behind it.
 
-| ID   | Question                                                                                                                         | Status                                                          | Recommendation |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | -------------- |
-| E001 | Can a pre-launch company obtain adequate legitimate supply?                                                                      | Not started (shell built to support applications)               | —              |
-| E002 | Do the unit economics work?                                                                                                      | Blocked on E001 credentials                                     | —              |
-| E003 | How reliable is tracking, per network × game?                                                                                    | Blocked                                                         | —              |
-| E004 | Does acquisition / landing-page conversion work?                                                                                 | Instrumented minimally (waitlist platform + `?ref=` source)     | —              |
-| E005 | First-offer contribution margin                                                                                                  | Blocked                                                         | —              |
-| E006 | Second offer / retention                                                                                                         | Blocked                                                         | —              |
-| E007 | Scaling CAC                                                                                                                      | Blocked                                                         | —              |
-| E008 | Can voluntary campus ambassadors reach qualified early-access users cheaply? (pre-launch)                                        | Ready to design; measurement exists (`npm run waitlist:report`) | —              |
-| E009 | Do conversion-qualified referrals beat other channels on CAC per qualified user, without worse fraud or reversals? (post-launch) | Blocked: launch, provider permission (Q27–29), counsel          | —              |
+| ID        | Question                                                                                                                                                                    | Status                                                                   | Recommendation |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------------- |
+| E001      | Can a pre-launch company obtain adequate legitimate supply?                                                                                                                 | Not started (shell built to support applications)                        | —              |
+| E002      | Do the unit economics work?                                                                                                                                                 | Blocked on E001 credentials                                              | —              |
+| E003      | How reliable is tracking, per network × game?                                                                                                                               | Blocked                                                                  | —              |
+| E004      | Does acquisition / landing-page conversion work?                                                                                                                            | Instrumented minimally (waitlist platform + `?ref=` source)              | —              |
+| E005      | First-offer contribution margin                                                                                                                                             | Blocked                                                                  | —              |
+| E006      | Second offer / retention                                                                                                                                                    | Blocked                                                                  | —              |
+| E007      | Scaling CAC                                                                                                                                                                 | Blocked                                                                  | —              |
+| E008      | Can voluntary ambassadors in the founders' social networks reach qualified early-access users cheaply? (pre-launch; college networks are the initial wedge, not the market) | Ready to design; measurement exists (`npm run waitlist:report`)          | —              |
+| E009      | Do conversion-qualified referrals beat other channels on CAC per qualified user, without worse fraud or reversals? (post-launch)                                            | Blocked: launch, provider permission (Q27–29), counsel                   | —              |
+| E010      | Do clans/groups cause incremental profitable activity? (cluster-randomized; social-only arm before cash)                                                                    | Backlog. Blocked: launch, LEGAL-001 (L12), E002, scale (see power notes) | —              |
+| E011      | Does progression cause incremental second/subsequent offers? (non-monetary before monetary)                                                                                 | Backlog. Blocked: launch, LEGAL-001 (L13), E002                          | —              |
+| LEGAL-001 | Can the intended reward/referral/payout/gamification structure operate compliantly?                                                                                         | OPEN (docs/LEGAL-001.md)                                                 | —              |
 
 ---
 
@@ -110,6 +113,18 @@ this evidence plus legal and provider review. If included, the "Is this gambling
 must be re-reviewed, and the copy guard's gambling-language rule will need an explicit, reviewed
 rule for provider-supplied game titles (it currently applies to all public text).
 
+### Inventory depth and supply structure (added 2026-10-04)
+
+Engagement is capped by eligible, desirable inventory (UNIT_ECONOMICS §7). For each provider and in
+aggregate, report: eligible US Android game offers (unique store IDs); **new eligible offers per
+week** (refresh rate); median offer lifetime; offers available to a single user over 4 and 12 weeks
+after excluding games they have started; and **provider concentration** (share of eligible games and
+of payout value from the top provider). These bound any later progression or clan design.
+
+For the social-casino segment (D-027), report separately: inventory share; publisher payouts;
+user-reward potential at candidate reward policies; milestone structure (depth, time limits);
+purchase requirements; provider concentration; and later completion, reversal rate and contribution.
+
 ### Working-capital model
 
 Working capital is modeled separately from profitability.
@@ -155,17 +170,20 @@ upper bounds until double opt-in exists (D-008).
 
 ---
 
-## E008 — Campus ambassador reach test (pre-launch)
+## E008 — Ambassador reach test in founder social networks (pre-launch)
 
-**Question:** Can a small number of voluntary student ambassadors generate early-access signups from
+> Initial wedge: the founder's college networks (friends, teams, fraternities, roommates and their
+> extended networks). College is a distribution experiment, not the product category (D-032).
+
+**Question:** Can a small number of voluntary ambassadors (initially students in the founder's networks) generate early-access signups from
 our target audience (US, Android-heavy) at a lower cost per signup than other channels, without
 harming trust?
 
 **Design (no new infrastructure):**
 
-- 5–10 ambassadors across 2–3 campuses, recruited individually (founder networks). All 18+, written
+- 5–10 ambassadors across 2–3 communities (initially campuses in the founder's network), recruited individually. All 18+, written
   terms, code of conduct, FTC disclosure training (docs/research/REFERRAL_AND_AMBASSADORS.md §7–8).
-- Each gets a unique code with a shared prefix: `amb_<campus>_<id>` (fits the waitlist's
+- Each gets a unique code with a shared prefix: `amb_<community>_<id>` (fits the waitlist's
   `[a-z0-9_-]{1,64}` rule). Measure with `npm run waitlist:report -- --prefix=amb_`.
 - Compensation: none, or a **flat stipend for time**. **Never per waitlist signup** (that pays for
   non-economic activity and invites junk). Conversion-based ambassador pay is the intended
@@ -191,7 +209,7 @@ implemented (ARCHITECTURE 2.10).
 referral payout for the first cohort, policy amount set from the affordability constraint in the
 referral research doc (not hard-coded). Optionally A/B two reward levels.
 
-**Arms:** friend referrals and campus ambassadors (both conversion-qualified, single-level),
+**Arms:** friend referrals and ambassadors (both conversion-qualified, single-level),
 compared against paid-acquisition and organic cohorts acquired over the same period.
 
 **Measure** (see "Channel cohort comparison"): Referral Contribution Margin and channel contribution
@@ -255,18 +273,30 @@ Payback (paid)                          = first day cumulative (GS − V) ≥ CA
 6. Compare channels on the same offer mix where possible, or report segment mix alongside (e.g.
    social-casino share), since offer mix drives margin.
 
+## E010 / E011: design notes
+
+Designs, arms and power analysis live in docs/research/SOCIAL_AND_PROGRESSION.md §9. Key constraints:
+cluster randomization for clans; non-monetary variants first; joint evaluation of stacked incentives
+and the per-conversion budget (UNIT_ECONOMICS §2, §4). Back-of-envelope power (assumption-laden):
+about 390 users per arm for user-randomized tests, and about 940 users (about 118 clans of 8) per
+arm for clan tests. These are post-scale experiments.
+
 ## Hypothesis register (cross-experiment)
 
-| ID     | Hypothesis                                                                                  | Where tested                                                  |
-| ------ | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| H-GD1  | Better-rated, higher-volume games have higher activation at similar first-milestone reward  | E003/E005                                                     |
-| H-GD2  | Users trade reward for game quality (lower reward + better game preferred)                  | Pre-launch stated-preference survey, then revealed preference |
-| H-GD3  | Popular games pay less per milestone                                                        | E002                                                          |
-| H-GD4  | External signals predict completion well enough as a cold-start prior                       | Post-launch                                                   |
-| H-GD5  | Recently updated games have fewer missing-credit claims                                     | Post-launch                                                   |
-| H-ACQ1 | High-intent "already downloading" traffic converts at low CAC **where campaigns permit it** | Post-launch, permitted campaigns only                         |
-| H-REF1 | Campus ambassadors reach Android-heavy, high-intent users cheaply                           | E008                                                          |
-| H-REF2 | Conversion-qualified referrals have lower CAC per qualified user than paid channels         | E009                                                          |
+| ID      | Hypothesis                                                                                                                     | Where tested                                                  |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| H-GD1   | Better-rated, higher-volume games have higher activation at similar first-milestone reward                                     | E003/E005                                                     |
+| H-GD2   | Users trade reward for game quality (lower reward + better game preferred)                                                     | Pre-launch stated-preference survey, then revealed preference |
+| H-GD3   | Popular games pay less per milestone                                                                                           | E002                                                          |
+| H-GD4   | External signals predict completion well enough as a cold-start prior                                                          | Post-launch                                                   |
+| H-GD5   | Recently updated games have fewer missing-credit claims                                                                        | Post-launch                                                   |
+| H-ACQ1  | High-intent "already downloading" traffic converts at low CAC **where campaigns permit it**                                    | Post-launch, permitted campaigns only                         |
+| H-REF1  | Ambassadors in dense social networks (initially the founder's college networks) reach Android-heavy, high-intent users cheaply | E008                                                          |
+| H-REF2  | Conversion-qualified referrals have lower CAC per qualified user than paid channels                                            | E009                                                          |
+| H-CLAN1 | Social-only clans increase qualifying dollars per member vs control                                                            | E010                                                          |
+| H-CLAN2 | A cash clan bonus adds lift beyond social-only clans, by more than its cost                                                    | E010                                                          |
+| H-PROG1 | Non-monetary progression increases second-offer rate                                                                           | E011                                                          |
+| H-PROG2 | Monetary progression adds lift beyond non-monetary, by more than its cost                                                      | E011                                                          |
 
 ## Methodology rules for any outcome estimate shown to users
 

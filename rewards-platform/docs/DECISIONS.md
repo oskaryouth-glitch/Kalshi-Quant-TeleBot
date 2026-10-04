@@ -262,7 +262,7 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
 
 ## D-022 — Discovery categories are defined filters with data gates
 
-- **Date:** 2026-10-04 · **Status:** ADOPTED (reviewer approved 2026-10-04: "Biggest rewards", not "Best", until outcome data supports a quality or recommendation ranking)
+- **Date:** 2026-10-04 · **Status:** ADOPTED (reviewer approved 2026-10-04 and re-confirmed: "Biggest rewards", not "Best", until outcome data supports a quality or recommendation ranking; a personalized "Recommended" default ranking may come later, only once justified by real data)
 - **Decision:** "No purchase needed" can ship at launch. "Popular games that pay" needs a licensed,
   named popularity source. "Quick wins" needs measured time-to-first-reward (the only pre-data
   variant is the structural "First reward at install or tutorial"). The founders' "Best rewards"
@@ -337,8 +337,8 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
   for recruiting recruiters, no downstream commissions, and no mandatory participation, pledging or
   initiation requirements. Voluntary, individual participation, code of conduct, 18+, FTC
   disclosure and the no-quota/no-leaderboard rules remain.
-- **Retained, flagged for explicit confirmation:** no per-member performance payments to
-  _organizations_ (fraternities, sororities, clubs, teams, dorms). Leadership authority over members
+- **Retained and confirmed by founders (2026-10-04, "for now"):** no per-member performance
+  payments to _organizations_ (fraternities, sororities, clubs, teams, dorms). Leadership authority over members
   makes this a coercion vector. Changing it needs an explicit founder decision and legal review.
 - **Pre-launch:** no conversions exist, so E008 ambassadors are unpaid or receive a flat stipend for
   time, never per waitlist signup.
@@ -374,3 +374,65 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
   `waitlist:report` used by E008.
 - **Metric added:** Referral Contribution Margin, compared directly with paid and organic cohorts
   on retention and second-offer rate (EXPERIMENTS "Channel cohort comparison").
+
+## D-032 — College is a distribution wedge, not the product
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED (founder direction)
+- **Decision:** The founder's college networks (friends, teams, fraternities, roommates and their
+  extended networks) are an initial, low-cost acquisition experiment. **No campus identity in product
+  architecture, branding, progression or the long-term thesis.** Referral, ambassador and group
+  mechanics must work for any eligible social network.
+- **Consequence:** E008 is renamed to an ambassador reach test in founder social networks. Codes use
+  `amb_<community>_<id>`. No campus-vs-campus mechanics.
+
+## D-033 — Leaderboards: blanket ban withdrawn; gated research
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED (founder direction, with engineering conditions)
+- **Decision:** Replace the "no leaderboards" rule (D-025/D-028 text) with: leaderboards may be
+  researched in friend, clan, individual or seasonal scopes. No campus-specific boards. **No cash
+  prizes for rank** (contest law and a fraud magnet; LEGAL L14). Rank only on approved qualifying
+  dollars. Tested only as variants inside E010/E011.
+- **Note:** The live site makes no public promise about leaderboards. The Trust page's "no
+  pressure tactics" items (countdowns, fake activity, spins) remain true.
+
+## D-034 — Per-conversion incentive budget across all stacked incentives
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED (design constraint)
+- **Decision:** Offer reward + referral share + clan share + progression share ≤ NPR − expected
+  variable costs − minimum contribution, enforced at policy-design time and monitored from the
+  ledger (`incentive_type` on every entry). Incentives are evaluated jointly, not one layer at a
+  time, to avoid attribution double-counting (docs/UNIT_ECONOMICS.md §2–4).
+- **Also fixed:** "provider revenue − … − expected reversal loss" double-counts if revenue is
+  already NPR. Use NPR and subtract only fraud loss on unrecoverable paid-out rewards.
+
+## D-035 — Clans/groups and progression are hypotheses with required design changes
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED as research direction; **nothing built** (D-031)
+- **Clan assessment: MODIFY.** Targets in approved, non-purchase **qualifying dollars**, not
+  completion counts. **Purchase milestones excluded** from group progress. Approval-date
+  accounting over monthly or rolling four-week periods (weekly visibility), paid after the hold.
+  **Social-only arm before cash.** Rewards as **marginal-tier rate × qualifying dollars**, so cost
+  scales with value at any size. Targets sublinear in verified active members at the start of the
+  period (hypothesis), pending counsel review (L12: recruitment-linked reward risk). Initial size
+  hypothesis 3 to about 10. Allocation hypothesis: eligibility + equal share, membership locked per
+  period, per-member clawback.
+- **Progression:** non-monetary first. Avoid loss-framed streaks and expiring rewards.
+- **Experiments:** E010 (clans, cluster-randomized), E011 (progression). Both are post-scale per the
+  power notes.
+- **Docs:** docs/research/SOCIAL_AND_PROGRESSION.md.
+
+## D-036 — LEGAL-001 established as a formal gate
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED
+- **Decision:** docs/LEGAL-001.md is the canonical legal issue register (28 items), with status
+  labels CONFIRMED / INFERENCE / HYPOTHESIS / UNKNOWN / COUNSEL REQUIRED. **No real consumer money
+  moves** until launch-relevant COUNSEL REQUIRED items are resolved in writing. Only a recorded
+  counsel resolution may mark an item cleared. No agent or document may.
+
+## D-037 — Scope freeze: the evidence phase begins
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED (founder direction; engineering concurs)
+- **Decision:** No new product scope until E001, LEGAL-001 and E002 produce evidence. Engineering
+  work is limited to: launch-readiness items founders request, application support, the repository
+  migration, and (once credentials exist) raw-payload capture and catalog analysis for E002.
+- **Revisit when:** E001 passes and E002 reports real unit economics.

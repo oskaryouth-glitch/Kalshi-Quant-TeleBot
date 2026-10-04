@@ -1,69 +1,64 @@
-# Current phase: pre-approval company shell
+# Current phase: evidence (E001 · LEGAL-001 · E002)
 
-**Updated:** 2026-10-04
+**Updated:** 2026-10-04 · **Scope freeze in effect (D-037).**
 
-## Goal
+The pre-approval company shell is built. Product scope is frozen until real-world evidence exists.
+The three things that matter now:
 
-A credible, honest public presence that offer-network partnership teams can evaluate (supporting
-E001 applications), plus an early-access list.
+| Track         | Question                                                                   | Status                                                                                                                                   | Doc                                         |
+| ------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| **E001**      | Can we obtain legitimate supply under terms that permit our model?         | Not started. Readiness audit done: **not ready to apply** until the founder actions below are complete.                                  | docs/E001_APPLICATION_READINESS.md          |
+| **LEGAL-001** | Can the reward/referral/payout/gamification structure operate compliantly? | OPEN. 28 items, nothing cleared.                                                                                                         | docs/LEGAL-001.md                           |
+| **E002**      | What do real inventory and terms say about economics?                      | Blocked on E001 credentials. Plan includes desirability, social-casino segmentation, inventory depth, concentration and working capital. | docs/EXPERIMENTS.md, docs/UNIT_ECONOMICS.md |
 
-## Built
+## Founder actions, in order (unblock E001)
 
-- Pages: Home, How it works, Trust & transparency, For partners, About, Early access, Contact,
-  Privacy (draft), Terms (draft), 404. Sitemap, robots, OG image, icon.
-- Early-access waitlist (Postgres; works without JS; fails closed without a DB).
-- Guardrails: copy guard, launch-readiness check, security headers, contrast tests.
-- Tests: unit (Vitest), Postgres integration, e2e (Playwright + axe) at mobile and desktop.
-- Docs: this folder.
+1. **Choose and clear the brand name, then buy the domain** (D-004). Do this before applying:
+   rebranding after approval means re-approval with every network.
+2. **Form the legal entity; get an EIN; set a mailing address** (needed for tax forms, contracts,
+   CAN-SPAM). Set `NEXT_PUBLIC_LEGAL_ENTITY`, `NEXT_PUBLIC_ENTITY_JURISDICTION`,
+   `NEXT_PUBLIC_MAILING_ADDRESS`.
+3. **Business email(s) and a phone number.** Set `NEXT_PUBLIC_PARTNERS_EMAIL`, `_SUPPORT_EMAIL`,
+   `_PRIVACY_EMAIL`. The partner page's email button appears automatically.
+4. **Hosting + Postgres**, `npm run db:migrate`, set `NEXT_PUBLIC_SITE_URL`, deploy.
+5. **Founder names and roles on About** (real facts only).
+6. **Engage counsel for LEGAL-001.** Priority items: L8–L9 (provider terms), L17–L18 (payout and
+   wallet), L10–L11 (referral and ambassador pay), L21 (age), L22 (tax), L23 (terms).
+7. **Apply in waves** (E001 readiness §H): BitLabs, Offerwall.GG, RevU first.
+8. **Repository migration** before any credentials or production database (docs/REPO_MIGRATION.md).
 
-## Launch blockers: founder actions (no engineering needed)
+`npm run check:launch` lists the remaining site blockers.
 
-`npm run check:launch` lists these until resolved:
+## Engineering work allowed during the freeze
 
-1. **Choose and clear the brand name.** Trademark search plus domain and social handles (D-004).
-   Then set `nameStatus: "cleared"` in `src/lib/site-config.ts` (and change `name` if needed).
-2. **Form the legal entity**, then set `NEXT_PUBLIC_LEGAL_ENTITY` and `NEXT_PUBLIC_ENTITY_JURISDICTION`.
-3. **Mailing address** (registered agent or virtual office): `NEXT_PUBLIC_MAILING_ADDRESS`. Also
-   required by CAN-SPAM before sending any email.
-4. **Domain plus business email** for partners@, support@ and privacy@ (or one inbox with aliases),
-   then set the env vars.
-5. **Hosting and Postgres** accounts, then `DATABASE_URL`, run `npm run db:migrate`, and set
-   `NEXT_PUBLIC_SITE_URL`.
-6. **Legal review** of `/privacy` and `/terms`, then replace the `-draft` versions in
-   `POLICY_VERSIONS`.
+- Site changes needed for applications (facts via env, founder names, processor list in privacy).
+- Repository migration.
+- Once credentials exist: raw-payload capture and catalog snapshots, then E002 analysis. No consumer
+  features.
+- The pre-launch ambassador reach test (E008) using the existing `npm run waitlist:report`.
 
-Partner applications can begin once 1–5 are done. Networks commonly look for a real domain,
-business email, privacy policy, terms and contact details.
+## Built so far (shell)
 
-## Recommended (founder choice, not a blocker)
+Pages: Home (earning-led, illustrative marketplace preview + offer detail dialog), How it works,
+Trust & transparency, For partners, About, Early access, Contact, Privacy (draft), Terms (draft), 404.
+Waitlist on Postgres (works without JS; fails closed without a DB). Guardrails: copy guard
+(including no cash or payout-method claims until confirmed), launch check, CSP, contrast tests.
+Tests: unit, Postgres integration, Playwright + axe e2e at 320/390/desktop.
 
-- **Show real people on the About page** (names, roles, optionally LinkedIn). Partner managers and
-  skeptical users both look for who is accountable. Nothing about the team is shown today because
-  nothing may be invented.
-- **Fill in the partner page's missing CTA.** The "Email partnerships" button only renders once
-  `NEXT_PUBLIC_PARTNERS_EMAIL` is set.
+## Decisions recorded this round
 
-## Decisions awaiting founder sign-off
+D-022 (re-confirmed; "Recommended" ranking only with data), D-027 (social casino segmented), D-028
+(conversion-based ambassador pay; organization per-member payouts stay prohibited for now), D-029,
+D-030, D-031, and new D-032 (college is a wedge, not the product), D-033 (leaderboards gated, no cash
+for rank), D-034 (per-conversion incentive budget), D-035 (clans/progression: hypotheses with design
+changes), D-036 (LEGAL-001), D-037 (scope freeze).
 
-Reviewer decisions recorded 2026-10-04: D-022 approved; D-023 → D-027 (segment social casino in
-E002); D-025 → D-028 (conversion-based ambassador pay allowed, gated); D-029 (enjoyment separate);
-D-030 (channel permission matrix); D-031 (no referral infrastructure before E001, legal review,
-provider permission and real economics). Still open for explicit confirmation: D-028's retained
-rule against per-member payments to organizations.
+Still awaiting founder input: D-004 (name), D-015 (time = elapsed days), D-017 (multi-network
+disclosure on the partner page).
 
-D-004 (name), D-015 (time = elapsed days), D-017 (disclosing multi-network
-intent on the partner page). See DECISIONS.md.
+## Research areas (documented; no build)
 
-## Research areas opened (2026-10-04)
-
-- Game desirability: `docs/research/GAME_DESIRABILITY.md` (feeds E002; hypotheses H-GD1–5).
-- Referral and campus ambassadors: `docs/research/REFERRAL_AND_AMBASSADORS.md` (E008 can run
-  pre-launch with `npm run waitlist:report`; E009 is post-launch and gated).
-
-## Next phase candidates (in order)
-
-1. **E001 execution:** archive Tier A provider terms (PROVIDER_REGISTRY "next research step"),
-   then apply.
-2. Double opt-in for the waitlist once an email provider exists (D-008).
-3. On credentials: the raw-payload store plus the first real adapter (ARCHITECTURE Part 2), and
-   E002 analysis notebooks over real snapshots.
+- Game desirability: `docs/research/GAME_DESIRABILITY.md`
+- Referral and ambassadors: `docs/research/REFERRAL_AND_AMBASSADORS.md`
+- Clans, progression, leaderboards: `docs/research/SOCIAL_AND_PROGRESSION.md`
+- Competitors: `docs/research/COMPETITORS-2026-10.md`
