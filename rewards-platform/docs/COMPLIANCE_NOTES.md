@@ -16,7 +16,11 @@ Founder rules, enforced by `src/lib/copy-guard.ts` on source files (unit test) a
   gambling language.
 - Planned features are labeled **Planned** (partner page) or described in future tense ("we plan
   to", "will").
-- The Offer Facts example is visibly labeled illustrative and fictional (D-006).
+- Example offers are visibly labeled illustrative (frame banner, card tag, detail header), use
+  genre names rather than real games, and carry no outcome figures (D-006, D-019).
+- No "real money", "real cash" or named payout methods until cash rewards and payout rails are
+  confirmed (D-020).
+- An offer card's headline amount never requires spending money (D-019, `summarizeOffer`).
 
 A copy change that trips the guard is a build failure. Fix the copy; don't weaken the pattern.
 

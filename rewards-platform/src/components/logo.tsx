@@ -3,7 +3,7 @@ import { site } from "@/lib/site-config";
 
 /**
  * Mark: three ruled lines of a disclosure label, top line in accent.
- * It references the "Offer Facts" label rather than money imagery (DESIGN_SYSTEM.md).
+ * It references a ladder of milestones rather than money imagery (DESIGN_SYSTEM.md).
  */
 export function LogoMark({ className }: { className?: string }) {
   return (

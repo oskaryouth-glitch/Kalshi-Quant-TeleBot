@@ -101,7 +101,7 @@ const presentation: Commitment[] = [
 ];
 
 const questions = [
-  "Are cash-equivalent rewards (for example PayPal) and gift card rewards permitted?",
+  "Are cash-equivalent rewards (for example, digital-wallet or bank payouts) and gift card rewards permitted?",
   "May we build our own interface on your catalog API, and sort and rank offers ourselves?",
   "May we integrate other networks at the same time?",
   "Which traffic sources are permitted: organic social, paid social, search, brand bidding?",

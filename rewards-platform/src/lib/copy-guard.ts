@@ -86,6 +86,13 @@ export const BANNED_PATTERNS: BannedPattern[] = [
     source: false,
   },
   {
+    // No provider has confirmed cash-equivalent rewards in writing yet (PROVIDER_REGISTRY:
+    // cash_reward_allowed = UNKNOWN). Remove once a provider is YES and payout rails exist.
+    pattern: /\breal (money|cash)\b|\bpaypal\b|\bvenmo\b|\bcash ?app\b/i,
+    reason: "Unconfirmed payout method or cash claim",
+    source: true,
+  },
+  {
     pattern: /\b(hurry|act now|limited time|last chance|don't miss)\b/i,
     reason: "False urgency",
     source: false,

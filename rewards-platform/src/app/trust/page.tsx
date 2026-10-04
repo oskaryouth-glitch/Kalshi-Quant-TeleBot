@@ -13,15 +13,15 @@ export const metadata: Metadata = {
 const principles = [
   {
     title: "You see the requirements before you start",
-    body: "Every offer gets the same Offer Facts label: milestones in order, deadline, platform, and whether purchases are optional or required. If a network gives us incomplete information, the label will say what is missing rather than guess.",
+    body: "Before you install anything, each offer shows every milestone in order, what each one pays, the time limit, eligibility rules, and whether purchases are optional or required. If a network gives us incomplete information, the offer will say what is missing rather than guess.",
   },
   {
     title: "The biggest number is never the headline",
-    body: "Listed totals are shown, but we will not rank or promote offers by their maximum possible total. We show totals with and without purchase milestones side by side.",
+    body: "Offer cards lead with what you can earn without spending. Totals that include purchases are shown, but never as the headline, and we will not rank offers by their maximum possible total.",
   },
   {
     title: "No numbers we cannot back up",
-    body: "Figures like typical earnings, typical time and tracking record only appear once we have measured enough real outcomes. Each will show how many outcomes it is based on and over what period. Until then, the label says “Not enough data yet”.",
+    body: "Figures like typical earnings, typical time and tracking record only appear once we have measured enough real outcomes. Each will show how many outcomes it is based on and over what period. Until then, we simply do not show them.",
   },
   {
     title: "Pending is not the same as available",
@@ -123,7 +123,7 @@ export default function TrustPage() {
           id="measure-heading"
           eyebrow="How our numbers will work"
           title="Every figure comes with its limits."
-          intro="Here is what each outcome-based figure on the Offer Facts label will mean once we have the data to show it."
+          intro="Once we have measured enough real outcomes, offers will start showing figures based on them. Here is what each one will mean."
         />
         <dl className="mt-10 divide-y divide-line border-y border-line">
           {measurement.map(([term, detail]) => (

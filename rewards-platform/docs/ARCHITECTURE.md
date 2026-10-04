@@ -14,12 +14,13 @@ rewards-platform/
 │   ├── early-access/        page + Server Action (the only server-side write path)
 │   ├── privacy/, terms/     draft legal pages
 │   ├── sitemap.ts, robots.ts, opengraph-image.tsx, icon.svg
-├── src/components/          UI: header/footer, Offer Facts label, balance states, form, primitives
+├── src/components/          UI: header/footer, offers/ (card, detail dialog, tracker, art), form, primitives
 ├── src/lib/
 │   ├── site-config.ts       brand/company/contact facts (env-driven) + launch blockers
 │   ├── copy-guard.ts        public-claim rules as code
 │   ├── money/format.ts      integer-cent formatting
-│   ├── fixtures/            ILLUSTRATIVE offer only (typed so it cannot pose as real)
+│   ├── offers/              offer types + summarizeOffer (card headline rule, tested)
+│   ├── fixtures/            ILLUSTRATIVE offers only (typed so they cannot pose as real)
 │   └── waitlist/            schema (zod), service (pure), stores, rate limiter, config
 ├── db/migrations/           SQL migrations (applied by scripts/db-migrate.ts)
 ├── scripts/                 launch-check.ts, db-migrate.ts (run with Node type-stripping)

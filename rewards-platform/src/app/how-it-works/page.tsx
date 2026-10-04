@@ -15,11 +15,11 @@ export const metadata: Metadata = {
 const steps = [
   {
     name: "Discover",
-    body: "Browse game offers available to you. Every offer is shown with the same Offer Facts label, so you can compare like with like.",
+    body: "Browse game offers available to you, each with its reward amount up front and a clear label for any purchase involved.",
   },
   {
     name: "Compare",
-    body: "See the milestones in order, the deadline, and whether any purchase is involved. Totals are shown with and without purchase milestones.",
+    body: "Open an offer to see every milestone in order, what each one pays, the time limit and who is eligible, before you install anything.",
   },
   {
     name: "Choose",

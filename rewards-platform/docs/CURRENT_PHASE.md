@@ -45,7 +45,7 @@ business email, privacy policy, terms and contact details.
 
 ## Decisions awaiting founder sign-off
 
-D-003 (positioning), D-004 (name), D-015 (time = elapsed days), D-017 (disclosing multi-network
+D-004 (name), D-015 (time = elapsed days), D-017 (disclosing multi-network
 intent on the partner page). See DECISIONS.md.
 
 ## Next phase candidates (in order)

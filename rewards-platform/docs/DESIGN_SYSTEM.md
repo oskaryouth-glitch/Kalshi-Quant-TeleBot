@@ -11,7 +11,8 @@ Scored 1–5 against the founders' criteria. Scores are design judgment, not use
 | **Scorecard** ✅ | Warm paper, charcoal ink, one electric ultramarine accent, bold grotesque display, tabular figures. The **Offer Facts label** (a standardized disclosure, like a nutrition label) is the signature motif. |   5   |     3      |        5        |     5      |   5    |  23   |
 
 **Why Scorecard:** it turns the product thesis (standardized, honest disclosure) into the visual
-identity itself. Ledger is trustworthy but reads as a bank, not a consumer product. Arcade Night is
+identity itself. (Amended by D-019: the label is no longer the hero; offer cards lead with earning,
+and the full disclosure lives in the offer detail.) Ledger is trustworthy but reads as a bank, not a consumer product. Arcade Night is
 exciting, but it is the visual language of the sites users already distrust, and it differentiates
 nothing. Game artwork can bring color and energy later; the interface chrome stays calm.
 
@@ -39,21 +40,47 @@ of the Offer Facts label.
 **Motion:** color/opacity transitions ≤150ms only. No animated numbers, tickers or confetti.
 `prefers-reduced-motion` respected globally.
 
-## Offer Facts label (signature component)
+## Balance: about 75% trust, 25% energy (D-019)
 
-Fixed row order, so labels can be compared at a glance:
+- **Trust (most of the surface):** warm paper, charcoal ink, generous whitespace, tabular figures,
+  plain copy, explicit labels.
+- **Energy (concentrated, never in the chrome):** colorful genre artwork, large dollar figures on
+  offer cards, an accent gradient on the second line of the hero headline, progress bars, and hover
+  lift on cards.
+- **Never:** money-green or gold for amounts, animated or counting numbers, confetti, flashing,
+  countdowns, emojis, fake activity.
 
-1. Header: "Offer Facts", platform · region
-2. Game title, subtitle
-3. Deadline, Purchases (none / optional / required)
-4. **Listed total** (with note "every milestone added up, including purchases"), **Without purchases**
-5. Milestones in order, with purchase milestones tagged
-6. "From real outcomes": typical earnings, typical days to finish, tracking record. Each shows
-   either a value with `n=` or "Not enough data yet"
+## Offer card (browse level)
 
-Rules: never show the listed total larger or bolder than the without-purchases total. Never omit
-section 6; its honesty is the point. The illustrative banner is mandatory for fixture data
-(enforced by type).
+Order: artwork (with "Example" tag for fixtures) → title, genre · platform → purchase badge →
+**headline amount** + its label → secondary amount → "N milestones · N-day limit" → "View offer".
+
+- The headline amount comes only from `summarizeOffer()`. Never compute it in a component.
+- The label always says what the number is ("available without purchases", "total rewards
+  available", or "expected, based on N players").
+- Purchase badge tones: none → ok, optional → neutral, required → pending.
+- Compact rows put the purchase status and time limit on their own line, which may wrap. They are
+  **never truncated** (e2e-tested at 320px and 390px).
+
+## Offer detail (pre-start disclosure)
+
+Header (art, "Example offer" label for fixtures, title) → stat tiles (without purchases, with
+purchases, time limit, purchases) → **milestone ladder** (numbered, each reward, purchase steps and
+purchase-gated steps flagged in the pending color) → "Before you start" (time-limit rule,
+eligibility, verification and reversal caveat) → "Start offer" (disabled in preview). Nothing
+material may be omitted. Opens as a native `<dialog>` from cards, and is also shown inline.
+
+## Game artwork
+
+`src/components/offers/game-art.tsx`: original flat SVG scenes per genre (city, puzzle, racing,
+word, farm), each with its own saturated palette. They never depict a real game, character or
+brand. Replace them with provider artwork only where provider terms allow.
+
+## Reward tracker (illustrative)
+
+Progress bar plus per-milestone status: available (ok), confirmed on hold or pending (pending), not
+reached (neutral). The balance is split into Available and Pending or on hold. It mirrors
+ARCHITECTURE 2.5.
 
 ## Voice and tone
 

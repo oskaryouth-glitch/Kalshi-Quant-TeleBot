@@ -41,7 +41,7 @@ were made only to the degree required to ship the pre-approval shell.
 
 ## D-003 — Lead positioning: "Know what a game reward takes before you start."
 
-- **Date:** 2026-10-04 · **Status:** PROPOSED (_needs founder sign-off_)
+- **Date:** 2026-10-04 · **Status:** SUPERSEDED by D-019 (founder direction correction, 2026-10-04)
 - **Alternatives considered:** "Find the games actually worth playing for money." (brief);
   "Know which rewards are actually worth your time." (brief).
 - **Reason:** Both brief options promise a judgment of _worth_ that requires outcome data we will
@@ -67,10 +67,13 @@ were made only to the degree required to ship the pre-approval shell.
 
 ## D-005 — Visual direction "Scorecard"
 
-- **Date:** 2026-10-04 · **Status:** ADOPTED
+- **Date:** 2026-10-04 · **Status:** ADOPTED, amended by D-019 (tokens and type kept; the Offer Facts label is no longer the hero motif)
 - See DESIGN_SYSTEM.md for the three directions considered and how they scored.
 
-## D-006 — No outcome-based numbers until measured; Offer Facts fixture is illustrative-only by type
+## D-006 — No outcome-based numbers until measured; fixtures are illustrative-only by type
+
+> Amended by D-019: the fixture now lives in `src/lib/fixtures/illustrative-offers.ts`, and outcome
+> fields are hidden rather than shown as "Not enough data yet".
 
 - **Date:** 2026-10-04 · **Status:** ADOPTED
 - **Decision:** The only offer data in the codebase is `src/lib/fixtures/illustrative-offer.ts`. Its
@@ -194,3 +197,52 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
   provider may attribute the install for its whole attribution window. Locking at click-out is the
   only safe point. An attempt may be manually unlocked only after that provider's attribution
   window expires with no conversion, and the unlock is recorded.
+
+## D-019 — Homepage leads with earning; disclosure moves to the offer detail (progressive disclosure)
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED (founder direction, with the refinements below)
+- **Context:** Founders judged that the hero had overcorrected toward disclosure. The Offer Facts
+  table read like a financial disclosure and made the product feel like work before it was
+  appealing. New hierarchy: attraction → selection → transparency → tracking. Target feel:
+  about 75% financial-product trust and 25% gaming/rewards energy.
+- **Decision:**
+  1. Hero headline "Play new games. Get paid as you progress." Alternatives considered: "Play
+     games. Earn real money." (strongest pull, but the cash claim is unverified: every provider is
+     `cash_reward_allowed: UNKNOWN`); "Find games worth playing." (differentiated but ambiguous,
+     weak pull); "Get paid to play new games." (clear but generic); "New games. Real rewards. No
+     surprises." (punchy, but the promise is broad). The chosen line states the value and the
+     mechanism (milestones) truthfully.
+  2. The hero preview is a marketplace: a featured offer card plus compact rows, with original genre
+     artwork and the reward amount as the most prominent element.
+  3. **Card headline rule** (`src/lib/offers/summary.ts`, unit-tested): measured expected earnings
+     lead once displayable (n ≥ `MIN_DISPLAY_SAMPLE`, estimator version present), with the maximum
+     secondary. Until then, the lead is the **total available without purchases**, and totals with
+     purchases are secondary. Milestones gated behind a required purchase are excluded from the
+     no-purchase total.
+  4. Cards show the purchase badge, milestone count and time limit (small). A time limit decides
+     whether the headline is reachable, so hiding it would be a material surprise.
+  5. Clicking an offer opens the full detail (native modal dialog, with a no-JS fallback to the
+     inline example): the milestone ladder with each reward, time limit, purchase rules,
+     eligibility, and verification and reversal caveats, all before "Start offer".
+  6. Outcome placeholder rows ("typical earnings", "typical days", "tracking record") are removed
+     from consumer UI. They return only as measured, displayable estimates.
+  7. Trust moves deeper (later homepage sections, /trust) but stays present on every surface.
+- **Refinements to the founder direction (and why):** maximum available as the pre-data headline
+  would recreate the "up to $X" pattern, so the no-purchase total leads instead. "Real money"
+  wording is avoided until cash payouts are confirmed (enforced by the copy guard; see D-020). Real
+  game titles and artwork are not used: that would mean trademark use, implied relationships and
+  fabricated offers.
+- **Evidence:** Competitor review (docs/research/COMPETITORS-2026-10.md), founder review of the
+  previous hero.
+- **Revisit when:** Real catalog data and artwork permissions exist; expected-earnings estimates
+  become displayable; cash payouts are confirmed.
+
+## D-020 — Copy guard blocks unconfirmed payout and cash claims
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED
+- **Decision:** "real money", "real cash", PayPal, Venmo and Cash App are banned in public copy
+  (source and rendered).
+- **Reason:** No provider has confirmed cash-equivalent rewards in writing, and payout rails are
+  not chosen. Competitors lead with these phrases, and we cannot yet say them truthfully.
+- **Revisit when:** A provider is `cash_reward_allowed: YES` with stored evidence **and** a payout
+  method is contracted. Then remove the pattern in `src/lib/copy-guard.ts`.

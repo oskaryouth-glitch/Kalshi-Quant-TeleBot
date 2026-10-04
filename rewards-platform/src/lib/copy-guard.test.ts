@@ -28,6 +28,8 @@ describe("copy guard: patterns", () => {
     "$1.2M paid out",
     "Earn $7.40/hr",
     "Rated 4.8/5",
+    "Play games. Earn real money.",
+    "Cash out to PayPal",
   ])("flags %j", (text) => {
     expect(findViolations(text).length).toBeGreaterThan(0);
   });

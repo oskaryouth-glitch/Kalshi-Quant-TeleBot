@@ -64,11 +64,44 @@ test("unknown routes return a helpful 404", async ({ page }) => {
   await expect(page.locator("h1")).toHaveText("This page does not exist.");
 });
 
-test("home shows the Offer Facts label as an explicit illustration", async ({ page }) => {
+test("home marketplace preview is explicitly illustrative and shows no outcome claims", async ({
+  page,
+}) => {
   await page.goto("/");
-  await expect(page.getByTestId("illustrative-banner")).toContainText("Illustrative example");
-  await expect(page.getByTestId("illustrative-banner")).toContainText("not a real offer");
-  await expect(page.getByText("Not enough data yet", { exact: true })).toHaveCount(3);
+  const banner = page.getByTestId("illustrative-banner");
+  await expect(banner).toContainText("Examples");
+  await expect(banner).toContainText("not real offers");
+  // No placeholder outcome rows or estimates anywhere on the homepage (D-019).
+  await expect(page.getByText(/not enough data yet/i)).toHaveCount(0);
+  await expect(page.getByText(/expected, based on/i)).toHaveCount(0);
+  await expect(page.getByText(/tracking record|typical days/i)).toHaveCount(0);
+  // The headline amount on an offer with purchases is labeled as the no-purchase amount.
+  await expect(page.getByText("available without purchases").first()).toBeVisible();
+});
+
+test("opening an offer shows every material term before starting", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: /Farm sim, example offer/ }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("heading", { level: 2, name: "Farm sim" })).toBeVisible();
+  await expect(dialog).toContainText("Example offer");
+  await expect(dialog).toContainText("21 days from install");
+  await expect(dialog).toContainText("Purchase required");
+  await expect(dialog).toContainText("Only reachable after the purchase above");
+  await expect(dialog).toContainText("New players only");
+  await expect(
+    dialog.getByRole("listitem").filter({ hasText: "Reach farm level 40" }),
+  ).toContainText("$15.00");
+  await expect(dialog.getByRole("button", { name: "Start offer" })).toBeDisabled();
+
+  // Closes with Escape and with the close button.
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await page.getByRole("link", { name: /Kart racer, example offer/ }).click();
+  await expect(page.getByRole("dialog")).toContainText("7 days from install");
+  await page.getByRole("button", { name: "Close offer details" }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
 });
 
 test("security headers are present", async ({ request }) => {
@@ -107,4 +140,29 @@ test("no horizontal overflow at 320px on any page", async ({ browser }) => {
     expect(box && box.x + box.width <= 320, `menu button clipped on ${route}`).toBe(true);
   }
   await context.close();
+});
+
+test("offer rows never clip purchase requirements or time limits", async ({ browser }) => {
+  for (const width of [320, 390]) {
+    const context = await browser.newContext({ viewport: { width, height: 800 } });
+    const page = await context.newPage();
+    await page.goto("/");
+    const metas = page.getByTestId("offer-row-meta");
+    const count = await metas.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      const clipped = await metas
+        .nth(i)
+        .evaluate((el) =>
+          [el, ...Array.from(el.querySelectorAll("*"))].some(
+            (n) =>
+              n.scrollWidth > n.clientWidth + 1 ||
+              n.getBoundingClientRect().right > window.innerWidth,
+          ),
+        );
+      expect(clipped, `row ${i} clipped at ${width}px`).toBe(false);
+    }
+    await expect(metas.filter({ hasText: "Purchase required" })).toHaveCount(1);
+    await context.close();
+  }
 });
