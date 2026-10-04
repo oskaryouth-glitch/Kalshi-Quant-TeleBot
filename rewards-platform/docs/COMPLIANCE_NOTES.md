@@ -85,6 +85,13 @@ reward-program terms.
     rights for third-party ratings; no scraping of Google Play.
 17. **Game names in marketing:** nominative use of game titles on landing pages vs provider and
     advertiser restrictions on branded traffic.
+18. **Conversion-based ambassador and referrer pay** (D-028): commission-style contractor terms,
+    state law on commissions and contractor classification, tax reporting, FTC disclosure of a
+    "possibility of being paid", and confirmation that single-level conversion-based pay is clear of
+    pyramid characteristics.
+19. **Casino-style games** (D-027): legal status of sweepstakes-style casino offers by state;
+    whether listing social-casino games creates any gambling-adjacent obligations or advertising
+    restrictions; age-rating implications.
 
 ## Launch blockers (from `npm run check:launch`)
 

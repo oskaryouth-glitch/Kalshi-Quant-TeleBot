@@ -188,16 +188,30 @@ queue. Catalog polling runs as scheduled jobs that respect provider rate limits.
   simulated_gambling, last_updated), `value`, `scale`, `retrieved_at`, `license_ref`,
   `raw_payload_id`. Append-only snapshots, so trends are reconstructable. **No derived "fun score"
   column** (D-021).
-- **Traffic permissions**: `provider.allowed_traffic_sources` and optional
-  `campaign.allowed_traffic_sources` (organic, seo, branded_search, referral, ambassador,
-  paid_social). Each holds a reference to the written evidence in PROVIDER_REGISTRY.
-- **`user.acquisition_channel`** (+ `acquisition_ref`, e.g. a referral code ID), set at signup and
-  immutable.
-- **Eligibility filter**: an offer is shown and routable only if the user's acquisition channel is
-  allowed by both the provider and the campaign. Route selection (2.4) applies the same filter.
+- **Channel permission matrix** (D-030): table `channel_permission` with `provider_id`,
+  `campaign_id` (nullable = provider default), `channel` (organic, seo, game_intent, referral,
+  ambassador, paid_social, paid_search, influencer), `decision` (allow / deny / conditional),
+  `conditions` (e.g. "no game name in ad copy", "no paid bidding on brand terms"),
+  `evidence_ref` (PROVIDER_REGISTRY evidence item), `effective_from/to`.
+  **Resolution:** campaign rule > provider default > **deny**. A channel with no evidence is denied.
+- **Two channel attributes:**
+  - `user.acquisition_channel` (+ `acquisition_ref`, e.g. a referral code ID): how the person
+    joined. Set at signup, immutable. Drives cohort economics (EXPERIMENTS "Channel cohort
+    comparison").
+  - `offer_attempt.entry_channel`: how they arrived at _this_ offer, e.g. a game-intent landing
+    page for that game. Recorded at click-out with the route lock.
+- **Eligibility filter**: an offer is shown and routable only if **both** the user's acquisition
+  channel and the attempt's entry channel are allowed for that provider and campaign. Route
+  selection (2.4) applies the same filter, so routing never sends a channel to a provider that
+  forbids it. Game-intent pages for a game render only if at least one eligible campaign allows
+  `game_intent`, and show immediately when none does.
+- **`app.segment`**: standard / social_casino / sweepstakes_casino / real_money_gambling (D-027).
+  `real_money_gambling` is never eligible for consumer surfaces; raw data is still preserved.
 
 ### 2.10 Referrals (conceptual; gated by D-024)
 
+- Ambassadors use the same machinery with `kind = ambassador` and their own policy versions;
+  compensation is conversion-qualified only (D-028).
 - **`referral_policy`**: `version`, `kind` (friend / ambassador), `reward_minor`, `currency`,
   `qualifying_rule` (e.g. cumulative approved NPR ≥ X within N days), `hold_rule` (≥ longest
   relevant reversal window), `caps` (per referrer per period), `active_from/to`.

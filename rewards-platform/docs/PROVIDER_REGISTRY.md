@@ -100,6 +100,8 @@ Evidence levels used below:
 29. Are there restrictions on funding referral bonuses or welcome bonuses from your payouts?
 30. Do you expose store ratings, rating counts, install ranges, genre or publisher in the catalog, and may we display them?
 31. Which campaigns restrict branded or search traffic (e.g. pages or ads naming the game), and is that exposed per campaign?
+32. Does the catalog identify casino-style games, and distinguish social casino, sweepstakes-style (redeemable prizes) and real-money gambling offers?
+33. May we pay referrers or campus ambassadors a fixed amount after a directly referred user's conversion is approved by you (single level, no payment for signups or installs)?
 
 ## Suggested next research step
 

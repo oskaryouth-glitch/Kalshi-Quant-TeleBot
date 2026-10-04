@@ -45,8 +45,11 @@ business email, privacy policy, terms and contact details.
 
 ## Decisions awaiting founder sign-off
 
-Added 2026-10-04: D-022 (discovery categories, "Biggest" not "Best"), D-023 (exclude social casino),
-D-025 (campus program guardrails).
+Reviewer decisions recorded 2026-10-04: D-022 approved; D-023 → D-027 (segment social casino in
+E002); D-025 → D-028 (conversion-based ambassador pay allowed, gated); D-029 (enjoyment separate);
+D-030 (channel permission matrix); D-031 (no referral infrastructure before E001, legal review,
+provider permission and real economics). Still open for explicit confirmation: D-028's retained
+rule against per-member payments to organizations.
 
 D-004 (name), D-015 (time = elapsed days), D-017 (disclosing multi-network
 intent on the partner page). See DECISIONS.md.

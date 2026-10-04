@@ -249,7 +249,7 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
 
 ## D-021 — Game desirability is measured from raw, sourced signals; no composite "fun score"
 
-- **Date:** 2026-10-04 · **Status:** ADOPTED
+- **Date:** 2026-10-04 · **Status:** ADOPTED, amended by D-029 (enjoyment kept conceptually separate from expected earnings)
 - **Decision:** Desirability is a first-class research dimension for E002 onward
   (docs/research/GAME_DESIRABILITY.md). Signals are stored individually with source, scale, sample
   size, retrieval date and license. Any combining model is internal, versioned and validated
@@ -262,7 +262,7 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
 
 ## D-022 — Discovery categories are defined filters with data gates
 
-- **Date:** 2026-10-04 · **Status:** PROPOSED (_needs founder sign-off_)
+- **Date:** 2026-10-04 · **Status:** ADOPTED (reviewer approved 2026-10-04: "Biggest rewards", not "Best", until outcome data supports a quality or recommendation ranking)
 - **Decision:** "No purchase needed" can ship at launch. "Popular games that pay" needs a licensed,
   named popularity source. "Quick wins" needs measured time-to-first-reward (the only pre-data
   variant is the structural "First reward at install or tutorial"). The founders' "Best rewards"
@@ -273,7 +273,7 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
 
 ## D-023 — Exclude simulated-gambling (social casino) games from the consumer catalog
 
-- **Date:** 2026-10-04 · **Status:** PROPOSED (_needs founder sign-off_)
+- **Date:** 2026-10-04 · **Status:** SUPERSEDED by D-027 (reviewer modified: segment in E002 and decide later)
 - **Reason:** Our public positioning says "not gambling", and competitors' casino offers are part
   of what makes the category look scammy. Many CPE offers are social casino games (INFERENCE), so
   exclusion has a supply cost that E002 must measure (share of catalog and of payout volume).
@@ -294,7 +294,7 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
 
 ## D-025 — Campus ambassadors: voluntary individuals only; no organization payouts; never paid per signup pre-launch
 
-- **Date:** 2026-10-04 · **Status:** PROPOSED (_needs founder sign-off_)
+- **Date:** 2026-10-04 · **Status:** SUPERSEDED by D-028 (reviewer approved the anti-coercion guardrails and allowed conversion-based compensation)
 - **Decision:** Ambassadors participate as individuals (18+, written terms, code of conduct, FTC
   disclosure). We do not pay fraternities, sororities, clubs, teams or dorms based on member
   participation. No quotas, leaderboards or group competitions. Pre-launch ambassadors are unpaid
@@ -306,10 +306,71 @@ null (reading 'edgesOut')`). `prettier-plugin-tailwindcss` was dropped for the s
 
 ## D-026 — "Already downloading this game?" acquisition is gated per campaign
 
-- **Date:** 2026-10-04 · **Status:** ADOPTED
+- **Date:** 2026-10-04 · **Status:** ADOPTED, amended by D-030 (channel-dependent, not globally blocked; general channel matrix)
 - **Decision:** No branded or search-intent acquisition (per-game pages or ads naming the game)
   except on campaigns whose terms explicitly permit it in writing (Q11, Q31). The schema carries
   per-campaign `allowed_traffic_sources`. Per-game pages must be data-driven and say immediately
   when an offer has ended.
 - **Reason:** Advertisers pay for incremental players. Intercepting users who would install anyway
   is commonly restricted (INFERENCE), and violations risk rejected conversions and account loss.
+
+## D-027 — Social-casino games are an E002 segmentation question, not an exclusion (supersedes D-023)
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED (reviewer decision)
+- **Decision:** Do not exclude social-casino games yet. Classify every game (standard / social
+  casino / sweepstakes-style casino / real-money gambling) and quantify the social-casino segment
+  separately in E002: inventory share, payouts, purchase requirements, and later completion and
+  economics. **Real-money gambling stays out of scope** and is never listed. Inclusion or exclusion
+  is decided after evidence plus legal and provider review.
+- **Engineering recommendation (not yet a decision):** treat sweepstakes-style casinos (redeemable
+  prizes) as out of scope until counsel clears them, since their legal status varies by state.
+- **Follow-ons if included:** re-review the "Is this gambling?" FAQ and Trust copy. Add a reviewed
+  rule for provider-supplied titles to the copy guard, which currently bans gambling language in all
+  public text.
+
+## D-028 — Campus ambassadors: anti-coercion guardrails plus conversion-based compensation (supersedes D-025)
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED (reviewer decision; gated on provider permission and legal review)
+- **Decision:** Performance-based compensation is **allowed and is the intended model**. A referrer
+  or ambassador is paid only after a **directly referred** user produces an eligible,
+  provider-approved economic conversion that clears the reversal window. There is no compensation
+  for recruiting recruiters, no downstream commissions, and no mandatory participation, pledging or
+  initiation requirements. Voluntary, individual participation, code of conduct, 18+, FTC
+  disclosure and the no-quota/no-leaderboard rules remain.
+- **Retained, flagged for explicit confirmation:** no per-member performance payments to
+  _organizations_ (fraternities, sororities, clubs, teams, dorms). Leadership authority over members
+  makes this a coercion vector. Changing it needs an explicit founder decision and legal review.
+- **Pre-launch:** no conversions exist, so E008 ambassadors are unpaid or receive a flat stipend for
+  time, never per waitlist signup.
+- **Gate:** written provider permission (Q27–29, Q33), legal review, then E009. No referral
+  infrastructure is built before E001, legal review, provider permission and real offer economics
+  (D-031).
+
+## D-029 — Enjoyment is separate from expected earnings
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED (reviewer direction)
+- **Decision:** Expected earnings come only from observed completion behavior and answer "How much
+  will I likely earn?" Voluntary enjoyment ratings, from players who started through us and are
+  never incentivized, answer "Will I actually enjoy playing this?" They are displayed separately
+  with n, never blended into expected earnings, and high completion is never labeled "fun".
+
+## D-030 — Acquisition channels are enabled per provider and campaign (amends D-026)
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED (design; nothing built)
+- **Decision:** "Already thinking about downloading this game? Get paid to start" is
+  channel-dependent, not globally blocked. A general **channel permission matrix** (ARCHITECTURE
+  2.9) enables each acquisition channel (organic, SEO, game-intent pages and search, referral,
+  ambassador, paid social, paid search, influencer) only where provider and campaign terms permit it.
+  Resolution: explicit campaign rule > provider default > **deny**. Every allow carries written
+  evidence and effective dates. Eligibility checks both the user's sticky acquisition channel and
+  the attempt's entry channel.
+
+## D-031 — Sequencing: evidence before referral infrastructure
+
+- **Date:** 2026-10-04 · **Status:** ADOPTED (reviewer direction)
+- **Decision:** No substantial referral infrastructure until E001 passes, legal review is done,
+  providers grant referral permission in writing, and real offer economics exist (E002). Until then,
+  referral work is limited to documentation, metric definitions and the existing aggregate
+  `waitlist:report` used by E008.
+- **Metric added:** Referral Contribution Margin, compared directly with paid and organic cohorts
+  on retention and second-offer rate (EXPERIMENTS "Channel cohort comparison").

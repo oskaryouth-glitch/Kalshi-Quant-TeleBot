@@ -22,16 +22,18 @@ Experiments are never advanced automatically. Each gate ends with an explicit re
 All money is in integer minor units (US cents). "Period" means conversions _approved_ in the period
 unless stated otherwise.
 
-| Term                              | Definition                                                                                                                                                                                                                                                                                                 |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Gross publisher revenue (GPR)** | Sum of network payouts for conversions approved in the period.                                                                                                                                                                                                                                             |
-| **Reversals**                     | Network payouts clawed back in the period (by approval-period cohort when analyzing).                                                                                                                                                                                                                      |
-| **Net publisher revenue (NPR)**   | GPR − reversals.                                                                                                                                                                                                                                                                                           |
-| **User rewards cost**             | Rewards credited to users for those conversions, net of user rewards reversed.                                                                                                                                                                                                                             |
-| **Gross spread**                  | NPR − user rewards cost. **Gross spread %** = gross spread ÷ NPR.                                                                                                                                                                                                                                          |
-| **Contribution profit**           | Gross spread − payout processing fees − fraud losses (rewards paid out and later unrecoverable) − variable support cost − allocated CAC − working-capital cost. **CAC includes** paid media, referral rewards, referred-user welcome bonuses and ambassador stipends, attributed by `acquisition_channel`. |
-| **Contribution margin %**         | Contribution profit ÷ NPR.                                                                                                                                                                                                                                                                                 |
-| **Net profit**                    | Contribution profit − fixed costs. Not an experiment metric.                                                                                                                                                                                                                                               |
+| Term                                   | Definition                                                                                                                                                                                                                                                                                                 |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Gross publisher revenue (GPR)**      | Sum of network payouts for conversions approved in the period.                                                                                                                                                                                                                                             |
+| **Reversals**                          | Network payouts clawed back in the period (by approval-period cohort when analyzing).                                                                                                                                                                                                                      |
+| **Net publisher revenue (NPR)**        | GPR − reversals.                                                                                                                                                                                                                                                                                           |
+| **User rewards cost**                  | Rewards credited to users for those conversions, net of user rewards reversed.                                                                                                                                                                                                                             |
+| **Gross spread**                       | NPR − user rewards cost. **Gross spread %** = gross spread ÷ NPR.                                                                                                                                                                                                                                          |
+| **Contribution profit**                | Gross spread − payout processing fees − fraud losses (rewards paid out and later unrecoverable) − variable support cost − allocated CAC − working-capital cost. **CAC includes** paid media, referral rewards, referred-user welcome bonuses and ambassador stipends, attributed by `acquisition_channel`. |
+| **Contribution margin %**              | Contribution profit ÷ NPR.                                                                                                                                                                                                                                                                                 |
+| **Net profit**                         | Contribution profit − fixed costs. Not an experiment metric.                                                                                                                                                                                                                                               |
+| **Channel contribution**               | For a signup cohort of one acquisition channel over horizon H: gross spread − variable costs − that channel's CAC. Definition in "Channel cohort comparison".                                                                                                                                              |
+| **Referral Contribution Margin (RCM)** | Channel contribution ÷ NPR for the referral cohort (and separately for the ambassador cohort).                                                                                                                                                                                                             |
 
 Never call gross spread "margin" or "profit". Never mix cohorts (approval month versus conversion
 month) within one table.
@@ -86,10 +88,27 @@ depends on milestone completion rates, which only E003/E005 can measure. Report 
 ### Game desirability dimension (see docs/research/GAME_DESIRABILITY.md)
 
 E002 also records, per eligible game: store ID (and iOS ID where matchable), genre, publisher,
-release/update recency, content rating, a simulated-gambling flag, and any **legitimately obtainable**
+release/update recency, content rating, a game-segment classification, and any **legitimately obtainable**
 external popularity and rating signals (with source, retrieval date and license; no scraping).
 Report signal coverage, the payout-vs-popularity relationship at matched milestone depth (H-GD3),
-and the share of the catalog that is social casino (input to D-023). **No composite "fun score".**
+and the social-casino segment separately (below). **No composite "fun score".**
+
+### Social-casino segmentation (D-027)
+
+Classify every game: **standard**, **social casino** (casino-style mechanics, no cash-out),
+**sweepstakes-style casino** (prizes redeemable for cash or equivalents), **real-money gambling**.
+Real-money gambling is out of scope: it is recorded in raw data only and never listed.
+Sweepstakes-style casinos are flagged for legal review; recommendation: treat as out of scope
+until counsel clears them, because their legal status varies by state and is actively contested
+(INFERENCE; needs counsel).
+
+For **social casino vs standard**, report: share of eligible games and of total publisher payout;
+payout per milestone at matched depth; share with purchase-required or purchase-optional
+milestones and the purchase share of listed totals. Post-launch, add completion curves, reversal
+rate, claim rate and channel contribution for each segment. Inclusion or exclusion is decided after
+this evidence plus legal and provider review. If included, the "Is this gambling?" FAQ and Trust copy
+must be re-reviewed, and the copy guard's gambling-language rule will need an explicit, reviewed
+rule for provider-supplied game titles (it currently applies to all public text).
 
 ### Working-capital model
 
@@ -148,8 +167,10 @@ harming trust?
   terms, code of conduct, FTC disclosure training (docs/research/REFERRAL_AND_AMBASSADORS.md §7–8).
 - Each gets a unique code with a shared prefix: `amb_<campus>_<id>` (fits the waitlist's
   `[a-z0-9_-]{1,64}` rule). Measure with `npm run waitlist:report -- --prefix=amb_`.
-- Compensation: none, or a **flat stipend for time**. **Never per signup** (that pays for
-  non-economic activity and invites junk).
+- Compensation: none, or a **flat stipend for time**. **Never per waitlist signup** (that pays for
+  non-economic activity and invites junk). Conversion-based ambassador pay is the intended
+  post-launch model (D-028) and is tested in E009; ambassadors are told it is planned
+  and still subject to provider permission and legal review.
 - Run 3–4 weeks. Same landing page for everyone. No paid amplification.
 
 **Measure:** signups per ambassador per week; Android share; cost per signup (stipends ÷ signups);
@@ -170,13 +191,69 @@ implemented (ARCHITECTURE 2.10).
 referral payout for the first cohort, policy amount set from the affordability constraint in the
 referral research doc (not hard-coded). Optionally A/B two reward levels.
 
-**Measure:** q (share of referred signups whose referral reward is actually paid), referred-cohort
-gross spread and reversal rate vs organic, fraud and void rate, provider rejection rate for the
-referred cohort, CAC per _qualified_ user vs other channels, contribution per referred signup.
+**Arms:** friend referrals and campus ambassadors (both conversion-qualified, single-level),
+compared against paid-acquisition and organic cohorts acquired over the same period.
 
-**Decision rule:** PASS only if CAC per qualified user beats the comparison channel **and** referred
-cohort reversal and fraud rates are not materially worse. Worse provider rejection rates → FAIL
-regardless of CAC (supply risk outweighs it).
+**Measure** (see "Channel cohort comparison"): Referral Contribution Margin and channel contribution
+per acquired and per activated user; CAC per qualified user; q (share of referred signups whose
+reward is actually paid); 30/60/90-day retention; second-offer rate; reversal, void, claim and
+provider-rejection rates. Each is reported for referral, ambassador, paid and organic.
+
+**Decision rule:** PASS only if, at maturity, referral (or ambassador) channel contribution per
+acquired user beats **paid acquisition**, **and** retention and second-offer rate are not materially
+worse than organic, **and** reversal and fraud rates are not materially worse. Worse provider
+rejection rates → FAIL regardless of margin (supply risk outweighs it). Too few mature users →
+CONTINUE COLLECTING.
+
+## Channel cohort comparison (referral vs ambassador vs paid vs organic)
+
+**Cohort:** users whose immutable `acquisition_channel` is c and who signed up in period P,
+observed for H days from signup (e.g. H = 90). Only **mature** cohorts are compared: H has elapsed
+**and** the longest relevant reversal window has closed for conversions inside H. Immature figures
+are labeled provisional.
+
+```
+NPR_c   = Σ net publisher revenue on cohort conversions approved within H (net of reversals)
+GS_c    = NPR_c − user rewards cost_c
+V_c     = payment fees + fraud losses + variable support + working-capital cost, attributed to cohort
+CAC_c   = paid:        media + creative spend attributed to the cohort
+          referral:    referral rewards paid or accrued (qualified, not voided) + welcome bonuses
+          ambassador:  ambassador performance rewards + stipends + materials
+          organic:     0 direct (content and SEO costs are fixed; reported separately)
+
+Channel contribution             CC_c  = GS_c − V_c − CAC_c
+Channel contribution margin      CCM_c = CC_c ÷ NPR_c         (RCM = CCM for referral; also ambassador)
+Contribution per acquired user          = CC_c ÷ signups_c
+Contribution per activated user         = CC_c ÷ users with ≥1 approved conversion within H
+CAC per qualified user                  = CAC_c ÷ users with ≥1 approved conversion within H
+Payback (paid)                          = first day cumulative (GS − V) ≥ CAC
+```
+
+**Behavior metrics (same cohorts):**
+
+- **Retention:** share of the cohort with any offer activity (start or milestone) in days 31–60 and
+  61–90.
+- **Second-offer rate:** among users with ≥1 approved conversion within H, the share with an
+  approved conversion on a second distinct offer within H. Second-offer _start_ rate is the leading
+  indicator.
+- **Quality:** reversal rate (reversed ÷ gross publisher revenue), provider rejection rate, void
+  and fraud rate, missing-credit claim rate.
+
+**Reporting rules:**
+
+1. Always show absolute dollars per user next to percentages. A margin % on a tiny NPR is
+   meaningless. Show n and bootstrap intervals.
+2. Single attribution per user, immutable. No channel double-counts a user.
+3. Organic has zero direct CAC by construction, so it will usually "win" on margin. The decision
+   questions are whether referral or ambassador beats **paid** (the scalable alternative), and
+   whether referred users are as valuable as organic ones.
+4. **Incrementality:** a referral program can pay for friends who would have joined anyway. Where
+   volume allows, use holdouts (e.g. delay referral rewards for a random subset of new referrers)
+   or compare organic signup trends where referrals launch. Note the limitation otherwise.
+5. Self-selection: early referrers and ambassadors are enthusiasts. Pilot results may overstate
+   scaled performance.
+6. Compare channels on the same offer mix where possible, or report segment mix alongside (e.g.
+   social-casino share), since offer mix drives margin.
 
 ## Hypothesis register (cross-experiment)
 

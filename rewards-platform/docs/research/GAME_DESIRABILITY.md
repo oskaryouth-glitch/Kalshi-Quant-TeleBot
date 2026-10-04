@@ -1,7 +1,7 @@
 # Research area: game desirability
 
 **Status:** research design (2026-10-04). Nothing here is built or shown to users.
-**Hypothesis owner:** founders. **Decision refs:** D-021, D-022, D-023.
+**Hypothesis owner:** founders. **Decision refs:** D-021, D-022, D-027, D-029, D-030.
 
 ## 1. Question
 
@@ -11,31 +11,38 @@ we should optimize the **game + reward combination**, rather than the reward alo
 Founder intuition: a $30 reward on an excellent game may outperform a $50 reward on an unpleasant
 grind.
 
-## 2. Key insight: desirability is already inside expected value
+## 2. Two separate questions (reviewer direction, 2026-10-04)
 
-The brief's expected payout is
+Desirability splits into two questions that must stay conceptually separate:
 
-```
-E[payout] = Σ_k P(reach milestone k) × reward_k
-```
+| Question                                  | Answered by           | Source                                                                             | Display                                               |
+| ----------------------------------------- | --------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| **"How much will I likely earn?"**        | **Expected earnings** | Observed completion behavior only: E[payout] = Σ_k P(reach milestone k) × reward_k | Primary number on cards once displayable (D-019)      |
+| **"Will I actually enjoy playing this?"** | **Enjoyment ratings** | Voluntary ratings from players who started the offer through us                    | Shown separately, with n; never blended into earnings |
 
-If a game is enjoyable, more people keep playing, so P(reach k) is higher at every depth. So we do
-**not** need a separate "fun score" to optimize the combination: once measured, expected earnings
-already rank a well-liked $30 game above a grindy $50 game **if** the completion data says so. Our
-revenue has the same shape (Σ P(reach k) × publisher_payout_k), so user value and our economics point
-the same way.
+How they relate:
 
-Desirability adds two things on top:
+- A well-liked game will tend to show higher P(reach k), so expected earnings will _reflect_ the
+  behavioral side of desirability automatically, once measured. A well-liked $30 offer outranks a
+  $50 grind on expected earnings **only if** observed completion says users actually earn more on
+  it.
+- Completion is driven by many things: enjoyment, difficulty, reward size, time limits, tracking
+  quality. So **a high completion rate must never be presented as "fun"**, and enjoyment ratings
+  must never be used to adjust expected earnings.
+- Enjoyment ratings answer a different question: a user may rationally pick a lower-earning offer
+  on a game they will enjoy. That is the user's trade-off to make, with both numbers visible.
+
+Desirability signals add, on top of those two:
 
 1. **A cold-start prior.** Before we have completion data for a game, external signals may predict
-   P(reach k). That is a testable hypothesis, not an assumption.
-2. **Enjoyment itself.** Time spent in a game the user enjoys costs them less than time in one they
-   dislike. Only users can tell us that (self-report), and it should be displayed as what it is
-   ("players rated this game"), never folded into a dollar figure.
+   P(reach k). That is a testable hypothesis (H-GD4), used internally only.
+2. **Discovery context**, e.g. "Popular games that pay" (D-022), from named, licensed sources.
 
-**Rule (D-021):** no composite "fun score". We store and, where legitimately allowed, display
-individual signals with their source, scale, sample size and date. Any model that combines them is
-internal, versioned and validated against outcomes before it influences ranking.
+**Rules (D-021):** no composite "fun score". Signals are stored and, where legitimately allowed,
+displayed individually with source, scale, sample size and date. Any model combining them is
+internal, versioned and validated against outcomes before it influences ranking. Enjoyment ratings
+are voluntary, never incentivized, collected only from players who started the offer through us,
+and shown only above a display threshold.
 
 ## 3. Candidate signals
 
@@ -43,17 +50,17 @@ Legend: **Avail.** = when we could have it. **Legit.** = legitimacy and licensin
 
 ### External (could exist before we have users)
 
-| Signal                                              | Source options                                                                                                                                                                                                                                   | Avail.           | Legit. / caveats                                                                                                                                    |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Store rating + rating count (Android)               | No official Google API for apps you don't own (CONFIRMED via third-party summaries of the Play Developer API scope). Options: licensed data vendors (e.g. Appfigures, AppMagic, Sensor Tower, 42matters), or provider catalog fields if exposed. | E002 if licensed | Scraping Google Play is a ToS and legal risk; **do not scrape**. Vendor pricing and display rights are UNKNOWN.                                     |
-| Store rating + count (iOS, as cross-platform proxy) | Apple iTunes Search/Lookup API: public, no key, returns `averageUserRating`, `userRatingCount`, `primaryGenreName`; about 20 calls/min (CONFIRMED via secondary sources)                                                                         | E002             | Need to review Apple's terms for this API before using it; iOS ratings are only a proxy for Android experience; needs cross-platform game matching. |
-| Install range ("1M+")                               | Shown publicly on Play listings; vendors                                                                                                                                                                                                         | E002 if licensed | Coarse buckets; same no-scraping rule.                                                                                                              |
-| Chart rank / popularity trend                       | Licensed vendors                                                                                                                                                                                                                                 | Post-E001        | Paid. Useful for "popular games that pay".                                                                                                          |
-| Genre / category                                    | Provider catalog (if exposed), store category via vendor or iOS API                                                                                                                                                                              | E002             | Low risk.                                                                                                                                           |
-| Publisher / studio                                  | Provider catalog, store listing                                                                                                                                                                                                                  | E002             | Low risk. Studio reputation is a weak prior.                                                                                                        |
-| Release date, update recency                        | Vendor / iOS API (`currentVersionReleaseDate`)                                                                                                                                                                                                   | E002             | Abandoned games correlate with tracking problems (hypothesis).                                                                                      |
-| Content rating; **simulated gambling** flag         | Store content rating (IARC), genre                                                                                                                                                                                                               | E002             | See D-023: social-casino games conflict with our positioning.                                                                                       |
-| Provider-claimed EPC / conversion rate              | Provider catalog                                                                                                                                                                                                                                 | E002             | Provider-claimed, not ours; stored with as-of; never displayed as our data.                                                                         |
+| Signal                                                                                       | Source options                                                                                                                                                                                                                                   | Avail.           | Legit. / caveats                                                                                                                                    |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Store rating + rating count (Android)                                                        | No official Google API for apps you don't own (CONFIRMED via third-party summaries of the Play Developer API scope). Options: licensed data vendors (e.g. Appfigures, AppMagic, Sensor Tower, 42matters), or provider catalog fields if exposed. | E002 if licensed | Scraping Google Play is a ToS and legal risk; **do not scrape**. Vendor pricing and display rights are UNKNOWN.                                     |
+| Store rating + count (iOS, as cross-platform proxy)                                          | Apple iTunes Search/Lookup API: public, no key, returns `averageUserRating`, `userRatingCount`, `primaryGenreName`; about 20 calls/min (CONFIRMED via secondary sources)                                                                         | E002             | Need to review Apple's terms for this API before using it; iOS ratings are only a proxy for Android experience; needs cross-platform game matching. |
+| Install range ("1M+")                                                                        | Shown publicly on Play listings; vendors                                                                                                                                                                                                         | E002 if licensed | Coarse buckets; same no-scraping rule.                                                                                                              |
+| Chart rank / popularity trend                                                                | Licensed vendors                                                                                                                                                                                                                                 | Post-E001        | Paid. Useful for "popular games that pay".                                                                                                          |
+| Genre / category                                                                             | Provider catalog (if exposed), store category via vendor or iOS API                                                                                                                                                                              | E002             | Low risk.                                                                                                                                           |
+| Publisher / studio                                                                           | Provider catalog, store listing                                                                                                                                                                                                                  | E002             | Low risk. Studio reputation is a weak prior.                                                                                                        |
+| Release date, update recency                                                                 | Vendor / iOS API (`currentVersionReleaseDate`)                                                                                                                                                                                                   | E002             | Abandoned games correlate with tracking problems (hypothesis).                                                                                      |
+| Content rating; **game segment** (standard / social casino / sweepstakes-style / real-money) | Store content rating (IARC), genre, provider category (Q32)                                                                                                                                                                                      | E002             | D-027: segment in analysis; real-money gambling out of scope.                                                                                       |
+| Provider-claimed EPC / conversion rate                                                       | Provider catalog                                                                                                                                                                                                                                 | E002             | Provider-claimed, not ours; stored with as-of; never displayed as our data.                                                                         |
 
 ### Internal (only after launch)
 
@@ -115,7 +122,11 @@ per-game landing pages ("Get paid to play {Game}") and search.
 **Why it is attractive:** high intent means low CAC; it fits "popular games that pay"; it is
 honest (the user wanted the game anyway).
 
-**Material risks, possibly blocking:**
+**Status (reviewer direction):** campaign- and channel-dependent, **not globally blocked**. It is
+enabled only for campaigns whose terms permit the relevant channel (ARCHITECTURE 2.9 channel
+matrix; default deny where no written evidence exists).
+
+**Material risks per campaign:**
 
 1. **Advertiser incrementality.** Advertisers pay CPI/CPE to acquire players they would _not_
    otherwise get. Intercepting users who were going to install anyway is exactly what many
@@ -145,7 +156,9 @@ For every eligible game in the catalog snapshot:
    scraping).
 3. Report **coverage**: share of games with each signal.
 4. Report the **payout vs popularity** relationship (H-GD3) at matched milestone depth.
-5. Report the **share of catalog that is simulated gambling / social casino** (input to D-023's
-   supply impact).
+5. Report the **social-casino segment separately** (D-027): inventory share, payout
+   levels, purchase requirements, and, once users exist, completion and economics. Classify every
+   game as standard / social casino / sweepstakes-style casino / real-money gambling. Real-money
+   gambling is out of scope and never listed.
 6. Draft and pilot the H-GD2 stated-preference survey (waitlist; requires the email provider and a
    privacy-policy update first).

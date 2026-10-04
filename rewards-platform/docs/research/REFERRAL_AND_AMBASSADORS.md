@@ -2,7 +2,7 @@
 
 **Status:** research and conceptual design (2026-10-04). **Nothing is built.** No referral feature
 ships before launch, before provider permission (approval questions 27–31) and before counsel
-review. **Decision refs:** D-024, D-025, D-026.
+review. **Decision refs:** D-024, D-028, D-030, D-031.
 
 ## 1. Design principles (non-negotiable)
 
@@ -16,10 +16,16 @@ review. **Decision refs:** D-024, D-025, D-026.
 4. **Bounded.** Per-referral rewards are fixed by a versioned policy. Each referred user can
    generate at most one referral reward (or a time-bounded set, if ever adopted). There are caps
    per referrer per period.
-5. **Voluntary and individual.** People participate as individuals. No organization is paid
-   according to how many of its members participate. No quotas, no mandatory participation, no
-   group penalties.
-6. **Referral rewards are acquisition cost** and appear in contribution-margin calculations as CAC.
+5. **Voluntary and individual.** People participate as individuals. No quotas, no mandatory
+   participation, no pledging or initiation requirements, no group penalties. (Organization-level
+   payouts: see §8.)
+6. **Referral rewards are acquisition cost** and appear in contribution-margin calculations as CAC,
+   measured as **Referral Contribution Margin** and compared directly with paid and organic cohorts
+   (EXPERIMENTS "Channel cohort comparison").
+7. **Performance-based compensation is allowed, and is the intended model (D-028).**
+   Referrers and campus ambassadors may be paid per directly referred user who produces an
+   eligible, provider-approved economic conversion. This is gated on provider permission (Q27–29,
+   Q33) and legal review.
 
 ## 2. Economics
 
@@ -167,10 +173,17 @@ traffic simply never shows its offers to referral-acquired users. Routing must r
 
 ### Guardrails specific to campus
 
-- **Individuals only.** Ambassadors act personally, not on behalf of fraternities, sororities,
-  clubs, teams or dorms. We do **not** pay organizations per member signup or conversion: that
-  creates pressure on members and risks coercion. Any future organization-level relationship (e.g.
-  flat event sponsorship) must not depend on member participation, and is out of scope for pilots.
+- **Compensation model:** an ambassador earns per **directly referred** user who produces an
+  eligible, provider-approved conversion that clears the reversal window, under the same policy,
+  holds and fraud controls as any referrer (§2–5), possibly with an ambassador-specific policy
+  version. Nothing for signups, installs or clicks, nothing for recruiting other ambassadors, and no
+  downstream commissions.
+- **Individuals, not organizations.** Ambassadors act personally, not on behalf of fraternities,
+  sororities, clubs, teams or dorms. We recommend **keeping** the rule that organizations are not
+  paid per member conversion. An organization's leadership has authority over members, so per-member
+  payments to the organization create exactly the pressure the guardrails forbid. This was retained
+  as an anti-coercion guardrail. If the founders want organization-level performance compensation,
+  it needs an explicit decision and legal review.
 - **Code of conduct:** no pressure, no participation requirements, no tying to membership, rank,
   pledging or initiation, no hazing contexts, no messaging people who have not opted in, no use of
   university names or marks, no posting where campus rules prohibit it, and disclosure every time.
@@ -189,7 +202,9 @@ waitlist captures `?ref=` source tags (`[a-z0-9_-]{1,64}`), and `npm run waitlis
 signups by source and platform with no personal data. See EXPERIMENTS E008 (pre-launch) and E009
 (post-launch referral pilot).
 
-Pre-launch ambassadors must **not** be paid per signup. That would pay for signups rather than
-economic activity, invite junk signups, and contradict principle 1. Options: unpaid founding
-ambassadors with clear terms, or a flat stipend for time. Both are disclosed as material
-connections.
+Before launch there are no conversions, so performance pay cannot apply yet. Pre-launch
+ambassadors must **not** be paid per waitlist signup: that pays for non-economic activity and
+invites junk signups. Options for E008: unpaid founding ambassadors with clear terms (told that
+conversion-based compensation is planned, subject to provider permission and legal review), or a
+flat stipend for time. Both are disclosed as material connections. Performance compensation starts
+in E009, after launch, provider permission and legal review.
